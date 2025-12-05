@@ -119,41 +119,76 @@ class MetricsCollector {
   async login() {
     console.log('🔐 Authenticating with Campus Controller...');
 
-    const authBody = JSON.stringify({
-      grantType: 'password',
-      userId: CONFIG.campusController.userId,
-      password: CONFIG.campusController.password
-    });
-
-    try {
-      const response = await this.makeRequest(
-        `${CONFIG.campusController.baseUrl}/v1/oauth2/token`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: authBody
-        },
-        10000
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Authentication failed (${response.status}): ${errorText}`);
+    // Try multiple authentication formats (same as frontend)
+    const authFormats = [
+      // Format 1: camelCase (Extreme Networks standard)
+      {
+        grantType: 'password',
+        userId: CONFIG.campusController.userId,
+        password: CONFIG.campusController.password
+      },
+      // Format 2: snake_case (OAuth 2.0 standard)
+      {
+        grant_type: 'password',
+        userId: CONFIG.campusController.userId,
+        password: CONFIG.campusController.password
+      },
+      // Format 3: username instead of userId
+      {
+        grantType: 'password',
+        username: CONFIG.campusController.userId,
+        password: CONFIG.campusController.password
+      },
+      // Format 4: snake_case with username
+      {
+        grant_type: 'password',
+        username: CONFIG.campusController.userId,
+        password: CONFIG.campusController.password
       }
+    ];
 
-      const authData = await response.json();
-      this.accessToken = authData.access_token;
-      this.refreshToken = authData.refresh_token;
+    let lastError = null;
 
-      console.log('✅ Authentication successful');
-      return true;
-    } catch (error) {
-      console.error('❌ Authentication failed:', error.message);
-      return false;
+    for (let i = 0; i < authFormats.length; i++) {
+      try {
+        const response = await this.makeRequest(
+          `${CONFIG.campusController.baseUrl}/v1/oauth2/token`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(authFormats[i])
+          },
+          10000
+        );
+
+        if (response.ok) {
+          const authData = await response.json();
+          this.accessToken = authData.access_token;
+          this.refreshToken = authData.refresh_token;
+
+          console.log('✅ Authentication successful');
+          return true;
+        } else {
+          const errorText = await response.text();
+          lastError = `Authentication failed (${response.status}): ${errorText}`;
+
+          // If credentials are wrong (401), no need to try other formats
+          if (response.status === 401) {
+            console.error(`❌ ${lastError}`);
+            console.error('   Please verify CAMPUS_CONTROLLER_USER and CAMPUS_CONTROLLER_PASSWORD are correct');
+            return false;
+          }
+        }
+      } catch (error) {
+        lastError = error.message;
+      }
     }
+
+    console.error('❌ Authentication failed after trying all formats:', lastError);
+    return false;
   }
 
   async makeAuthenticatedRequest(endpoint, options = {}, timeoutMs = 10000) {
