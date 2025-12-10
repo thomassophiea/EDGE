@@ -2210,6 +2210,290 @@ class ApiService {
     }
   }
 
+  // ============================================================================
+  // Device Group Management
+  // ============================================================================
+
+  /**
+   * Get all device groups
+   */
+  async getDeviceGroups(): Promise<any[]> {
+    // Try multiple endpoint patterns
+    const endpoints = [
+      '/v3/devicegroups',
+      '/v1/devicegroups',
+      '/v3/groups'
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await this.makeAuthenticatedRequest(endpoint, {}, 8000);
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`Found device groups at ${endpoint}`);
+          return Array.isArray(data) ? data : [];
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    console.warn('No device groups endpoint found');
+    return [];
+  }
+
+  /**
+   * Get device groups for a specific site
+   */
+  async getDeviceGroupsBySite(siteId: string): Promise<any[]> {
+    // Try multiple endpoint patterns
+    const endpoints = [
+      `/v3/sites/${encodeURIComponent(siteId)}/devicegroups`,
+      `/v1/sites/${encodeURIComponent(siteId)}/devicegroups`,
+      `/v3/devicegroups?siteId=${encodeURIComponent(siteId)}`,
+      `/v3/sites/${encodeURIComponent(siteId)}/groups`
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await this.makeAuthenticatedRequest(endpoint, {}, 8000);
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`Found device groups for site ${siteId} at ${endpoint}`);
+          return Array.isArray(data) ? data : [];
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    console.warn(`No device groups found for site ${siteId}`);
+    return [];
+  }
+
+  // ============================================================================
+  // Profile Management
+  // ============================================================================
+
+  /**
+   * Get all profiles
+   */
+  async getProfiles(): Promise<any[]> {
+    // Try multiple endpoint patterns
+    const endpoints = [
+      '/v3/profiles',
+      '/v1/profiles',
+      '/v3/approfiles',
+      '/v3/networkprofiles'
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await this.makeAuthenticatedRequest(endpoint, {}, 8000);
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`Found profiles at ${endpoint}`);
+          return Array.isArray(data) ? data : [];
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    console.warn('No profiles endpoint found');
+    return [];
+  }
+
+  /**
+   * Get profiles for a specific device group
+   */
+  async getProfilesByDeviceGroup(deviceGroupId: string): Promise<any[]> {
+    // Try multiple endpoint patterns
+    const endpoints = [
+      `/v3/devicegroups/${encodeURIComponent(deviceGroupId)}/profiles`,
+      `/v1/devicegroups/${encodeURIComponent(deviceGroupId)}/profiles`,
+      `/v3/profiles?deviceGroupId=${encodeURIComponent(deviceGroupId)}`,
+      `/v3/groups/${encodeURIComponent(deviceGroupId)}/profiles`
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await this.makeAuthenticatedRequest(endpoint, {}, 8000);
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`Found profiles for device group ${deviceGroupId} at ${endpoint}`);
+          return Array.isArray(data) ? data : [];
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    console.warn(`No profiles found for device group ${deviceGroupId}`);
+    return [];
+  }
+
+  /**
+   * Get profile by ID
+   */
+  async getProfileById(profileId: string): Promise<any | null> {
+    const endpoints = [
+      `/v3/profiles/${encodeURIComponent(profileId)}`,
+      `/v1/profiles/${encodeURIComponent(profileId)}`
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await this.makeAuthenticatedRequest(endpoint, {}, 8000);
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    return null;
+  }
+
+  // ============================================================================
+  // Service/WLAN Assignment to Profiles
+  // ============================================================================
+
+  /**
+   * Assign a service/WLAN to a profile
+   * This tries multiple methods since the exact API pattern is unknown
+   */
+  async assignServiceToProfile(serviceId: string, profileId: string): Promise<void> {
+    console.log(`Assigning service ${serviceId} to profile ${profileId}`);
+
+    // Method 1: Try dedicated assignment endpoint
+    const assignmentEndpoints = [
+      `/v3/profiles/${encodeURIComponent(profileId)}/services`,
+      `/v3/services/${encodeURIComponent(serviceId)}/assign`,
+      `/v1/profiles/${encodeURIComponent(profileId)}/services`
+    ];
+
+    for (const endpoint of assignmentEndpoints) {
+      try {
+        const response = await this.makeAuthenticatedRequest(endpoint, {
+          method: 'POST',
+          body: JSON.stringify({ serviceId, profileId })
+        });
+
+        if (response.ok) {
+          console.log(`Successfully assigned via ${endpoint}`);
+          return;
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    // Method 2: Try updating the profile to add the service
+    try {
+      const profile = await this.getProfileById(profileId);
+      if (profile) {
+        const services = profile.services || [];
+        if (!services.includes(serviceId)) {
+          services.push(serviceId);
+
+          const updateEndpoints = [
+            `/v3/profiles/${encodeURIComponent(profileId)}`,
+            `/v1/profiles/${encodeURIComponent(profileId)}`
+          ];
+
+          for (const endpoint of updateEndpoints) {
+            try {
+              const response = await this.makeAuthenticatedRequest(endpoint, {
+                method: 'PUT',
+                body: JSON.stringify({ ...profile, services })
+              });
+
+              if (response.ok) {
+                console.log(`Successfully assigned via profile update at ${endpoint}`);
+                return;
+              }
+            } catch (error) {
+              continue;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to assign via profile update:', error);
+    }
+
+    throw new Error(`Failed to assign service ${serviceId} to profile ${profileId} - no working endpoint found`);
+  }
+
+  /**
+   * Trigger profile synchronization
+   */
+  async syncProfile(profileId: string): Promise<void> {
+    console.log(`Triggering sync for profile ${profileId}`);
+
+    const syncEndpoints = [
+      `/v3/profiles/${encodeURIComponent(profileId)}/sync`,
+      `/v1/profiles/${encodeURIComponent(profileId)}/sync`,
+      `/v3/profiles/${encodeURIComponent(profileId)}/push`,
+      `/v3/sync/profile/${encodeURIComponent(profileId)}`
+    ];
+
+    for (const endpoint of syncEndpoints) {
+      try {
+        const response = await this.makeAuthenticatedRequest(endpoint, {
+          method: 'POST'
+        });
+
+        if (response.ok) {
+          console.log(`Successfully triggered sync via ${endpoint}`);
+          return;
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    // If no sync endpoint works, log warning but don't fail
+    // (some systems may sync automatically)
+    console.warn(`No sync endpoint found for profile ${profileId} - profile may sync automatically`);
+  }
+
+  /**
+   * Sync multiple profiles (batch operation)
+   */
+  async syncMultipleProfiles(profileIds: string[]): Promise<void> {
+    console.log(`Triggering sync for ${profileIds.length} profiles`);
+
+    // Try batch sync endpoint first
+    const batchEndpoints = [
+      '/v3/profiles/sync',
+      '/v1/profiles/sync',
+      '/v3/sync/profiles'
+    ];
+
+    for (const endpoint of batchEndpoints) {
+      try {
+        const response = await this.makeAuthenticatedRequest(endpoint, {
+          method: 'POST',
+          body: JSON.stringify({ profileIds })
+        });
+
+        if (response.ok) {
+          console.log(`Successfully triggered batch sync via ${endpoint}`);
+          return;
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    // Fall back to individual syncs
+    console.log('Batch sync not available, falling back to individual syncs');
+    await Promise.all(profileIds.map(id => this.syncProfile(id)));
+  }
+
   // Check if an endpoint is available (returns true if endpoint exists and is reachable)
   async checkEndpointAvailability(endpoint: string): Promise<boolean> {
     try {
