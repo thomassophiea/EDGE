@@ -7,11 +7,12 @@ import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Label } from './ui/label';
-import { AlertCircle, Building2, Search, RefreshCw, Filter, Plus, Edit, Trash2, Copy, Globe, Clock, MapPin, Users, Radio, Network, Settings, Info } from 'lucide-react';
+import { AlertCircle, Building2, Search, RefreshCw, Filter, Plus, Edit, Trash2, Copy, Globe, Clock, MapPin, Users, Radio, Network, Settings, Info, Wifi } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 import { Skeleton } from './ui/skeleton';
 import { apiService } from '../services/api';
 import { toast } from 'sonner';
+import { SiteWLANAssignmentDialog } from './SiteWLANAssignmentDialog';
 
 interface ConfigureSitesProps {
   onShowDetail?: (siteId: string, siteName: string) => void;
@@ -56,7 +57,9 @@ export function ConfigureSites({ onShowDetail }: ConfigureSitesProps) {
   const [filteredSites, setFilteredSites] = useState<Site[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isWLANDialogOpen, setIsWLANDialogOpen] = useState(false);
   const [editingSite, setEditingSite] = useState<Site | null>(null);
+  const [selectedSiteForWLAN, setSelectedSiteForWLAN] = useState<{ id: string; name: string } | null>(null);
   const [countrySearch, setCountrySearch] = useState('');
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
 
@@ -432,6 +435,11 @@ export function ConfigureSites({ onShowDetail }: ConfigureSitesProps) {
     setIsCreateDialogOpen(true);
   };
 
+  const openWLANDialog = (site: Site) => {
+    setSelectedSiteForWLAN({ id: site.id, name: site.siteName || site.name });
+    setIsWLANDialogOpen(true);
+  };
+
   // Safe filtering with proper validation
   const filteredCountries = Array.isArray(countries) ? countries.filter(country => {
     // Safety check for country object and name property
@@ -736,6 +744,14 @@ export function ConfigureSites({ onShowDetail }: ConfigureSitesProps) {
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => openWLANDialog(site)}
+                          title="View WLAN Assignments"
+                        >
+                          <Wifi className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => openEditDialog(site)}
                         >
                           <Edit className="h-4 w-4" />
@@ -973,6 +989,16 @@ export function ConfigureSites({ onShowDetail }: ConfigureSitesProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* WLAN Assignment Dialog */}
+      {selectedSiteForWLAN && (
+        <SiteWLANAssignmentDialog
+          open={isWLANDialogOpen}
+          onOpenChange={setIsWLANDialogOpen}
+          siteId={selectedSiteForWLAN.id}
+          siteName={selectedSiteForWLAN.name}
+        />
+      )}
     </div>
   );
 }
