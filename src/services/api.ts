@@ -2246,29 +2246,30 @@ class ApiService {
    * Get device groups for a specific site
    */
   async getDeviceGroupsBySite(siteId: string): Promise<any[]> {
-    // Try multiple endpoint patterns
-    const endpoints = [
-      `/v3/sites/${encodeURIComponent(siteId)}/devicegroups`,
-      `/v1/sites/${encodeURIComponent(siteId)}/devicegroups`,
-      `/v3/devicegroups?siteId=${encodeURIComponent(siteId)}`,
-      `/v3/sites/${encodeURIComponent(siteId)}/groups`
-    ];
+    try {
+      console.log(`[API] Fetching site details to get device groups for site ${siteId}...`);
 
-    for (const endpoint of endpoints) {
-      try {
-        const response = await this.makeAuthenticatedRequest(endpoint, {}, 8000);
-        if (response.ok) {
-          const data = await response.json();
-          console.log(`Found device groups for site ${siteId} at ${endpoint}`);
-          return Array.isArray(data) ? data : [];
-        }
-      } catch (error) {
-        continue;
+      // Fetch the full site object - device groups are nested in it
+      const siteResponse = await this.makeAuthenticatedRequest(`/v3/sites/${encodeURIComponent(siteId)}`);
+
+      if (!siteResponse.ok) {
+        console.warn(`Failed to fetch site details: ${siteResponse.status}`);
+        return [];
       }
-    }
 
-    console.warn(`No device groups found for site ${siteId}`);
-    return [];
+      const site = await siteResponse.json();
+      console.log(`[API] Site details fetched for ${siteId}`);
+      console.log(`[API] Site.deviceGroups:`, site.deviceGroups);
+
+      // Device groups are nested in the site object
+      const deviceGroups = site.deviceGroups || [];
+      console.log(`[API] Found ${deviceGroups.length} device groups for site ${siteId}`);
+
+      return deviceGroups;
+    } catch (error) {
+      console.error(`[API] Error fetching device groups for site ${siteId}:`, error);
+      return [];
+    }
   }
 
   // ============================================================================
