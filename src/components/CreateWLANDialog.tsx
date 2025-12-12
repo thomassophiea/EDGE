@@ -533,25 +533,29 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
                     {[1, 2].map(i => <Skeleton key={i} className="h-8 w-full" />)}
                   </div>
                 ) : sites.length === 0 ? (
-                  <div className="text-sm text-muted-foreground text-center py-4">
+                  <div className="text-xs text-muted-foreground text-center py-3">
                     No sites available
                   </div>
                 ) : (
-                  <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-2">
                     {sites.map(site => (
                       <div
                         key={site.id}
-                        className="flex items-center space-x-3 p-3 hover:bg-accent cursor-pointer"
-                        onClick={() => toggleSite(site.id)}
+                        className={`flex items-center gap-2 p-2 border rounded cursor-pointer transition-colors ${
+                          formData.selectedSites.includes(site.id)
+                            ? 'border-primary bg-primary/5'
+                            : 'hover:bg-accent/50'
+                        }`}
+                        onClick={() => handleSiteToggle(site.id)}
                       >
                         <input
                           type="checkbox"
                           checked={formData.selectedSites.includes(site.id)}
                           onChange={() => {}}
-                          className="h-4 w-4"
+                          className="h-3.5 w-3.5 flex-shrink-0"
                         />
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="flex-1">{site.name || site.siteName || site.id}</span>
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                        <span className="flex-1 truncate text-xs">{site.name || site.siteName || site.id}</span>
                       </div>
                     ))}
                   </div>
