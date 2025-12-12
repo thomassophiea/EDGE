@@ -49,12 +49,17 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
     vlan: null,
     band: 'dual',
     enabled: true,
-    selectedSites: []
+    selectedSites: [],
+    authenticatedUserDefaultRoleID: null
   });
 
   // Sites data
   const [sites, setSites] = useState<Site[]>([]);
   const [loadingSites, setLoadingSites] = useState(false);
+
+  // Roles
+  const [roles, setRoles] = useState<any[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(false);
 
   // Site deployment configurations
   const [siteConfigs, setSiteConfigs] = useState<Map<string, SiteDeploymentConfig>>(new Map());
@@ -73,10 +78,11 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
   // Submission state
   const [submitting, setSubmitting] = useState(false);
 
-  // Load sites when dialog opens
+  // Load sites and roles when dialog opens
   useEffect(() => {
     if (open) {
       loadSites();
+      loadRoles();
       // Reset form
       setFormData({
         ssid: '',
@@ -85,7 +91,8 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
         vlan: null,
         band: 'dual',
         enabled: true,
-        selectedSites: []
+        selectedSites: [],
+        authenticatedUserDefaultRoleID: null // Will be set to 'accessing' after roles load
       });
       setSiteConfigs(new Map());
       setProfilesBySite(new Map());
@@ -120,6 +127,29 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
       toast.error('Failed to load sites');
     } finally {
       setLoadingSites(false);
+    }
+  };
+
+  const loadRoles = async () => {
+    setLoadingRoles(true);
+    try {
+      const data = await apiService.getRoles();
+      setRoles(data);
+
+      // Auto-select "accessing" role if it exists
+      const accessingRole = data.find(r =>
+        r.name?.toLowerCase() === 'accessing'
+      );
+
+      if (accessingRole) {
+        setFormData(prev => ({ ...prev, authenticatedUserDefaultRoleID: accessingRole.id }));
+        console.log('[CreateWLAN] Auto-selected "accessing" role:', accessingRole.id);
+      }
+    } catch (error) {
+      console.error('Failed to load roles:', error);
+      // Don't show error toast - roles are optional
+    } finally {
+      setLoadingRoles(false);
     }
   };
 
@@ -318,7 +348,8 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
           vlan: formData.vlan || undefined,
           band: formData.band,
           enabled: formData.enabled,
-          sites: formData.selectedSites
+          sites: formData.selectedSites,
+          authenticatedUserDefaultRoleID: formData.authenticatedUserDefaultRoleID || undefined
         },
         siteAssignments
       );
@@ -355,21 +386,25 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl w-[95vw] max-h-[95vh] flex flex-col">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle className="flex items-center gap-2">
-              <Wifi className="h-5 w-5" />
+        <DialogContent className="max-w-5xl w-[90vw] max-h-[90vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Wifi className="h-6 w-6" />
               Create Wireless Network
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-base">
               Configure a new WLAN with site-centric deployment
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4 overflow-y-auto flex-1 px-1">
+          <div className="space-y-6 py-6 px-6 overflow-y-auto flex-1">
             {/* WLAN Configuration Section */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-sm">Network Configuration</h3>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Network Configuration</CardTitle>
+                <CardDescription className="text-xs">Basic WLAN settings</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
 
               <div className="grid gap-4">
                 {/* SSID */}
@@ -447,24 +482,48 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
                     max="4094"
                   />
                 </div>
-              </div>
-            </div>
 
-            <Separator />
+                {/* Role */}
+                <div className="space-y-2">
+                  <Label htmlFor="role">User Role</Label>
+                  <Select
+                    value={formData.authenticatedUserDefaultRoleID || ''}
+                    onValueChange={(value) => setFormData({ ...formData, authenticatedUserDefaultRoleID: value || null })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={loadingRoles ? "Loading roles..." : "Select role..."} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No Role</SelectItem>
+                      {roles.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              </CardContent>
+            </Card>
 
             {/* Site Selection Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium text-sm">Site Assignment *</h3>
-                {discoveringProfiles && (
-                  <Badge variant="secondary" className="gap-1">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Discovering profiles...
-                  </Badge>
-                )}
-              </div>
-
-              {/* Site Selection */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-sm font-medium">Site Assignment *</CardTitle>
+                    <CardDescription className="text-xs mt-1">Select sites for deployment</CardDescription>
+                  </div>
+                  {discoveringProfiles && (
+                    <Badge variant="secondary" className="gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Discovering profiles...
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Select Sites</Label>
                 {loadingSites ? (
@@ -496,14 +555,17 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
                   </div>
                 )}
               </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Deployment Mode Selectors */}
             {formData.selectedSites.length > 0 && !discoveringProfiles && (
-              <>
-                <Separator />
-                <div className="space-y-4">
-                  <h3 className="font-medium text-sm">Deployment Configuration</h3>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Deployment Configuration</CardTitle>
+                  <CardDescription className="text-xs">Choose how WLANs are assigned to profiles</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <div className="grid gap-4">
                     {Array.from(siteConfigs.values()).map((config) => (
                       <DeploymentModeSelector
@@ -523,17 +585,15 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
                       />
                     ))}
                   </div>
-                </div>
 
-                <Separator />
-
-                {/* Effective Set Preview */}
-                <EffectiveSetPreview effectiveSets={effectiveSets} />
-              </>
+                  {/* Effective Set Preview */}
+                  <EffectiveSetPreview effectiveSets={effectiveSets} />
+                </CardContent>
+              </Card>
             )}
           </div>
 
-          <DialogFooter className="flex-shrink-0">
+          <DialogFooter className="flex-shrink-0 px-6 py-4 border-t bg-muted/30">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
               Cancel
             </Button>

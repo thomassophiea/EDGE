@@ -99,6 +99,7 @@ export interface WLANFormData {
   band: '2.4GHz' | '5GHz' | 'dual';
   enabled: boolean;
   selectedSites: string[];
+  authenticatedUserDefaultRoleID?: string | null;
 }
 
 // ============================================
