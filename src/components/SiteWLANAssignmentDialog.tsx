@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
 import { Alert, AlertDescription } from './ui/alert';
 import {
@@ -12,10 +13,14 @@ import {
   Radio,
   AlertCircle,
   Loader2,
-  Building2
+  Building2,
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { toast } from 'sonner';
+import { ReconciliationDialog } from './wlans/ReconciliationDialog';
+import { assignmentStorageService } from '../services/assignmentStorage';
 
 interface SiteWLANAssignmentDialogProps {
   open: boolean;
@@ -33,10 +38,14 @@ export function SiteWLANAssignmentDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<any>(null);
+  const [reconcileDialogOpen, setReconcileDialogOpen] = useState(false);
+  const [selectedWLAN, setSelectedWLAN] = useState<{ id: string; name: string } | null>(null);
+  const [expectedWLANCounts, setExpectedWLANCounts] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     if (open && siteId) {
       loadAssignmentSummary();
+      loadExpectedCounts();
     }
   }, [open, siteId]);
 
@@ -66,6 +75,42 @@ export function SiteWLANAssignmentDialog({
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadExpectedCounts = () => {
+    try {
+      // Load expected WLAN counts from assignment tracking
+      const allSiteAssignments = assignmentStorageService.getAllWLANSiteAssignments();
+      const siteAssignments = allSiteAssignments.filter(a => a.siteId === siteId);
+
+      const countsMap = new Map<string, number>();
+
+      // For each WLAN assigned to this site, count expected profile assignments
+      siteAssignments.forEach(siteAssignment => {
+        const profileAssignments = assignmentStorageService.getWLANProfileAssignments(
+          siteAssignment.wlanId
+        ).filter(pa => pa.siteId === siteId && pa.expectedState === 'ASSIGNED');
+
+        countsMap.set(siteAssignment.wlanId, profileAssignments.length);
+      });
+
+      setExpectedWLANCounts(countsMap);
+      console.log('[SiteWLANDialog] Expected WLAN counts loaded:', Object.fromEntries(countsMap));
+    } catch (err) {
+      console.error('[SiteWLANDialog] Error loading expected counts:', err);
+    }
+  };
+
+  const handleReconcileWLAN = (wlanId: string, wlanName: string) => {
+    setSelectedWLAN({ id: wlanId, name: wlanName });
+    setReconcileDialogOpen(true);
+  };
+
+  const handleReconcileDialogClose = () => {
+    setReconcileDialogOpen(false);
+    // Reload data after reconciliation to show updated state
+    loadAssignmentSummary();
+    loadExpectedCounts();
   };
 
   const getSecurityBadge = (security?: string) => {
@@ -186,28 +231,67 @@ export function SiteWLANAssignmentDialog({
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {summary.wlans.map((wlan: any) => (
-                      <div
-                        key={wlan.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Wifi className="h-5 w-5 text-muted-foreground" />
-                          <div>
-                            <div className="font-medium">
-                              {wlan.ssid || wlan.name || wlan.serviceName || wlan.id}
+                    {summary.wlans.map((wlan: any) => {
+                      // Calculate actual profile count with this WLAN
+                      const actualCount = summary.profiles.filter(
+                        (p: any) => p.wlans?.some((w: any) => w.id === wlan.id)
+                      ).length;
+
+                      const expectedCount = expectedWLANCounts.get(wlan.id) || 0;
+                      const hasMismatch = expectedCount > 0 && actualCount !== expectedCount;
+
+                      return (
+                        <div
+                          key={wlan.id}
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <Wifi className="h-5 w-5 text-muted-foreground" />
+                            <div className="flex-1">
+                              <div className="font-medium flex items-center gap-2">
+                                {wlan.ssid || wlan.name || wlan.serviceName || wlan.id}
+                                {hasMismatch && (
+                                  <AlertTriangle className="h-4 w-4 text-orange-500" />
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                                {wlan.vlan && <span>VLAN {wlan.vlan}</span>}
+                                {expectedCount > 0 && (
+                                  <>
+                                    <span className="text-muted-foreground">•</span>
+                                    <span>
+                                      Expected: {expectedCount} profile{expectedCount !== 1 ? 's' : ''}
+                                    </span>
+                                    <span className="text-muted-foreground">•</span>
+                                    <span className={hasMismatch ? 'text-orange-500 font-medium' : ''}>
+                                      Actual: {actualCount} profile{actualCount !== 1 ? 's' : ''}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                            {wlan.vlan && (
-                              <div className="text-xs text-muted-foreground">VLAN {wlan.vlan}</div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getSecurityBadge(wlan.security)}
+                            {getBandBadge(wlan.band)}
+                            {expectedCount > 0 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleReconcileWLAN(
+                                  wlan.id,
+                                  wlan.ssid || wlan.name || wlan.serviceName || wlan.id
+                                )}
+                                className="gap-1"
+                              >
+                                <RefreshCw className="h-3 w-3" />
+                                Reconcile
+                              </Button>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {getSecurityBadge(wlan.security)}
-                          {getBandBadge(wlan.band)}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -288,6 +372,16 @@ export function SiteWLANAssignmentDialog({
           </div>
         )}
       </DialogContent>
+
+      {/* Reconciliation Dialog */}
+      {selectedWLAN && (
+        <ReconciliationDialog
+          open={reconcileDialogOpen}
+          onOpenChange={handleReconcileDialogClose}
+          wlanId={selectedWLAN.id}
+          wlanName={selectedWLAN.name}
+        />
+      )}
     </Dialog>
   );
 }
