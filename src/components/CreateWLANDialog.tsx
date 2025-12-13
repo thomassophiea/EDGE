@@ -43,6 +43,7 @@ interface SiteDeploymentConfig {
 export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDialogProps) {
   // Form state
   const [formData, setFormData] = useState<WLANFormData>({
+    serviceName: '',
     ssid: '',
     security: 'wpa2-psk',
     passphrase: '',
@@ -334,6 +335,7 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
 
   // Check if form has all required fields filled
   const isFormValid = () => {
+    if (!formData.serviceName.trim()) return false;
     if (!formData.ssid.trim()) return false;
     if (!formData.security) return false;
     if (!formData.band) return false;
@@ -352,6 +354,10 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
 
     // Comprehensive validation - check all required fields
     const errors: string[] = [];
+
+    if (!formData.serviceName.trim()) {
+      errors.push('Service Name is required');
+    }
 
     if (!formData.ssid.trim()) {
       errors.push('SSID is required');
@@ -416,8 +422,8 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
       // Use new site-centric deployment method
       const result = await assignmentService.createWLANWithSiteCentricDeployment(
         {
-          name: formData.ssid,
-          serviceName: formData.ssid,
+          name: formData.serviceName,
+          serviceName: formData.serviceName,
           ssid: formData.ssid,
           security: formData.security,
           passphrase: formData.passphrase || undefined,
@@ -499,6 +505,20 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
               </CardHeader>
               <CardContent>
               <div className="space-y-4">
+                {/* Service Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="serviceName">
+                    Service Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="serviceName"
+                    value={formData.serviceName}
+                    onChange={(e) => setFormData({ ...formData, serviceName: e.target.value })}
+                    placeholder="Service identifier (required)"
+                    className={!formData.serviceName.trim() ? 'border-red-300 focus-visible:border-red-500' : ''}
+                  />
+                </div>
+
                 {/* SSID */}
                 <div className="space-y-2">
                   <Label htmlFor="ssid">
