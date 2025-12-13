@@ -15,11 +15,13 @@ import {
   Loader2,
   Building2,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  QrCode
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { toast } from 'sonner';
 import { ReconciliationDialog } from './wlans/ReconciliationDialog';
+import { WifiQRCodeDialog } from './WifiQRCodeDialog';
 import { assignmentStorageService } from '../services/assignmentStorage';
 import { wlanDeploymentStatusService } from '../services/wlanDeploymentStatus';
 import type { SiteWLANInventory } from '../types/network';
@@ -43,6 +45,8 @@ export function SiteWLANAssignmentDialog({
   const [inventory, setInventory] = useState<SiteWLANInventory | null>(null);
   const [reconcileDialogOpen, setReconcileDialogOpen] = useState(false);
   const [selectedWLAN, setSelectedWLAN] = useState<{ id: string; name: string } | null>(null);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [qrWLAN, setQrWLAN] = useState<any>(null);
 
   useEffect(() => {
     if (open && siteId) {
@@ -93,6 +97,11 @@ export function SiteWLANAssignmentDialog({
   const handleReconcileWLAN = (wlanId: string, wlanName: string) => {
     setSelectedWLAN({ id: wlanId, name: wlanName });
     setReconcileDialogOpen(true);
+  };
+
+  const handleShowQRCode = (wlan: any) => {
+    setQrWLAN(wlan);
+    setQrDialogOpen(true);
   };
 
   const handleReconcileDialogClose = () => {
@@ -282,6 +291,16 @@ export function SiteWLANAssignmentDialog({
                           <div className="flex items-center gap-2">
                             {getSecurityBadge(wlan.security)}
                             {getBandBadge(wlan.band)}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleShowQRCode(wlan)}
+                              className="gap-1"
+                              title="Download WiFi QR Code"
+                            >
+                              <QrCode className="h-3 w-3" />
+                              QR Code
+                            </Button>
                             {item.expectedProfiles > 0 && (
                               <Button
                                 variant="outline"
@@ -388,6 +407,15 @@ export function SiteWLANAssignmentDialog({
           onOpenChange={handleReconcileDialogClose}
           wlanId={selectedWLAN.id}
           wlanName={selectedWLAN.name}
+        />
+      )}
+
+      {/* WiFi QR Code Dialog */}
+      {qrWLAN && (
+        <WifiQRCodeDialog
+          open={qrDialogOpen}
+          onOpenChange={setQrDialogOpen}
+          wlan={qrWLAN}
         />
       )}
     </Dialog>

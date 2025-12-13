@@ -473,13 +473,15 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           ref={dialogRef}
-          className="max-w-3xl w-[90vw] max-h-[90vh] p-0 flex flex-col overflow-hidden pointer-events-auto"
+          className="max-w-7xl w-[95vw] max-h-[95vh] p-0 flex flex-col overflow-hidden pointer-events-auto resize"
           style={{
             position: 'fixed',
             left: '50%',
             top: '50%',
             transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px))`,
-            cursor: isDragging ? 'grabbing' : 'auto'
+            cursor: isDragging ? 'grabbing' : 'auto',
+            minWidth: '800px',
+            minHeight: '600px'
           }}
           onMouseDown={handleMouseDown}
         >
@@ -504,7 +506,7 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
                 </CardDescription>
               </CardHeader>
               <CardContent>
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Service Name */}
                 <div className="space-y-2">
                   <Label htmlFor="serviceName">
@@ -643,7 +645,7 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
               </CardHeader>
               {showAdvanced && (
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Hide SSID */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">

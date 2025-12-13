@@ -92,6 +92,7 @@ export interface SyncResult {
 
 // Form data for WLAN creation dialog
 export interface WLANFormData {
+  serviceName: string;
   ssid: string;
   security: 'open' | 'wpa2-psk' | 'wpa3-sae' | 'wpa2-enterprise';
   passphrase: string;
