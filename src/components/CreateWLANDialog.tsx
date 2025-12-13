@@ -335,11 +335,11 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
 
   // Check if form has all required fields filled
   const isFormValid = () => {
-    if (!formData.serviceName.trim()) return false;
-    if (!formData.ssid.trim()) return false;
+    if (!formData.serviceName?.trim()) return false;
+    if (!formData.ssid?.trim()) return false;
     if (!formData.security) return false;
     if (!formData.band) return false;
-    if (formData.security !== 'open' && !formData.passphrase.trim()) return false;
+    if (formData.security !== 'open' && !formData.passphrase?.trim()) return false;
     if (formData.selectedSites.length === 0) return false;
     return true;
   };
@@ -355,11 +355,11 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
     // Comprehensive validation - check all required fields
     const errors: string[] = [];
 
-    if (!formData.serviceName.trim()) {
+    if (!formData.serviceName?.trim()) {
       errors.push('Service Name is required');
     }
 
-    if (!formData.ssid.trim()) {
+    if (!formData.ssid?.trim()) {
       errors.push('SSID is required');
     }
 
@@ -371,7 +371,7 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
       errors.push('Band is required');
     }
 
-    if (formData.security !== 'open' && !formData.passphrase.trim()) {
+    if (formData.security !== 'open' && !formData.passphrase?.trim()) {
       errors.push('Passphrase is required for secured networks');
     }
 
@@ -510,28 +510,28 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
                 {/* Service Name */}
                 <div className="space-y-2">
                   <Label htmlFor="serviceName">
-                    Service Name {!formData.serviceName.trim() && <span className="text-red-500">*</span>}
+                    Service Name {!formData.serviceName?.trim() && <span className="text-red-500">*</span>}
                   </Label>
                   <Input
                     id="serviceName"
-                    value={formData.serviceName}
+                    value={formData.serviceName || ''}
                     onChange={(e) => setFormData({ ...formData, serviceName: e.target.value })}
                     placeholder="Service identifier (required)"
-                    className={!formData.serviceName.trim() ? 'border-red-300 focus-visible:border-red-500' : ''}
+                    className={!formData.serviceName?.trim() ? 'border-red-300 focus-visible:border-red-500' : ''}
                   />
                 </div>
 
                 {/* SSID */}
                 <div className="space-y-2">
                   <Label htmlFor="ssid">
-                    SSID {!formData.ssid.trim() && <span className="text-red-500">*</span>}
+                    SSID {!formData.ssid?.trim() && <span className="text-red-500">*</span>}
                   </Label>
                   <Input
                     id="ssid"
-                    value={formData.ssid}
+                    value={formData.ssid || ''}
                     onChange={(e) => setFormData({ ...formData, ssid: e.target.value })}
                     placeholder="MyNetwork (required)"
-                    className={!formData.ssid.trim() ? 'border-red-300 focus-visible:border-red-500' : ''}
+                    className={!formData.ssid?.trim() ? 'border-red-300 focus-visible:border-red-500' : ''}
                   />
                 </div>
 
@@ -580,15 +580,15 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
                 {formData.security !== 'open' && (
                   <div className="space-y-2">
                     <Label htmlFor="passphrase">
-                      Passphrase {formData.security !== 'open' && !formData.passphrase.trim() && <span className="text-red-500">*</span>}
+                      Passphrase {formData.security !== 'open' && !formData.passphrase?.trim() && <span className="text-red-500">*</span>}
                     </Label>
                     <Input
                       id="passphrase"
                       type="password"
-                      value={formData.passphrase}
+                      value={formData.passphrase || ''}
                       onChange={(e) => setFormData({ ...formData, passphrase: e.target.value })}
                       placeholder="Enter passphrase (required)"
-                      className={!formData.passphrase.trim() ? 'border-red-300 focus-visible:border-red-500' : ''}
+                      className={!formData.passphrase?.trim() ? 'border-red-300 focus-visible:border-red-500' : ''}
                     />
                   </div>
                 )}
