@@ -105,7 +105,7 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
         band: 'dual',
         enabled: true,
         selectedSites: [],
-        authenticatedUserDefaultRoleID: null // Will be set to 'accessing' after roles load
+        authenticatedUserDefaultRoleID: null // Will be set to 'bridged' after roles load
       });
       setSiteConfigs(new Map());
       setProfilesBySite(new Map());
@@ -185,14 +185,14 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
       const data = await apiService.getRoles();
       setRoles(data);
 
-      // Auto-select "accessing" role if it exists
-      const accessingRole = data.find(r =>
-        r.name?.toLowerCase() === 'accessing'
+      // Auto-select "bridged" role if it exists
+      const bridgedRole = data.find(r =>
+        r.name?.toLowerCase() === 'bridged'
       );
 
-      if (accessingRole) {
-        setFormData(prev => ({ ...prev, authenticatedUserDefaultRoleID: accessingRole.id }));
-        console.log('[CreateWLAN] Auto-selected "accessing" role:', accessingRole.id);
+      if (bridgedRole) {
+        setFormData(prev => ({ ...prev, authenticatedUserDefaultRoleID: bridgedRole.id }));
+        console.log('[CreateWLAN] Auto-selected "bridged" role:', bridgedRole.id);
       }
     } catch (error) {
       console.error('Failed to load roles:', error);
@@ -562,7 +562,7 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
 
                 {/* Role */}
                 <div className="space-y-2">
-                  <Label htmlFor="role">User Role (Default: accessing)</Label>
+                  <Label htmlFor="role">User Role (Default: bridged)</Label>
                   <Select
                     value={formData.authenticatedUserDefaultRoleID || 'none'}
                     onValueChange={(value) => setFormData({ ...formData, authenticatedUserDefaultRoleID: value === 'none' ? null : value })}
