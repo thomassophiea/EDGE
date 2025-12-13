@@ -391,6 +391,7 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
       const result = await assignmentService.createWLANWithSiteCentricDeployment(
         {
           name: formData.ssid,
+          serviceName: formData.ssid,
           ssid: formData.ssid,
           security: formData.security,
           passphrase: formData.passphrase || undefined,
