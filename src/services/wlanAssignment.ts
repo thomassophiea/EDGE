@@ -35,36 +35,117 @@ export class WLANAssignmentService {
       // Step 1: Create the WLAN/Service
       console.log('[WLANAssignment] Step 1: Creating service...');
 
-      // Build service payload with only the fields we want to send
+      // Build Campus Controller API compliant service payload
       const servicePayload: any = {
+        // Basic identification
         serviceName: serviceData.serviceName || serviceData.name,
         ssid: serviceData.ssid,
-        security: serviceData.security,
-        band: serviceData.band,
-        enabled: serviceData.enabled,
+        status: 'enabled',
+        suppressSsid: serviceData.hidden || false,
+
+        // Required flags
+        canEdit: true,
+        canDelete: true,
+        proxied: 'Local',
+        shutdownOnMeshpointLoss: false,
+
+        // VLAN configuration
+        dot1dPortNumber: serviceData.vlan || 99,
+
+        // Security configuration (WPA2-PSK)
+        privacy: null, // Will be set below based on security type
+
+        // 802.11k/v/r support
+        enabled11kSupport: false,
+        rm11kBeaconReport: false,
+        rm11kQuietIe: false,
+        enable11mcSupport: false,
+
+        // QoS settings
+        uapsdEnabled: true,
+        admissionControlVideo: false,
+        admissionControlVoice: false,
+        admissionControlBestEffort: false,
+        admissionControlBackgroundTraffic: false,
+
+        // Advanced features
+        flexibleClientAccess: false,
+        mbaAuthorization: false,
+        accountingEnabled: false,
+        clientToClientCommunication: true,
+        includeHostname: false,
+        mbo: false,
+        oweAutogen: false,
+        oweCompanion: null,
+        purgeOnDisconnect: false,
+        beaconProtection: false,
+
+        // Policies
+        aaaPolicyId: null,
+        mbatimeoutRoleId: null,
+        roamingAssistPolicy: null,
+
+        // Vendor attributes
+        vendorSpecificAttributes: ['apName', 'vnsName', 'ssid'],
+
+        // Captive portal
+        enableCaptivePortal: false,
+        captivePortalType: null,
+        eGuestPortalId: null,
+        eGuestSettings: [],
+
+        // Timeouts
+        preAuthenticatedIdleTimeout: 300,
+        postAuthenticatedIdleTimeout: 1800,
+        sessionTimeout: 0,
+
+        // Topology and CoS (using default UUIDs from existing services)
+        defaultTopology: 'efd5f044-26c8-11e7-93ae-92361f002671',
+        defaultCoS: '1eea4d66-2607-11e7-93ae-92361f002671',
+
+        // Roles
+        unAuthenticatedUserDefaultRoleID: serviceData.authenticatedUserDefaultRoleID || null,
+        authenticatedUserDefaultRoleID: serviceData.authenticatedUserDefaultRoleID || null,
+        cpNonAuthenticatedPolicyName: null,
+
+        // Hotspot 2.0
+        hotspotType: 'Disabled',
+        hotspot: null,
+
+        // DSCP code points mapping
+        dscp: {
+          codePoints: [
+            2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 2, 0,
+            1, 0, 3, 0, 3, 0, 3, 0, 3, 0, 4, 0, 4, 0, 4, 0,
+            4, 0, 5, 0, 5, 0, 5, 0, 5, 0, 0, 0, 0, 0, 6, 0,
+            6, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0
+          ]
+        },
+
+        // Features
+        features: ['CENTRALIZED-SITE']
       };
 
-      // Add optional fields only if they have values
-      if (serviceData.passphrase) servicePayload.passphrase = serviceData.passphrase;
-      if (serviceData.vlan) servicePayload.vlan = serviceData.vlan;
-      if (serviceData.authenticatedUserDefaultRoleID) servicePayload.authenticatedUserDefaultRoleID = serviceData.authenticatedUserDefaultRoleID;
-      if (serviceData.hidden !== undefined) servicePayload.hidden = serviceData.hidden;
-      if (serviceData.maxClients) servicePayload.maxClients = serviceData.maxClients;
-      if (serviceData.description) servicePayload.description = serviceData.description;
-
-      // IMPORTANT: Campus Controller API bug - if timeout fields are omitted, it defaults them to 0, then fails validation
-      // We must explicitly set valid default values (min valid value is 5)
-      servicePayload.preAuthenticatedIdleTimeout = 300;  // 5 minutes default
-      servicePayload.postAuthenticatedIdleTimeout = 1800; // 30 minutes default
-      servicePayload.sessionTimeout = 86400; // 24 hours default
-
-      // IMPORTANT: Campus Controller API requires unAuthenticatedUserDefaultRoleID when captive portal is disabled
-      // Set to same as authenticated role if not provided (most networks don't use captive portal)
-      if (!servicePayload.unAuthenticatedUserDefaultRoleID && servicePayload.authenticatedUserDefaultRoleID) {
-        servicePayload.unAuthenticatedUserDefaultRoleID = servicePayload.authenticatedUserDefaultRoleID;
+      // Configure security based on type
+      if (serviceData.security === 'wpa2-psk' && serviceData.passphrase) {
+        servicePayload.privacy = {
+          WpaPskElement: {
+            mode: 'aesOnly',
+            pmfMode: 'disabled',
+            presharedKey: serviceData.passphrase,
+            keyHexEncoded: false
+          }
+        };
+      } else if (serviceData.security === 'open') {
+        servicePayload.privacy = null;
       }
 
-      console.log('[WLANAssignment] Service payload with defaults:', JSON.stringify(servicePayload));
+      // Add optional description if provided
+      if (serviceData.description) {
+        servicePayload.description = serviceData.description;
+      }
+
+      console.log('[WLANAssignment] Service payload:', JSON.stringify(servicePayload));
 
       const service = await apiService.createService(servicePayload);
 
@@ -391,37 +472,117 @@ export class WLANAssignmentService {
       // Step 4: Create the WLAN/Service
       console.log('[WLANAssignment] Step 4: Creating service...');
 
-      // Build service payload with only the fields we want to send
-      // IMPORTANT: Do NOT include timeout fields unless they have valid values (>= 5)
+      // Build Campus Controller API compliant service payload
       const servicePayload: any = {
+        // Basic identification
         serviceName: serviceData.serviceName || serviceData.name,
         ssid: serviceData.ssid,
-        security: serviceData.security,
-        band: serviceData.band,
-        enabled: serviceData.enabled,
+        status: 'enabled',
+        suppressSsid: serviceData.hidden || false,
+
+        // Required flags
+        canEdit: true,
+        canDelete: true,
+        proxied: 'Local',
+        shutdownOnMeshpointLoss: false,
+
+        // VLAN configuration
+        dot1dPortNumber: serviceData.vlan || 99,
+
+        // Security configuration (WPA2-PSK)
+        privacy: null, // Will be set below based on security type
+
+        // 802.11k/v/r support
+        enabled11kSupport: false,
+        rm11kBeaconReport: false,
+        rm11kQuietIe: false,
+        enable11mcSupport: false,
+
+        // QoS settings
+        uapsdEnabled: true,
+        admissionControlVideo: false,
+        admissionControlVoice: false,
+        admissionControlBestEffort: false,
+        admissionControlBackgroundTraffic: false,
+
+        // Advanced features
+        flexibleClientAccess: false,
+        mbaAuthorization: false,
+        accountingEnabled: false,
+        clientToClientCommunication: true,
+        includeHostname: false,
+        mbo: false,
+        oweAutogen: false,
+        oweCompanion: null,
+        purgeOnDisconnect: false,
+        beaconProtection: false,
+
+        // Policies
+        aaaPolicyId: null,
+        mbatimeoutRoleId: null,
+        roamingAssistPolicy: null,
+
+        // Vendor attributes
+        vendorSpecificAttributes: ['apName', 'vnsName', 'ssid'],
+
+        // Captive portal
+        enableCaptivePortal: false,
+        captivePortalType: null,
+        eGuestPortalId: null,
+        eGuestSettings: [],
+
+        // Timeouts
+        preAuthenticatedIdleTimeout: 300,
+        postAuthenticatedIdleTimeout: 1800,
+        sessionTimeout: 0,
+
+        // Topology and CoS (using default UUIDs from existing services)
+        defaultTopology: 'efd5f044-26c8-11e7-93ae-92361f002671',
+        defaultCoS: '1eea4d66-2607-11e7-93ae-92361f002671',
+
+        // Roles
+        unAuthenticatedUserDefaultRoleID: serviceData.authenticatedUserDefaultRoleID || null,
+        authenticatedUserDefaultRoleID: serviceData.authenticatedUserDefaultRoleID || null,
+        cpNonAuthenticatedPolicyName: null,
+
+        // Hotspot 2.0
+        hotspotType: 'Disabled',
+        hotspot: null,
+
+        // DSCP code points mapping
+        dscp: {
+          codePoints: [
+            2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 2, 0,
+            1, 0, 3, 0, 3, 0, 3, 0, 3, 0, 4, 0, 4, 0, 4, 0,
+            4, 0, 5, 0, 5, 0, 5, 0, 5, 0, 0, 0, 0, 0, 6, 0,
+            6, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0
+          ]
+        },
+
+        // Features
+        features: ['CENTRALIZED-SITE']
       };
 
-      // Add optional fields only if they have values
-      if (serviceData.passphrase) servicePayload.passphrase = serviceData.passphrase;
-      if (serviceData.vlan) servicePayload.vlan = serviceData.vlan;
-      if (serviceData.authenticatedUserDefaultRoleID) servicePayload.authenticatedUserDefaultRoleID = serviceData.authenticatedUserDefaultRoleID;
-      if (serviceData.hidden !== undefined) servicePayload.hidden = serviceData.hidden;
-      if (serviceData.maxClients) servicePayload.maxClients = serviceData.maxClients;
-      if (serviceData.description) servicePayload.description = serviceData.description;
-
-      // IMPORTANT: Campus Controller API bug - if timeout fields are omitted, it defaults them to 0, then fails validation
-      // We must explicitly set valid default values (min valid value is 5)
-      servicePayload.preAuthenticatedIdleTimeout = 300;  // 5 minutes default
-      servicePayload.postAuthenticatedIdleTimeout = 1800; // 30 minutes default
-      servicePayload.sessionTimeout = 86400; // 24 hours default
-
-      // IMPORTANT: Campus Controller API requires unAuthenticatedUserDefaultRoleID when captive portal is disabled
-      // Set to same as authenticated role if not provided (most networks don't use captive portal)
-      if (!servicePayload.unAuthenticatedUserDefaultRoleID && servicePayload.authenticatedUserDefaultRoleID) {
-        servicePayload.unAuthenticatedUserDefaultRoleID = servicePayload.authenticatedUserDefaultRoleID;
+      // Configure security based on type
+      if (serviceData.security === 'wpa2-psk' && serviceData.passphrase) {
+        servicePayload.privacy = {
+          WpaPskElement: {
+            mode: 'aesOnly',
+            pmfMode: 'disabled',
+            presharedKey: serviceData.passphrase,
+            keyHexEncoded: false
+          }
+        };
+      } else if (serviceData.security === 'open') {
+        servicePayload.privacy = null;
       }
 
-      console.log('[WLANAssignment] Service payload with defaults:', JSON.stringify(servicePayload));
+      // Add optional description if provided
+      if (serviceData.description) {
+        servicePayload.description = serviceData.description;
+      }
+
+      console.log('[WLANAssignment] Service payload:', JSON.stringify(servicePayload));
 
       const service = await apiService.createService(servicePayload);
 
