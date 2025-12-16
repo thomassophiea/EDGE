@@ -292,17 +292,17 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
         const mappedFormData = {
           // Basic Settings
           name: serviceData.serviceName || serviceData.name || serviceData.ssid || 'Unnamed Network',
-          ssid: serviceData.ssid || serviceData.name || '',
-          description: serviceData.description || '',
+          ssid: serviceData.ssid || serviceData.name || 'none',
+          description: serviceData.description || 'none',
           enabled: serviceData.enabled !== false && serviceData.status !== 'disabled',
 
           // Security Configuration
           securityType: serviceData.security?.type || serviceData.securityType || 'open',
-          privacyType: serviceData.security?.privacyType || serviceData.privacyType || '',
-          authType: serviceData.security?.authType || serviceData.authType || '',
-          authMethod: serviceData.security?.authMethod || serviceData.authMethod || '',
+          privacyType: serviceData.security?.privacyType || serviceData.privacyType || 'none',
+          authType: serviceData.security?.authType || serviceData.authType || 'none',
+          authMethod: serviceData.security?.authMethod || serviceData.authMethod || 'none',
           encryption: serviceData.security?.encryption || serviceData.encryption || 'none',
-          passphrase: pskElement?.presharedKey || saeElement?.presharedKey || serviceData.security?.passphrase || serviceData.passphrase || '',
+          passphrase: pskElement?.presharedKey || saeElement?.presharedKey || serviceData.security?.passphrase || serviceData.passphrase || 'none',
 
           // WPA3-SAE Configuration
           pmfMode: saeElement?.pmfMode || pskElement?.pmfMode || enterpriseElement?.pmfMode || 'disabled',
@@ -311,11 +311,11 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
 
           // OWE (Enhanced Open)
           oweAutogen: serviceData.oweAutogen || false,
-          oweCompanion: serviceData.oweCompanion || '',
+          oweCompanion: serviceData.oweCompanion || 'none',
 
           // Network Settings
           vlan: (serviceData.vlan || serviceData.dot1dPortNumber || '').toString(),
-          defaultTopology: serviceData.defaultTopology || '',
+          defaultTopology: serviceData.defaultTopology || 'none',
           proxied: serviceData.proxied || 'Local',
           band: serviceData.band || 'both',
           channel: serviceData.channel?.toString() || 'auto',
@@ -323,7 +323,7 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
           hidden: serviceData.suppressSsid || serviceData.hidden || false,
 
           // AAA/RADIUS
-          aaaPolicyId: serviceData.aaaPolicyId || '',
+          aaaPolicyId: serviceData.aaaPolicyId || 'none',
           accountingEnabled: serviceData.accountingEnabled || false,
 
           // Fast Transition (802.11r)
@@ -331,9 +331,9 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
           fastTransitionMdId: enterpriseElement?.fastTransitionMdId || 0,
 
           // Role Assignment
-          authenticatedUserDefaultRoleID: serviceData.authenticatedUserDefaultRoleID || '',
-          unAuthenticatedUserDefaultRoleID: serviceData.unAuthenticatedUserDefaultRoleID || '',
-          mbatimeoutRoleId: serviceData.mbatimeoutRoleId || '',
+          authenticatedUserDefaultRoleID: serviceData.authenticatedUserDefaultRoleID || 'none',
+          unAuthenticatedUserDefaultRoleID: serviceData.unAuthenticatedUserDefaultRoleID || 'none',
+          mbatimeoutRoleId: serviceData.mbatimeoutRoleId || 'none',
 
           // 802.11k/v/r Support
           enabled11kSupport: serviceData.enabled11kSupport || false,
@@ -347,8 +347,8 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
 
           // Access Control
           captivePortal: serviceData.captivePortal || serviceData.enableCaptivePortal || false,
-          captivePortalType: serviceData.captivePortalType || '',
-          eGuestPortalId: serviceData.eGuestPortalId || '',
+          captivePortalType: serviceData.captivePortalType || 'none',
+          eGuestPortalId: serviceData.eGuestPortalId || 'none',
           guestAccess: serviceData.guestAccess || false,
           macBasedAuth: serviceData.macBasedAuth || false,
           mbaAuthorization: serviceData.mbaAuthorization || false,
@@ -369,7 +369,7 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
           includeHostname: serviceData.includeHostname || false,
 
           // Quality of Service
-          defaultCoS: serviceData.defaultCoS || '',
+          defaultCoS: serviceData.defaultCoS || 'none',
           bandwidthLimitEnabled: serviceData.bandwidthLimitEnabled || false,
           downloadLimit: serviceData.downloadLimit || 0,
           uploadLimit: serviceData.uploadLimit || 0,
@@ -385,7 +385,7 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
           hotspot: serviceData.hotspotType !== 'Disabled' && serviceData.hotspotType !== undefined,
 
           // Roaming
-          roamingAssistPolicy: serviceData.roamingAssistPolicy || '',
+          roamingAssistPolicy: serviceData.roamingAssistPolicy || 'none',
 
           // Vendor Attributes
           vendorSpecificAttributes: serviceData.vendorSpecificAttributes || ['apName', 'vnsName', 'ssid'],
@@ -552,19 +552,19 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
 
         // OWE specific fields
         oweAutogen: formData.oweAutogen,
-        oweCompanion: formData.oweCompanion || null,
+        oweCompanion: formData.oweCompanion === 'none' ? null : formData.oweCompanion,
 
         // === AAA/RADIUS CONFIGURATION ===
-        aaaPolicyId: formData.aaaPolicyId || null,
+        aaaPolicyId: formData.aaaPolicyId === 'none' ? null : formData.aaaPolicyId,
         accountingEnabled: formData.accountingEnabled,
 
         // === ROLE ASSIGNMENT ===
-        authenticatedUserDefaultRoleID: formData.authenticatedUserDefaultRoleID || '',
-        unAuthenticatedUserDefaultRoleID: formData.unAuthenticatedUserDefaultRoleID || '',
-        mbatimeoutRoleId: formData.mbatimeoutRoleId || null,
+        authenticatedUserDefaultRoleID: formData.authenticatedUserDefaultRoleID || 'none',
+        unAuthenticatedUserDefaultRoleID: formData.unAuthenticatedUserDefaultRoleID || 'none',
+        mbatimeoutRoleId: formData.mbatimeoutRoleId === 'none' ? null : formData.mbatimeoutRoleId,
 
         // === NETWORK SETTINGS ===
-        defaultTopology: formData.defaultTopology || null,
+        defaultTopology: formData.defaultTopology === 'none' ? null : formData.defaultTopology,
         proxied: formData.proxied,
         vlan: formData.vlan ? parseInt(formData.vlan) : undefined,
         band: formData.band,
@@ -581,7 +581,7 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
         mbo: formData.mbo,
 
         // === QUALITY OF SERVICE ===
-        defaultCoS: formData.defaultCoS || null,
+        defaultCoS: formData.defaultCoS === 'none' ? null : formData.defaultCoS,
         uapsdEnabled: formData.uapsdEnabled,
         admissionControlVideo: formData.admissionControlVideo,
         admissionControlVoice: formData.admissionControlVoice,
@@ -613,7 +613,7 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
         includeHostname: formData.includeHostname,
 
         // === ROAMING & OPTIMIZATION ===
-        roamingAssistPolicy: formData.roamingAssistPolicy || null,
+        roamingAssistPolicy: formData.roamingAssistPolicy === 'none' ? null : formData.roamingAssistPolicy,
         loadBalancing: formData.loadBalancing,
 
         // === RADIUS VENDOR ATTRIBUTES ===
@@ -981,7 +981,7 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
                       <SelectValue placeholder="Select AAA policy" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {aaaPolicies.map(policy => (
                         <SelectItem key={policy.id} value={policy.id}>
                           {policy.name || policy.policyName}
@@ -1054,7 +1054,7 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
                     <SelectValue placeholder="Select default role before authentication" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {roles.map(role => (
                       <SelectItem key={role.id} value={role.id}>
                         {role.name}
@@ -1072,7 +1072,7 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
                     <SelectValue placeholder="Select default role after authentication" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {roles.map(role => (
                       <SelectItem key={role.id} value={role.id}>
                         {role.name}
@@ -1091,7 +1091,7 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
                       <SelectValue placeholder="Select role after MBA timeout" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {roles.map(role => (
                         <SelectItem key={role.id} value={role.id}>
                           {role.name}
@@ -1131,7 +1131,7 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
                       <SelectValue placeholder="Select topology" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {topologies.map(topo => (
                         <SelectItem key={topo.id} value={topo.id}>
                           {topo.name} (VLAN {topo.vlanid})
@@ -1352,7 +1352,7 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
                     <SelectValue placeholder="Select CoS" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None (Best Effort)</SelectItem>
+                    <SelectItem value="none">None (Best Effort)</SelectItem>
                     {cosOptions.map(cos => (
                       <SelectItem key={cos.id} value={cos.id}>
                         {cos.cosName}
@@ -1458,7 +1458,7 @@ export function NetworkEditDetail({ serviceId, onSave, isInline = false }: Netwo
                         <SelectValue placeholder="Select portal type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         <SelectItem value="internal">Internal Portal</SelectItem>
                         <SelectItem value="external">External Portal</SelectItem>
                         <SelectItem value="custom">Custom Portal</SelectItem>
