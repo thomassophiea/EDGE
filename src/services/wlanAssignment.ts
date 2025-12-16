@@ -34,19 +34,25 @@ export class WLANAssignmentService {
     try {
       // Step 1: Create the WLAN/Service
       console.log('[WLANAssignment] Step 1: Creating service...');
-      const service = await apiService.createService({
+
+      // Build service payload with only the fields we want to send
+      const servicePayload: any = {
         serviceName: serviceData.serviceName || serviceData.name,
         ssid: serviceData.ssid,
         security: serviceData.security,
-        passphrase: serviceData.passphrase,
-        vlan: serviceData.vlan,
         band: serviceData.band,
         enabled: serviceData.enabled,
-        authenticatedUserDefaultRoleID: serviceData.authenticatedUserDefaultRoleID,
-        hidden: serviceData.hidden,
-        maxClients: serviceData.maxClients,
-        description: serviceData.description,
-      });
+      };
+
+      // Add optional fields only if they have values
+      if (serviceData.passphrase) servicePayload.passphrase = serviceData.passphrase;
+      if (serviceData.vlan) servicePayload.vlan = serviceData.vlan;
+      if (serviceData.authenticatedUserDefaultRoleID) servicePayload.authenticatedUserDefaultRoleID = serviceData.authenticatedUserDefaultRoleID;
+      if (serviceData.hidden !== undefined) servicePayload.hidden = serviceData.hidden;
+      if (serviceData.maxClients) servicePayload.maxClients = serviceData.maxClients;
+      if (serviceData.description) servicePayload.description = serviceData.description;
+
+      const service = await apiService.createService(servicePayload);
 
       console.log('[WLANAssignment] Service created:', service.id);
 
@@ -370,19 +376,25 @@ export class WLANAssignmentService {
 
       // Step 4: Create the WLAN/Service
       console.log('[WLANAssignment] Step 4: Creating service...');
-      const service = await apiService.createService({
+
+      // Build service payload with only the fields we want to send
+      const servicePayload: any = {
         serviceName: serviceData.serviceName || serviceData.name,
         ssid: serviceData.ssid,
         security: serviceData.security,
-        passphrase: serviceData.passphrase,
-        vlan: serviceData.vlan,
         band: serviceData.band,
         enabled: serviceData.enabled,
-        authenticatedUserDefaultRoleID: serviceData.authenticatedUserDefaultRoleID,
-        hidden: serviceData.hidden,
-        maxClients: serviceData.maxClients,
-        description: serviceData.description,
-      });
+      };
+
+      // Add optional fields only if they have values
+      if (serviceData.passphrase) servicePayload.passphrase = serviceData.passphrase;
+      if (serviceData.vlan) servicePayload.vlan = serviceData.vlan;
+      if (serviceData.authenticatedUserDefaultRoleID) servicePayload.authenticatedUserDefaultRoleID = serviceData.authenticatedUserDefaultRoleID;
+      if (serviceData.hidden !== undefined) servicePayload.hidden = serviceData.hidden;
+      if (serviceData.maxClients) servicePayload.maxClients = serviceData.maxClients;
+      if (serviceData.description) servicePayload.description = serviceData.description;
+
+      const service = await apiService.createService(servicePayload);
 
       const wlanId = service.id;
       const wlanName = service.serviceName || service.name || service.ssid || wlanId;
