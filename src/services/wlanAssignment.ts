@@ -58,6 +58,12 @@ export class WLANAssignmentService {
       servicePayload.postAuthenticatedIdleTimeout = 1800; // 30 minutes default
       servicePayload.sessionTimeout = 86400; // 24 hours default
 
+      // IMPORTANT: Campus Controller API requires unAuthenticatedUserDefaultRoleID when captive portal is disabled
+      // Set to same as authenticated role if not provided (most networks don't use captive portal)
+      if (!servicePayload.unAuthenticatedUserDefaultRoleID && servicePayload.authenticatedUserDefaultRoleID) {
+        servicePayload.unAuthenticatedUserDefaultRoleID = servicePayload.authenticatedUserDefaultRoleID;
+      }
+
       console.log('[WLANAssignment] Service payload with defaults:', JSON.stringify(servicePayload));
 
       const service = await apiService.createService(servicePayload);
@@ -408,6 +414,12 @@ export class WLANAssignmentService {
       servicePayload.preAuthenticatedIdleTimeout = 300;  // 5 minutes default
       servicePayload.postAuthenticatedIdleTimeout = 1800; // 30 minutes default
       servicePayload.sessionTimeout = 86400; // 24 hours default
+
+      // IMPORTANT: Campus Controller API requires unAuthenticatedUserDefaultRoleID when captive portal is disabled
+      // Set to same as authenticated role if not provided (most networks don't use captive portal)
+      if (!servicePayload.unAuthenticatedUserDefaultRoleID && servicePayload.authenticatedUserDefaultRoleID) {
+        servicePayload.unAuthenticatedUserDefaultRoleID = servicePayload.authenticatedUserDefaultRoleID;
+      }
 
       console.log('[WLANAssignment] Service payload with defaults:', JSON.stringify(servicePayload));
 
