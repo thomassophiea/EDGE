@@ -624,7 +624,9 @@ export function CreateWLANDialog({ open, onOpenChange, onSuccess }: CreateWLANDi
                     <SelectContent>
                       <SelectItem value="2.4GHz">2.4 GHz</SelectItem>
                       <SelectItem value="5GHz">5 GHz</SelectItem>
+                      <SelectItem value="6GHz">6 GHz (WiFi 6E)</SelectItem>
                       <SelectItem value="dual">Dual Band (2.4 + 5 GHz)</SelectItem>
+                      <SelectItem value="all">All Bands (2.4 + 5 + 6 GHz)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
