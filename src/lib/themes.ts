@@ -1,9 +1,9 @@
 /**
  * Theme Configuration
- * Supports: Default, Dark, and Synthwave (80s neon) themes
+ * Supports: Default, Dark, Miami Vice (80s neon), and Pirate themes
  */
 
-export type ThemeMode = 'default' | 'dark' | 'synthwave';
+export type ThemeMode = 'default' | 'dark' | 'synthwave' | 'pirate';
 
 export interface Theme {
   name: string;
@@ -118,6 +118,40 @@ export const themes: Record<ThemeMode, Theme> = {
       input: '225 50% 7%', // #070A1A (dark input bg)
       ring: '316 100% 58%' // #FF2BD6 (pink focus ring at 70% opacity)
     }
+  },
+  pirate: {
+    name: 'pirate',
+    displayName: 'Pirate',
+    emoji: '🏴‍☠️',
+    colors: {
+      // Treasure gold primary - #D4AF37
+      primary: '45 65% 52%', // #D4AF37 (treasure gold)
+      primaryForeground: '20 45% 7%', // #1A0F0A (dark text on gold)
+      // Deep crimson secondary - #8B0000
+      secondary: '0 100% 27%', // #8B0000 (dark red)
+      secondaryForeground: '38 56% 89%', // #F5E6D3 (bone white)
+      // Dark wood background - #1A0F0A
+      background: '20 45% 7%', // #1A0F0A (very dark brown)
+      foreground: '38 56% 89%', // #F5E6D3 (weathered bone/cream)
+      // Aged wood card surfaces - #2B1810
+      card: '18 45% 13%', // #2B1810 (aged wood)
+      cardForeground: '38 56% 89%', // #F5E6D3 (bone white)
+      popover: '18 45% 13%', // #2B1810 (aged wood)
+      popoverForeground: '38 56% 89%', // #F5E6D3
+      // Muted brown
+      muted: '25 40% 20%', // Dark brown
+      mutedForeground: '38 45% 70%', // Light tan
+      // Rusty red accent - #A52A2A
+      accent: '0 59% 41%', // #A52A2A (rusty red/brown)
+      accentForeground: '38 56% 89%', // #F5E6D3
+      // Blood red destructive - #DC143C
+      destructive: '348 83% 47%', // #DC143C (crimson)
+      destructiveForeground: '38 56% 89%', // #F5E6D3
+      // Rusty gold borders - #B8860B
+      border: '43 89% 38%', // #B8860B (dark goldenrod)
+      input: '18 45% 13%', // #2B1810 (aged wood input bg)
+      ring: '45 65% 52%' // #D4AF37 (gold focus ring)
+    }
   }
 };
 
@@ -135,7 +169,7 @@ export function applyTheme(theme: ThemeMode) {
   localStorage.setItem('theme', theme);
 
   // Add theme class for additional styling
-  root.classList.remove('theme-default', 'theme-dark', 'theme-synthwave');
+  root.classList.remove('theme-default', 'theme-dark', 'theme-synthwave', 'theme-pirate');
   root.classList.add(`theme-${theme}`);
 }
 

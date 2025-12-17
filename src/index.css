@@ -5679,3 +5679,312 @@ html[data-theme="light"], html.light {
 .synthwave [data-slot="sheet-content"] > * {
   background-color: transparent !important;
 }
+
+/* ========================================
+   PIRATE THEME - Skull & Crossbones
+   Arrr! Set sail with weathered wood and treasure gold
+   ======================================== */
+
+/* Pirate Background - Weathered wood planks with ocean depths */
+.pirate {
+  background: #1A0F0A;
+  position: relative;
+}
+
+/* Wood planks background with ocean scene */
+.pirate::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(26, 15, 10, 0.90) 0%,
+      rgba(26, 15, 10, 0.85) 50%,
+      rgba(13, 6, 4, 0.92) 100%
+    ),
+    /* Wood grain effect */
+    repeating-linear-gradient(
+      90deg,
+      rgba(101, 67, 33, 0.1) 0px,
+      rgba(101, 67, 33, 0.1) 3px,
+      transparent 3px,
+      transparent 8px
+    ),
+    /* Horizontal planks */
+    repeating-linear-gradient(
+      0deg,
+      rgba(43, 24, 16, 0.3) 0px,
+      rgba(43, 24, 16, 0.3) 60px,
+      rgba(26, 15, 10, 0.5) 60px,
+      rgba(26, 15, 10, 0.5) 62px
+    ),
+    /* Deep ocean gradient */
+    linear-gradient(
+      180deg,
+      #0a0503 0%,
+      #1a0f0a 40%,
+      #0d1a1a 100%
+    );
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 1;
+}
+
+/* Ensure content appears above background */
+.pirate > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Aged paper/parchment texture overlay */
+.pirate::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' /%3E%3C/svg%3E");
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Pirate Card Styling - Weathered wood with gold trim */
+.pirate .surface-4dp,
+.pirate [class*="Card"] {
+  background: rgba(43, 24, 16, 0.95) !important;
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(212, 175, 55, 0.35);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.6),
+    0 0 3px rgba(212, 175, 55, 0.25),
+    inset 0 0 30px rgba(101, 67, 33, 0.15);
+}
+
+/* Pirate Card Hover - Treasure glow */
+.pirate [class*="Card"]:hover {
+  border-color: rgba(212, 175, 55, 0.50);
+  box-shadow:
+    0 4px 25px rgba(0, 0, 0, 0.7),
+    0 0 8px rgba(212, 175, 55, 0.4),
+    inset 0 0 35px rgba(212, 175, 55, 0.1);
+}
+
+/* Top Nav - Captain's quarters */
+.pirate nav,
+.pirate header {
+  background: rgba(43, 24, 16, 0.98) !important;
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid rgba(184, 134, 11, 0.4) !important;
+}
+
+/* Side Nav - Ship's cabin */
+.pirate .bg-sidebar {
+  background: rgba(26, 15, 10, 0.98) !important;
+  backdrop-filter: blur(10px);
+  border-right: 2px solid rgba(101, 67, 33, 0.3);
+}
+
+/* Active sidebar item - Treasure highlight */
+.pirate .bg-sidebar-primary {
+  background: rgba(212, 175, 55, 0.20) !important;
+  border-left: 3px solid #D4AF37 !important;
+}
+
+/* Hover sidebar item */
+.pirate [class*="sidebar"] button:hover {
+  background: rgba(184, 134, 11, 0.15) !important;
+}
+
+/* Pirate Buttons - Treasure gold */
+.pirate button[class*="bg-primary"] {
+  background: #D4AF37 !important;
+  color: #1A0F0A !important;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.pirate button[class*="bg-primary"]:hover {
+  background: #E5C158 !important;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+}
+
+/* Secondary Buttons - Rusty red */
+.pirate button[variant="secondary"],
+.pirate button[variant="outline"] {
+  background: rgba(139, 0, 0, 0.20) !important;
+  border: 1px solid rgba(139, 0, 0, 0.5) !important;
+  color: #F5E6D3 !important;
+}
+
+.pirate button[variant="secondary"]:hover,
+.pirate button[variant="outline"]:hover {
+  background: rgba(139, 0, 0, 0.30) !important;
+}
+
+/* Danger Buttons - Blood red */
+.pirate button[variant="destructive"] {
+  background: #DC143C !important;
+  color: #F5E6D3 !important;
+}
+
+.pirate button[variant="destructive"]:hover {
+  background: #FF1744 !important;
+}
+
+/* Input Fields - Aged parchment */
+.pirate input,
+.pirate textarea,
+.pirate select {
+  background: rgba(13, 6, 4, 0.60) !important;
+  color: #F5E6D3 !important;
+  border: 1px solid rgba(184, 134, 11, 0.35) !important;
+}
+
+.pirate input::placeholder,
+.pirate textarea::placeholder {
+  color: rgba(245, 230, 211, 0.50) !important;
+}
+
+.pirate input:focus,
+.pirate textarea:focus,
+.pirate select:focus {
+  border-color: #D4AF37 !important;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.30) !important;
+  outline: none;
+}
+
+/* Table Styling - Treasure map */
+.pirate table thead {
+  background: rgba(43, 24, 16, 0.90) !important;
+  border-bottom: 2px solid rgba(184, 134, 11, 0.4);
+}
+
+.pirate table tbody tr {
+  background: rgba(26, 15, 10, 0.60) !important;
+  border-bottom: 1px solid rgba(101, 67, 33, 0.25);
+}
+
+.pirate table tbody tr:hover {
+  background: rgba(184, 134, 11, 0.12) !important;
+}
+
+/* Text Styling - Weathered bone */
+.pirate {
+  color: #F5E6D3 !important;
+}
+
+.pirate p,
+.pirate span,
+.pirate div,
+.pirate td,
+.pirate th,
+.pirate label {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+/* Headings - Treasure gold glow */
+.pirate h1,
+.pirate h2,
+.pirate h3 {
+  color: #D4AF37 !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+/* Badge Styling - Pirate flags and coins */
+.pirate [class*="badge"],
+.pirate [class*="Badge"] {
+  background: rgba(43, 24, 16, 0.80) !important;
+  border: 1px solid rgba(184, 134, 11, 0.4);
+  color: #F5E6D3 !important;
+}
+
+/* Success badges - Gold coins */
+.pirate .bg-green-500 {
+  background: rgba(212, 175, 55, 0.25) !important;
+  color: #FFD700 !important;
+}
+
+/* Warning badges - Rusty anchor */
+.pirate .bg-yellow-500 {
+  background: rgba(184, 134, 11, 0.25) !important;
+  color: #FFA500 !important;
+}
+
+/* Danger badges - Jolly Roger */
+.pirate .bg-red-500 {
+  background: rgba(220, 20, 60, 0.25) !important;
+  color: #FF4444 !important;
+}
+
+/* Scrollbar - Rusty metal */
+.pirate ::-webkit-scrollbar-track {
+  background: rgba(26, 15, 10, 0.7);
+}
+
+.pirate ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #654321, #3E2723);
+  border: 1px solid rgba(184, 134, 11, 0.3);
+  border-radius: 4px;
+}
+
+.pirate ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #8B6914, #654321);
+}
+
+/* Sheet/Slide-out Panel Styling for Pirate */
+.pirate [data-slot="sheet-content"].bg-background,
+.pirate [data-slot="sheet-content"] {
+  background: rgba(43, 24, 16, 0.98) !important;
+  background-color: rgba(43, 24, 16, 0.98) !important;
+  backdrop-filter: blur(10px) !important;
+  border-left: 3px solid rgba(212, 175, 55, 0.40) !important;
+  box-shadow:
+    -6px 0 25px rgba(0, 0, 0, 0.8),
+    0 0 50px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Sheet Overlay */
+.pirate [data-slot="sheet-overlay"],
+.pirate [data-radix-dialog-overlay] {
+  background: rgba(13, 6, 4, 0.88) !important;
+  background-color: rgba(13, 6, 4, 0.88) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* Override bg-black/50 from overlay */
+.pirate [data-slot="sheet-overlay"].bg-black\/50 {
+  background: rgba(13, 6, 4, 0.88) !important;
+}
+
+/* Sheet Header */
+.pirate [data-slot="sheet-header"] {
+  background: rgba(26, 15, 10, 0.70) !important;
+  border-bottom: 2px solid rgba(184, 134, 11, 0.35) !important;
+}
+
+/* Widget backgrounds - Treasure chests */
+.pirate [class*="widget"],
+.pirate .dashboard-widget {
+  background: rgba(43, 24, 16, 0.95) !important;
+}
+
+/* Pirate theme button in sidebar */
+.pirate .bg-gradient-to-r {
+  background: linear-gradient(
+    90deg,
+    rgba(212, 175, 55, 0.25),
+    rgba(184, 134, 11, 0.25)
+  ) !important;
+  border: 1px solid rgba(212, 175, 55, 0.50) !important;
+}

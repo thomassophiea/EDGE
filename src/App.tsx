@@ -64,7 +64,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState('service-levels');
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark' | 'synthwave' | 'system'>('system');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'synthwave' | 'pirate' | 'system'>('system');
   const [detailPanel, setDetailPanel] = useState<DetailPanelState>({
     isOpen: false,
     type: null,
@@ -78,7 +78,7 @@ export default function App() {
   useEffect(() => {
     // Initialize theme from localStorage or system preference
     const initializeTheme = () => {
-      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'synthwave' | 'system' | null;
+      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'synthwave' | 'pirate' | 'system' | null;
       const initialTheme = savedTheme || 'system';
 
       setTheme(initialTheme);
@@ -536,14 +536,14 @@ export default function App() {
   }, []);
 
   // Helper function to apply theme to document
-  const applyTheme = (newTheme: 'light' | 'dark' | 'synthwave') => {
+  const applyTheme = (newTheme: 'light' | 'dark' | 'synthwave' | 'pirate') => {
     const root = document.documentElement;
 
     // Apply color variables from themes.ts
     applyThemeColors(newTheme === 'light' ? 'default' : newTheme);
 
     // Remove existing theme classes
-    root.classList.remove('light', 'dark', 'synthwave');
+    root.classList.remove('light', 'dark', 'synthwave', 'pirate');
 
     // Add new theme class
     root.classList.add(newTheme);
@@ -552,12 +552,12 @@ export default function App() {
     root.setAttribute('data-theme', newTheme);
 
     // Ensure body also gets the theme class
-    document.body.classList.remove('light', 'dark', 'synthwave');
+    document.body.classList.remove('light', 'dark', 'synthwave', 'pirate');
     document.body.classList.add(newTheme);
   };
 
   // Helper function to apply theme based on mode (handles system detection)
-  const applyThemeForMode = (mode: 'light' | 'dark' | 'synthwave' | 'system') => {
+  const applyThemeForMode = (mode: 'light' | 'dark' | 'synthwave' | 'pirate' | 'system') => {
     if (mode === 'system') {
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       applyTheme(systemTheme);
@@ -570,7 +570,8 @@ export default function App() {
     const newTheme =
       theme === 'light' ? 'dark' :
       theme === 'dark' ? 'synthwave' :
-      theme === 'synthwave' ? 'system' :
+      theme === 'synthwave' ? 'pirate' :
+      theme === 'pirate' ? 'system' :
       'light';
     setTheme(newTheme);
     applyThemeForMode(newTheme);
@@ -582,11 +583,13 @@ export default function App() {
     const themeLabel =
       newTheme === 'system' ? 'System (Auto)' :
       newTheme === 'synthwave' ? 'Miami Vice' :
+      newTheme === 'pirate' ? 'Pirate' :
       newTheme.charAt(0).toUpperCase() + newTheme.slice(1);
 
     const themeDescription =
       newTheme === 'system' ? 'The interface will now follow your system preference.' :
       newTheme === 'synthwave' ? "You've got to know the rules before you can break 'em. Otherwise, it's no fun." :
+      newTheme === 'pirate' ? "Arrr! Dead men tell no tales, but this UI tells all the metrics ye need!" :
       `The interface is now using ${newTheme} theme.`;
 
     toast.success(`Switched to ${themeLabel} mode`, {
