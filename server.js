@@ -71,7 +71,7 @@ const proxyOptions = {
 app.use('/api', createProxyMiddleware(proxyOptions));
 
 // Serve static files from the build directory
-const buildPath = path.join(__dirname, 'dist');
+const buildPath = path.join(__dirname, 'build');
 console.log('[Proxy Server] Serving static files from:', buildPath);
 app.use(express.static(buildPath));
 
