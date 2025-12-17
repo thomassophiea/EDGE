@@ -8,7 +8,7 @@ export interface Service {
   security: 'open' | 'wpa2-psk' | 'wpa3-sae' | 'wpa2-enterprise';
   passphrase?: string;
   vlan?: number;
-  band: '2.4GHz' | '5GHz' | 'dual';
+  band: '2.4GHz' | '5GHz' | '6GHz' | 'both' | 'dual' | 'all';
   enabled: boolean;
   sites?: string[]; // Site IDs this service is assigned to
   profiles?: string[]; // Profile IDs this service is assigned to
@@ -111,7 +111,7 @@ export interface WLANFormData {
   security: 'open' | 'wpa2-psk' | 'wpa3-sae' | 'wpa2-enterprise';
   passphrase: string;
   vlan: number | null;
-  band: '2.4GHz' | '5GHz' | 'dual';
+  band: '2.4GHz' | '5GHz' | '6GHz' | 'both' | 'dual' | 'all';
   enabled: boolean;
   selectedSites: string[];
   selectedSiteGroups: string[]; // Site groups selected for deployment
