@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
-import { RefreshCw, BarChart3, TrendingUp, Network, Zap, Database, Activity } from 'lucide-react';
+import { Alert, AlertDescription } from './ui/alert';
+import { RefreshCw, BarChart3, TrendingUp, Network, Zap, Database, Activity, AlertTriangle } from 'lucide-react';
 import { apiService } from '../services/api';
 import { toast } from 'sonner';
 
@@ -209,42 +210,16 @@ export function ApplicationWidgets({ selectedService, timeRange = '24h' }: Appli
     );
   }
 
-  // If no applications found, show a placeholder
+  // If no applications found, show EP1 not available message
   if (applications.length === 0 && !loading) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              Application Analytics
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Top applications by network traffic
-            </p>
-          </div>
-          <Button
-            onClick={() => loadApplications(true)}
-            variant="outline"
-            size="sm"
-            disabled={refreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
-        <Card>
-          <CardContent className="py-12 text-center">
-            <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
-            <h3 className="text-lg font-medium mb-2">No Application Data Available</h3>
-            <p className="text-sm text-muted-foreground">
-              Application analytics will appear here when data is available from the Campus Controller.
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              Endpoint: /v1/applications
-            </p>
-          </CardContent>
-        </Card>
+      <div className="p-6">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            We are waiting for EP1 support: application analytics endpoints are not available on this Extreme Platform ONE version. This feature requires Campus Controller API endpoints for application traffic data (tested: /v1/applications, /v1/analytics/applications, /platformmanager/v1/applications, and 9 other variations - all returned 404).
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }

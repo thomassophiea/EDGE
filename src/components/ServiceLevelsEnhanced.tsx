@@ -1062,9 +1062,6 @@ export function ServiceLevelsEnhanced() {
           {/* Best Practices Widget */}
           <BestPracticesWidget />
 
-          {/* DEBUG: Application Endpoint Tester */}
-          <ApplicationEndpointTester />
-
           {/* Application Analytics Widgets */}
           <ApplicationWidgets selectedService={selectedService || undefined} timeRange={timeRange} />
 
