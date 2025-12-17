@@ -37,10 +37,14 @@ const proxyOptions = {
   secure: false, // Accept self-signed certificates
   followRedirects: true,
   logLevel: 'debug',
+  pathRewrite: {
+    '^/management': '/management', // Ensure path is preserved
+  },
 
   onProxyReq: (proxyReq, req, res) => {
     // Log all proxied requests
-    console.log(`[Proxy] ${req.method} ${req.url} -> ${CAMPUS_CONTROLLER_URL}${req.url}`);
+    const targetUrl = `${CAMPUS_CONTROLLER_URL}${req.url}`;
+    console.log(`[Proxy] ${req.method} ${req.url} -> ${targetUrl}`);
 
     // Forward original headers
     if (req.headers.authorization) {
@@ -68,7 +72,15 @@ const proxyOptions = {
 };
 
 // Proxy all /api/* requests to Campus Controller
-app.use('/api', createProxyMiddleware(proxyOptions));
+// Use a filter function to ensure all /api requests are proxied
+app.use('/api', createProxyMiddleware({
+  ...proxyOptions,
+  filter: (pathname, req) => {
+    const shouldProxy = pathname.startsWith('/management');
+    console.log(`[Proxy Filter] ${pathname} -> ${shouldProxy ? 'PROXYING' : 'SKIPPING'}`);
+    return shouldProxy;
+  }
+}));
 
 // Serve static files from the build directory
 const buildPath = path.join(__dirname, 'build');
