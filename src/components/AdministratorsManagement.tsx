@@ -315,6 +315,19 @@ export function AdministratorsManagement() {
     );
   }
 
+  if (apiNotAvailable) {
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            We are waiting for EP1 support: management API endpoints are not available on this Extreme Platform ONE version. This feature requires Extreme Platform ONE API v1/administrators.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
