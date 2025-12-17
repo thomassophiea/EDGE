@@ -78,20 +78,84 @@ export function ApplicationsManagement() {
   const loadApplications = async () => {
     setLoading(true);
     try {
-      const response = await apiService.makeAuthenticatedRequest('/v1/applications', {
+      console.log('[ApplicationsManagement] Fetching applications from /v1/oauth/applications...');
+
+      const response = await apiService.makeAuthenticatedRequest('/v1/oauth/applications', {
         method: 'GET'
       });
 
+      console.log('[ApplicationsManagement] Response status:', response.status);
+      console.log('[ApplicationsManagement] Response ok:', response.ok);
+
       if (response.ok) {
         const data = await response.json();
-        setApplications(Array.isArray(data) ? data : []);
+        console.log('[ApplicationsManagement] Raw API response:', data);
+        console.log('[ApplicationsManagement] Response type:', typeof data, 'isArray:', Array.isArray(data));
+
+        // Parse applications data with flexible schema detection
+        let rawApps: any[] = [];
+
+        if (Array.isArray(data)) {
+          rawApps = data;
+        } else if (data && typeof data === 'object') {
+          // Check for nested arrays in common property names
+          const possibleKeys = ['applications', 'apps', 'oauthApplications', 'clients', 'data', 'items', 'results'];
+          for (const key of possibleKeys) {
+            if (data[key] && Array.isArray(data[key])) {
+              console.log('[ApplicationsManagement] Found applications array at key:', key);
+              rawApps = data[key];
+              break;
+            }
+          }
+
+          if (rawApps.length === 0) {
+            console.log('[ApplicationsManagement] No apps found. Available keys:', Object.keys(data));
+          }
+        }
+
+        console.log('[ApplicationsManagement] Parsed applications count:', rawApps.length);
+        if (rawApps.length > 0) {
+          console.log('[ApplicationsManagement] Sample app:', rawApps[0]);
+        }
+
+        // Transform Campus Controller format to our interface
+        const appList: Application[] = rawApps.map((app: any, index: number) => {
+          // Map grant type from Campus Controller
+          let grantType: Application['grantType'] = 'client_credentials';
+          if (app.grantType === 'password' || app.grant_type === 'password') {
+            grantType = 'password';
+          } else if (app.grantType === 'authorization_code' || app.grant_type === 'authorization_code') {
+            grantType = 'authorization_code';
+          }
+
+          return {
+            id: app.id || app.clientId || app.client_id || `app-${index}`,
+            name: app.name || app.applicationName || app.client_name || `Application ${index + 1}`,
+            description: app.description || app.desc || '',
+            clientId: app.clientId || app.client_id || app.id || 'unknown',
+            clientSecret: app.clientSecret || app.client_secret || '••••••••',
+            grantType: grantType,
+            scopes: app.scopes || app.scope?.split(' ') || [],
+            enabled: app.enabled !== undefined ? app.enabled : app.status === 'active' || app.status === 'ACTIVE',
+            createdAt: app.createdAt || app.created_at || app.createTime || new Date().toISOString(),
+            lastUsed: app.lastUsed || app.last_used || app.lastAccessTime || undefined,
+            requestCount: app.requestCount || app.request_count || app.accessCount || 0
+          };
+        });
+
+        console.log('[ApplicationsManagement] Transformed applications:', appList);
+
+        setApplications(appList);
         setApiNotAvailable(false);
       } else if (response.status === 404) {
         setApiNotAvailable(true);
-        console.warn('Applications API endpoint not available on Extreme Platform ONE');
+        console.warn('[ApplicationsManagement] Applications API endpoint not available (404)');
+      } else {
+        console.warn('[ApplicationsManagement] Unexpected response status:', response.status);
+        setApiNotAvailable(true);
       }
     } catch (error) {
-      console.error('Failed to load applications:', error);
+      console.error('[ApplicationsManagement] Failed to load applications:', error);
       setApiNotAvailable(true);
     } finally {
       setLoading(false);
@@ -383,11 +447,10 @@ export function ApplicationsManagement() {
       </div>
 
       {apiNotAvailable && (
-        <Alert className="border-yellow-500">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Applications management API endpoints are not available on this Extreme Platform ONE version.
-            This feature requires Extreme Platform ONE API v1/applications support.
+        <Alert className="border-2 border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+            OAuth applications management API endpoints are not available on this Extreme Platform ONE version. This feature requires Extreme Platform ONE API v1/oauth/applications support.
           </AlertDescription>
         </Alert>
       )}
