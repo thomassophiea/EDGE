@@ -586,7 +586,7 @@ export default function App() {
 
     const themeDescription =
       newTheme === 'system' ? 'The interface will now follow your system preference.' :
-      newTheme === 'synthwave' ? 'Welcome to Miami! 🌴✨' :
+      newTheme === 'synthwave' ? "You've got to know the rules before you can break 'em. Otherwise, it's no fun." :
       `The interface is now using ${newTheme} theme.`;
 
     toast.success(`Switched to ${themeLabel} mode`, {
