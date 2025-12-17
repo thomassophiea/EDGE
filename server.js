@@ -72,15 +72,11 @@ const proxyOptions = {
 };
 
 // Proxy all /api/* requests to Campus Controller
-// Use a filter function to ensure all /api requests are proxied
-app.use('/api', createProxyMiddleware({
-  ...proxyOptions,
-  filter: (pathname, req) => {
-    const shouldProxy = pathname.startsWith('/management');
-    console.log(`[Proxy Filter] ${pathname} -> ${shouldProxy ? 'PROXYING' : 'SKIPPING'}`);
-    return shouldProxy;
-  }
-}));
+console.log('[Proxy Server] Setting up /api/* proxy middleware');
+app.use('/api', (req, res, next) => {
+  console.log(`[Proxy Middleware] Received: ${req.method} ${req.url}`);
+  next();
+}, createProxyMiddleware(proxyOptions));
 
 // Serve static files from the build directory
 const buildPath = path.join(__dirname, 'build');
