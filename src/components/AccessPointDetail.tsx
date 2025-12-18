@@ -29,6 +29,9 @@ export function AccessPointDetail({ serialNumber }: AccessPointDetailProps) {
   const [stations, setStations] = useState<APStation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
+  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+  const [, setTimeUpdateCounter] = useState(0);
 
   const loadApDetails = async () => {
     try {
@@ -37,9 +40,10 @@ export function AccessPointDetail({ serialNumber }: AccessPointDetailProps) {
         apiService.getAccessPointDetails(serialNumber),
         apiService.getAccessPointStations(serialNumber).catch(() => [])
       ]);
-      
+
       setApDetails(details);
       setStations(stationsData);
+      setLastRefreshTime(new Date());
     } catch (error) {
       console.error('Failed to load AP details:', error);
       toast.error('Failed to load access point details');
@@ -58,6 +62,69 @@ export function AccessPointDetail({ serialNumber }: AccessPointDetailProps) {
   useEffect(() => {
     loadApDetails();
   }, [serialNumber]);
+
+  // Auto-refresh polling
+  useEffect(() => {
+    const REFRESH_INTERVAL = 60000; // 60 seconds
+
+    const intervalId = setInterval(() => {
+      // Only auto-refresh if the page is visible
+      if (document.visibilityState === 'visible') {
+        console.log('Auto-refreshing AP detail data...');
+        setIsAutoRefreshing(true);
+        loadApDetails().finally(() => {
+          setIsAutoRefreshing(false);
+        });
+      }
+    }, REFRESH_INTERVAL);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(intervalId);
+  }, [serialNumber]);
+
+  // Pause polling when tab becomes inactive, resume when active
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Tab became active, refreshing AP detail data...');
+        loadApDetails();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [serialNumber]);
+
+  // Force re-render every 10 seconds to update "time ago" text
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setTimeUpdateCounter(prev => prev + 1);
+    }, 10000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Helper function to format time ago
+  const getTimeAgo = () => {
+    if (!lastRefreshTime) return 'Never';
+
+    const seconds = Math.floor((new Date().getTime() - lastRefreshTime.getTime()) / 1000);
+
+    if (seconds < 10) return 'Just now';
+    if (seconds < 60) return `${seconds}s ago`;
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
 
   if (isLoading) {
     return (
@@ -89,17 +156,30 @@ export function AccessPointDetail({ serialNumber }: AccessPointDetailProps) {
     <div className="space-y-6">
       {/* Header Actions */}
       <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <Wifi className="h-5 w-5 text-muted-foreground" />
-          <span className="font-medium">Access Point Details</span>
+        <div>
+          <div className="flex items-center space-x-2">
+            <Wifi className="h-5 w-5 text-muted-foreground" />
+            <span className="font-medium">Access Point Details</span>
+          </div>
+          {lastRefreshTime && (
+            <p className="text-xs text-muted-foreground mt-1 ml-7">
+              Last updated: {getTimeAgo()}
+              {isAutoRefreshing && (
+                <span className="ml-2 inline-flex items-center">
+                  <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                  Auto-refreshing...
+                </span>
+              )}
+            </p>
+          )}
         </div>
         <Button
           variant="outline"
           size="sm"
           onClick={handleRefresh}
-          disabled={isRefreshing}
+          disabled={isRefreshing || isAutoRefreshing}
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing || isAutoRefreshing ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>

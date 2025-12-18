@@ -35,6 +35,9 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [queryColumns, setQueryColumns] = useState<APQueryColumn[]>([]);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
+  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+  const [, setTimeUpdateCounter] = useState(0);
 
   useEffect(() => {
     loadData();
@@ -45,6 +48,50 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
     // This will trigger on initial load (selectedSite starts as 'all') and when user changes selection
     loadAccessPointsForSite();
   }, [selectedSite]);
+
+  // Auto-refresh polling
+  useEffect(() => {
+    const REFRESH_INTERVAL = 60000; // 60 seconds
+
+    const intervalId = setInterval(() => {
+      // Only auto-refresh if the page is visible
+      if (document.visibilityState === 'visible') {
+        console.log('Auto-refreshing AP data...');
+        setIsAutoRefreshing(true);
+        loadAccessPointsForSite().finally(() => {
+          setIsAutoRefreshing(false);
+        });
+      }
+    }, REFRESH_INTERVAL);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(intervalId);
+  }, [selectedSite]); // Re-create interval when selected site changes
+
+  // Pause polling when tab becomes inactive
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Tab became active, refreshing AP data...');
+        loadAccessPointsForSite();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [selectedSite]);
+
+  // Force re-render every 10 seconds to update "time ago" text
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setTimeUpdateCounter(prev => prev + 1);
+    }, 10000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   const loadData = async () => {
     setError('');
@@ -105,10 +152,10 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
   const loadAccessPointsForSite = async () => {
     setIsLoading(true);
     setError('');
-    
+
     try {
       console.log('Loading access points for site:', selectedSite);
-      
+
       let apsData;
       if (!selectedSite || selectedSite === 'all') {
         // Load all access points
@@ -117,17 +164,20 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
         // Load access points for specific site
         apsData = await apiService.getAccessPointsBySite(selectedSite);
       }
-      
+
       const accessPointsArray = Array.isArray(apsData) ? apsData : [];
       console.log(`Loaded ${accessPointsArray.length} access points for site ${selectedSite || 'all'}`);
-      
+
       setAccessPoints(accessPointsArray);
-      
+
       // Load client counts for filtered APs
       await loadClientCounts(accessPointsArray);
+
+      // Update last refresh time on successful load
+      setLastRefreshTime(new Date());
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load access points for selected site';
-      
+
       // Only show errors that aren't timeouts
       if (!errorMessage.includes('timeout') && !errorMessage.includes('timed out')) {
         setError(errorMessage);
@@ -455,6 +505,25 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
     return Object.values(clientCounts).reduce((total, count) => total + count, 0);
   };
 
+  // Helper function to format time ago
+  const getTimeAgo = () => {
+    if (!lastRefreshTime) return 'Never';
+
+    const seconds = Math.floor((new Date().getTime() - lastRefreshTime.getTime()) / 1000);
+
+    if (seconds < 10) return 'Just now';
+    if (seconds < 60) return `${seconds}s ago`;
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -496,18 +565,29 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
           <p className="text-muted-foreground">
             Configure and monitor access points across your network infrastructure
           </p>
+          {lastRefreshTime && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Last updated: {getTimeAgo()}
+              {isAutoRefreshing && (
+                <span className="ml-2 inline-flex items-center">
+                  <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                  Auto-refreshing...
+                </span>
+              )}
+            </p>
+          )}
         </div>
         <div className="flex items-center space-x-2">
           <Button onClick={() => {
             // Refresh both sites and access points
             loadData();
             loadAccessPointsForSite();
-          }} variant="outline" size="sm">
-            <RefreshCw className="mr-2 h-4 w-4" />
+          }} variant="outline" size="sm" disabled={isAutoRefreshing}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${isAutoRefreshing ? 'animate-spin' : ''}`} />
             Refresh APs
           </Button>
-          <Button 
-            onClick={() => loadClientCounts(accessPoints)} 
+          <Button
+            onClick={() => loadClientCounts(accessPoints)}
             variant="outline"
             size="sm"
             disabled={isLoadingClients}
