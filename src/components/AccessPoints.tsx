@@ -979,35 +979,44 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
 
         <Card className="surface-1dp">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Online</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium">AP Status</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {accessPoints.filter(ap => isAPOnline(ap)).length}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium">Online</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl font-bold text-green-600">
+                    {accessPoints.filter(ap => isAPOnline(ap)).length}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    ({accessPoints.length > 0
+                      ? `${Math.round((accessPoints.filter(ap => isAPOnline(ap)).length / accessPoints.length) * 100)}%`
+                      : '0%'})
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <WifiOff className="h-4 w-4 text-red-500" />
+                  <span className="text-sm font-medium">Offline</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl font-bold text-red-600">
+                    {accessPoints.filter(ap => !isAPOnline(ap)).length}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    ({accessPoints.length > 0
+                      ? `${Math.round((accessPoints.filter(ap => !isAPOnline(ap)).length / accessPoints.length) * 100)}%`
+                      : '0%'})
+                  </span>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {accessPoints.length > 0 
-                ? `${Math.round((accessPoints.filter(ap => isAPOnline(ap)).length / accessPoints.length) * 100)}%`
-                : '0%'} active
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="surface-1dp">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Offline</CardTitle>
-            <WifiOff className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {accessPoints.filter(ap => !isAPOnline(ap)).length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {accessPoints.length > 0 
-                ? `${Math.round((accessPoints.filter(ap => !isAPOnline(ap)).length / accessPoints.length) * 100)}%`
-                : '0%'} disconnected
-            </p>
           </CardContent>
         </Card>
 
