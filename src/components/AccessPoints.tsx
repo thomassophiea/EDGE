@@ -168,6 +168,20 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
       const accessPointsArray = Array.isArray(apsData) ? apsData : [];
       console.log(`Loaded ${accessPointsArray.length} access points for site ${selectedSite || 'all'}`);
 
+      // Debug: Check what fields are available from /v1/aps/query
+      if (accessPointsArray.length > 0) {
+        const firstAP = accessPointsArray[0];
+        console.log('📊 Sample AP data from /v1/aps/query:', firstAP);
+        console.log('📊 Available fields:', Object.keys(firstAP));
+        console.log('📊 Status-related fields:', {
+          status: firstAP.status,
+          uptime: firstAP.uptime,
+          memoryUsage: firstAP.memoryUsage,
+          cpuUsage: firstAP.cpuUsage,
+          channelUtilization: firstAP.channelUtilization
+        });
+      }
+
       setAccessPoints(accessPointsArray);
 
       // Load client counts for filtered APs
