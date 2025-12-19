@@ -207,27 +207,17 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
     try {
       // Check if authenticated before making API call
       if (!apiService.isAuthenticated()) {
-        console.log('Waiting for authentication before loading sites...');
         setSites([]);
         return;
       }
-      
-      console.log('Loading sites for AccessPoints filter...');
+
       const sitesData = await apiService.getSites();
-      console.log('Sites loaded for AccessPoints:', sitesData);
-      
+
       // Ensure we have an array
       const sitesArray = Array.isArray(sitesData) ? sitesData : [];
       setSites(sitesArray);
-      
-      console.log(`Loaded ${sitesArray.length} sites for AccessPoints filter`);
     } catch (err) {
-      // Only log if it's not an auth error
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      if (!errorMessage.includes('No access token') && !errorMessage.includes('not authenticated')) {
-        console.warn('Failed to load sites for AccessPoints:', err);
-      }
-      // Don't show error toast for sites loading failure, just log it
+      // Silently handle errors
       setSites([]);
     } finally {
       setIsLoadingSites(false);
@@ -239,8 +229,6 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
     setError('');
 
     try {
-      console.log('Loading access points for site:', selectedSite);
-
       let apsData;
       if (!selectedSite || selectedSite === 'all') {
         // Load all access points
@@ -251,7 +239,6 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
       }
 
       const accessPointsArray = Array.isArray(apsData) ? apsData : [];
-      console.log(`Loaded ${accessPointsArray.length} access points for site ${selectedSite || 'all'}`);
 
       // Map sysUptime to uptime field and format it
       const enrichedAPs = accessPointsArray.map(ap => ({
@@ -265,20 +252,19 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
 
       setAccessPoints(enrichedAPs);
 
-      // Load client counts for filtered APs
-      await loadClientCounts(accessPointsArray);
-
       // Update last refresh time on successful load
       setLastRefreshTime(new Date());
+
+      // Load client counts in background (non-blocking)
+      loadClientCounts(accessPointsArray);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load access points for selected site';
 
       // Only show errors that aren't timeouts
       if (!errorMessage.includes('timeout') && !errorMessage.includes('timed out')) {
         setError(errorMessage);
-        console.error('Error loading access points for site:', err);
       } else {
-        // For timeout errors, just log silently and show a user-friendly message
+        // For timeout errors, show a user-friendly message
         setError('Loading access points is taking longer than expected. The Campus Controller may be slow to respond.');
       }
     } finally {
@@ -288,59 +274,44 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
 
   const loadClientCounts = async (aps: AccessPoint[]) => {
     if (aps.length === 0) {
-      console.log('No APs to load client counts for');
       return;
     }
 
     setIsLoadingClients(true);
-    console.log('=== LOADING CLIENT COUNTS FOR', aps.length, 'ACCESS POINTS ===');
-    
+
     const clientCountsByAP: Record<string, number> = {};
-    
+
     // Initialize all APs with 0 clients
     aps.forEach(ap => {
       clientCountsByAP[ap.serialNumber] = 0;
     });
-    
-    console.log('Initialized client counts:', clientCountsByAP);
 
     try {
-      // Method 1: Try individual AP queries (more reliable)
-      console.log('Using individual AP station queries...');
-      let successCount = 0;
-      let totalClients = 0;
-      
-      for (const ap of aps) {
+      // Load all client counts in parallel instead of sequentially
+      const promises = aps.map(async (ap) => {
         try {
-          console.log(`Querying stations for AP: ${ap.serialNumber}`);
           const stations = await apiService.getAccessPointStations(ap.serialNumber);
           const count = Array.isArray(stations) ? stations.length : 0;
-          clientCountsByAP[ap.serialNumber] = count;
-          totalClients += count;
-          successCount++;
-          
-          console.log(`✓ AP ${ap.serialNumber}: ${count} clients`);
-          
-          // Update state incrementally so user sees progress
-          setClientCounts({...clientCountsByAP});
-          
-          // Small delay to avoid overwhelming the API
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (stationError) {
-          console.warn(`✗ Failed to load stations for AP ${ap.serialNumber}:`, stationError);
-          // Keep the count at 0 for failed APs
+          return { serialNumber: ap.serialNumber, count };
+        } catch (error) {
+          // Return 0 for failed APs
+          return { serialNumber: ap.serialNumber, count: 0 };
         }
-      }
-      
-      console.log(`=== COMPLETED: ${successCount}/${aps.length} APs, ${totalClients} total clients ===`);
-      console.log('Final client counts:', clientCountsByAP);
-      
-      // Set final state
+      });
+
+      // Wait for all requests to complete in parallel
+      const results = await Promise.all(promises);
+
+      // Update counts
+      results.forEach(({ serialNumber, count }) => {
+        clientCountsByAP[serialNumber] = count;
+      });
+
+      // Set final state once
       setClientCounts(clientCountsByAP);
-      
+
     } catch (err) {
-      console.error('Critical error in loadClientCounts:', err);
-      // Still set the counts (even if all zeros) so the UI updates
+      console.error('Error loading client counts:', err);
       setClientCounts(clientCountsByAP);
     } finally {
       setIsLoadingClients(false);
