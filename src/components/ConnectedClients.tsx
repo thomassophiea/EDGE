@@ -99,6 +99,9 @@ export function ConnectedClients({ onShowDetail }: ConnectedClientsProps) {
     }
   };
 
+  // Log to verify new version is deployed
+  console.log('[ConnectedClients] Column customization enabled - v2024-12-23');
+
   const formatBytes = (bytes: number) => {
     if (!bytes || bytes === 0) return '0 B';
     const k = 1024;
