@@ -64,6 +64,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "prebuild": "rm -rf node_modules/.vite build dist",
     "build": "node scripts/generate-version.js && vite build",
     "generate-version": "node scripts/generate-version.js",
     "start": "node server.js",
