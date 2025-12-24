@@ -3,8 +3,8 @@ builder = "nixpacks"
 
 [build.nixpacksPlan]
 phases.setup.nixPkgs = ["nodejs"]
-phases.install.cmds = ["npm ci"]
-phases.build.cmds = ["npm run build"]
+phases.install.cmds = ["npm ci --no-cache"]
+phases.build.cmds = ["rm -rf node_modules/.vite build dist && npm run build"]
 
 [deploy]
 startCommand = "node server.js"
