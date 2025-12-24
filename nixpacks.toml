@@ -1,11 +1,5 @@
-[phases.setup]
-nixPkgs = ['nodejs_20']
+[phases.build]
+cmd = "rm -rf node_modules/.vite build dist && npm run build"
 
 [phases.install]
-cmds = ['npm ci --prefer-offline --no-audit']
-
-[phases.build]
-cmds = ['npm run build']
-
-[start]
-cmd = 'npx serve build -s -l $PORT'
+cmd = "npm ci --no-cache"
