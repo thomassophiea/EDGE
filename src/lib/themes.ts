@@ -9,6 +9,7 @@ export interface Theme {
   name: string;
   displayName: string;
   colors: {
+    // Legacy tokens (maintained for backward compatibility)
     primary: string;
     primaryForeground: string;
     secondary: string;
@@ -28,6 +29,96 @@ export interface Theme {
     border: string;
     input: string;
     ring: string;
+
+    // Semantic tokens - Background
+    backgroundDefault?: string;
+    backgroundSecondary?: string;
+    backgroundInverse?: string;
+
+    // Semantic tokens - Surface
+    surfacePrimary?: string;
+    surfaceSecondary?: string;
+    surfaceElevated?: string;
+
+    // Semantic tokens - Brand
+    brandPrimary?: string;
+    brandPrimaryHover?: string;
+    brandPrimaryActive?: string;
+    brandSecondary?: string;
+    brandSecondaryHover?: string;
+
+    // Semantic tokens - Text
+    textPrimary?: string;
+    textSecondary?: string;
+    textMuted?: string;
+    textInverse?: string;
+    textOnBrand?: string;
+
+    // Semantic tokens - Border
+    borderDefault?: string;
+    borderSubtle?: string;
+    borderFocus?: string;
+
+    // Semantic tokens - Status
+    statusSuccess?: string;
+    statusSuccessBg?: string;
+    statusWarning?: string;
+    statusWarningBg?: string;
+    statusError?: string;
+    statusErrorBg?: string;
+    statusInfo?: string;
+    statusInfoBg?: string;
+
+    // Semantic tokens - Table
+    tableHeaderBg?: string;
+    tableHeaderText?: string;
+    tableHeaderBorder?: string;
+    tableRowBg?: string;
+    tableRowHover?: string;
+    tableRowSelected?: string;
+    tableRowBorder?: string;
+    tableCellText?: string;
+    tableCellMuted?: string;
+
+    // Semantic tokens - Button
+    buttonPrimaryBg?: string;
+    buttonPrimaryHover?: string;
+    buttonPrimaryActive?: string;
+    buttonPrimaryText?: string;
+    buttonSecondaryBg?: string;
+    buttonSecondaryHover?: string;
+    buttonSecondaryActive?: string;
+    buttonSecondaryText?: string;
+    buttonOutlineBorder?: string;
+    buttonOutlineHoverBg?: string;
+
+    // Semantic tokens - Navigation
+    navBackground?: string;
+    navText?: string;
+    navTextMuted?: string;
+    navItemHover?: string;
+    navItemActive?: string;
+    navBorder?: string;
+
+    // Semantic tokens - Form
+    formLabelText?: string;
+    formLabelRequired?: string;
+    inputBg?: string;
+    inputBorder?: string;
+    inputBorderHover?: string;
+    inputBorderFocus?: string;
+    inputText?: string;
+    inputPlaceholder?: string;
+    inputDisabledBg?: string;
+    inputDisabledText?: string;
+    inputErrorBorder?: string;
+    inputErrorBg?: string;
+
+    // Semantic tokens - Link
+    linkDefault?: string;
+    linkHover?: string;
+    linkVisited?: string;
+    linkActive?: string;
   };
   emoji?: string;
 }
@@ -192,23 +283,24 @@ export const themes: Record<ThemeMode, Theme> = {
     displayName: 'Kroger',
     emoji: '🛒',
     colors: {
-      // Kroger brand blue - #0F3989
-      primary: '217 83% 31%', // #0F3989 (Kroger brand blue)
+      // Legacy tokens (maintained for backward compatibility)
+      // Kroger brand blue - #084999 (Official Pantone 2728 C)
+      primary: '217 92% 32%', // #084999 (NEW: Official Kroger brand blue)
       primaryForeground: '0 0% 100%', // #FFFFFF (white text on blue)
       // Dark gray buttons - #32373c
       secondary: '210 10% 23%', // #32373c (dark gray for buttons)
       secondaryForeground: '0 0% 100%', // #FFFFFF
       // Clean white background
       background: '0 0% 100%', // #FFFFFF (white)
-      foreground: '0 0% 0%', // #000000 (black text)
+      foreground: '220 25% 14%', // #1A1F2E (NEW: dark gray for better readability)
       // Card surfaces - light gray - #F7F8F8
       card: '200 17% 98%', // #F7F8F8 (light gray)
-      cardForeground: '0 0% 0%', // #000000
+      cardForeground: '220 25% 14%', // #1A1F2E
       popover: '0 0% 100%', // #FFFFFF
-      popoverForeground: '0 0% 0%', // #000000
+      popoverForeground: '220 25% 14%', // #1A1F2E
       // Muted light gray
       muted: '200 17% 98%', // #F7F8F8 (light gray)
-      mutedForeground: '0 0% 29%', // #4A4A4A (medium gray)
+      mutedForeground: '218 17% 35%', // #4A5568 (medium gray)
       // Accent light blue - #64C2EA
       accent: '196 75% 66%', // #64C2EA (light blue)
       accentForeground: '0 0% 100%', // #FFFFFF
@@ -218,7 +310,97 @@ export const themes: Record<ThemeMode, Theme> = {
       // Subtle borders
       border: '0 0% 92%', // Very subtle gray border
       input: '0 0% 100%', // #FFFFFF (white input bg)
-      ring: '196 75% 66%' // #64C2EA (light blue focus ring)
+      ring: '196 75% 66%', // #64C2EA (light blue focus ring)
+
+      // Semantic tokens - Background
+      backgroundDefault: '0 0% 100%', // #FFFFFF
+      backgroundSecondary: '200 17% 98%', // #F7F8F8
+      backgroundInverse: '220 25% 14%', // #1A1F2E
+
+      // Semantic tokens - Surface
+      surfacePrimary: '0 0% 100%', // #FFFFFF
+      surfaceSecondary: '200 17% 98%', // #F7F8F8
+      surfaceElevated: '0 0% 100%', // #FFFFFF
+
+      // Semantic tokens - Brand
+      brandPrimary: '217 92% 32%', // #084999 (Official Kroger blue)
+      brandPrimaryHover: '217 92% 25%', // #06387A (20% darker)
+      brandPrimaryActive: '217 92% 21%', // #052D66 (35% darker)
+      brandSecondary: '196 75% 66%', // #64C2EA (light blue)
+      brandSecondaryHover: '196 75% 59%', // #4AB3E0
+
+      // Semantic tokens - Text
+      textPrimary: '220 25% 14%', // #1A1F2E
+      textSecondary: '218 17% 35%', // #4A5568
+      textMuted: '220 14% 51%', // #718096
+      textInverse: '0 0% 100%', // #FFFFFF
+      textOnBrand: '0 0% 100%', // #FFFFFF
+
+      // Semantic tokens - Border
+      borderDefault: '0 0% 0%', // rgba(0, 0, 0, 0.08) - opacity applied in CSS
+      borderSubtle: '0 0% 0%', // rgba(0, 0, 0, 0.04) - opacity applied in CSS
+      borderFocus: '217 92% 32%', // #084999
+
+      // Semantic tokens - Status
+      statusSuccess: '150 82% 29%', // #0C8542
+      statusSuccessBg: '150 53% 93%', // #E6F7ED
+      statusWarning: '30 92% 44%', // #D97706
+      statusWarningBg: '37 89% 95%', // #FEF3E6
+      statusError: '0 73% 51%', // #DC2626
+      statusErrorBg: '0 86% 95%', // #FEE6E6
+      statusInfo: '199 94% 32%', // #0369A1
+      statusInfoBg: '199 61% 94%', // #E6F3F9
+
+      // Semantic tokens - Table
+      tableHeaderBg: '200 17% 98%', // #F7F8F8
+      tableHeaderText: '218 17% 35%', // #4A5568
+      tableHeaderBorder: '0 0% 0%', // rgba(0, 0, 0, 0.08) - opacity applied in CSS
+      tableRowBg: '0 0% 100%', // #FFFFFF
+      tableRowHover: '217 92% 32%', // rgba(8, 73, 153, 0.04) - opacity applied in CSS
+      tableRowSelected: '217 92% 32%', // rgba(8, 73, 153, 0.08) - opacity applied in CSS
+      tableRowBorder: '0 0% 0%', // rgba(0, 0, 0, 0.06) - opacity applied in CSS
+      tableCellText: '220 25% 14%', // #1A1F2E
+      tableCellMuted: '220 14% 51%', // #718096
+
+      // Semantic tokens - Button
+      buttonPrimaryBg: '217 92% 32%', // #084999
+      buttonPrimaryHover: '217 92% 25%', // #06387A
+      buttonPrimaryActive: '217 92% 21%', // #052D66
+      buttonPrimaryText: '0 0% 100%', // #FFFFFF
+      buttonSecondaryBg: '200 17% 98%', // #F7F8F8
+      buttonSecondaryHover: '220 16% 91%', // #E5E7EB
+      buttonSecondaryActive: '220 13% 82%', // #D1D5DB
+      buttonSecondaryText: '220 25% 14%', // #1A1F2E
+      buttonOutlineBorder: '217 92% 32%', // rgba(8, 73, 153, 0.3) - opacity applied in CSS
+      buttonOutlineHoverBg: '217 92% 32%', // rgba(8, 73, 153, 0.04) - opacity applied in CSS
+
+      // Semantic tokens - Navigation
+      navBackground: '217 92% 32%', // #084999
+      navText: '0 0% 100%', // #FFFFFF
+      navTextMuted: '0 0% 100%', // rgba(255, 255, 255, 0.7) - opacity applied in CSS
+      navItemHover: '0 0% 100%', // rgba(255, 255, 255, 0.1) - opacity applied in CSS
+      navItemActive: '196 75% 66%', // #64C2EA
+      navBorder: '0 0% 100%', // rgba(255, 255, 255, 0.1) - opacity applied in CSS
+
+      // Semantic tokens - Form
+      formLabelText: '220 25% 14%', // #1A1F2E
+      formLabelRequired: '0 73% 51%', // #DC2626
+      inputBg: '0 0% 100%', // #FFFFFF
+      inputBorder: '0 0% 0%', // rgba(0, 0, 0, 0.15) - opacity applied in CSS
+      inputBorderHover: '217 92% 32%', // rgba(8, 73, 153, 0.3) - opacity applied in CSS
+      inputBorderFocus: '217 92% 32%', // #084999
+      inputText: '220 25% 14%', // #1A1F2E
+      inputPlaceholder: '220 14% 51%', // #718096
+      inputDisabledBg: '200 17% 98%', // #F7F8F8
+      inputDisabledText: '220 13% 69%', // #A0AEC0
+      inputErrorBorder: '0 73% 51%', // #DC2626
+      inputErrorBg: '0 73% 51%', // rgba(220, 38, 38, 0.02) - opacity applied in CSS
+
+      // Semantic tokens - Link
+      linkDefault: '217 92% 32%', // #084999
+      linkHover: '217 92% 25%', // #06387A
+      linkVisited: '258 90% 43%', // #5B21B6 (purple)
+      linkActive: '217 92% 21%' // #052D66
     }
   }
 };

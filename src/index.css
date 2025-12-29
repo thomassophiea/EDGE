@@ -6409,10 +6409,10 @@ html[data-theme="light"], html.light {
    KROGER THEME OVERRIDES
    ======================================== */
 
-/* Kroger sidebar - Brand blue background */
+/* Kroger sidebar - Official Brand blue background (Pantone 2728 C) */
 .theme-kroger .bg-sidebar,
 .kroger .bg-sidebar {
-  background-color: #0F3989 !important;
+  background-color: #084999 !important;
 }
 
 /* Kroger sidebar text - White */
@@ -6457,11 +6457,23 @@ html[data-theme="light"], html.light {
   background-color: #F7F8F8 !important;
 }
 
-/* Kroger primary buttons - Brand blue */
+/* Kroger primary buttons - Official Brand blue */
 .theme-kroger .bg-primary,
 .kroger .bg-primary {
-  background-color: #0F3989 !important;
+  background-color: #084999 !important;
   color: #ffffff !important;
+}
+
+/* Kroger primary button hover state */
+.theme-kroger .bg-primary:hover,
+.kroger .bg-primary:hover {
+  background-color: #06387A !important;
+}
+
+/* Kroger primary button active state */
+.theme-kroger .bg-primary:active,
+.kroger .bg-primary:active {
+  background-color: #052D66 !important;
 }
 
 /* Kroger secondary buttons - Dark gray */
@@ -6471,10 +6483,10 @@ html[data-theme="light"], html.light {
   color: #ffffff !important;
 }
 
-/* Kroger text - Black */
+/* Kroger text - Dark gray for better readability */
 .theme-kroger .text-foreground,
 .kroger .text-foreground {
-  color: #000000 !important;
+  color: #1A1F2E !important;
 }
 
 /* Kroger accent - Light blue */
@@ -6482,4 +6494,45 @@ html[data-theme="light"], html.light {
 .kroger .bg-accent {
   background-color: #64C2EA !important;
   color: #ffffff !important;
+}
+
+/* Kroger table row hover */
+.theme-kroger .table-row:hover,
+.theme-kroger tbody tr:hover,
+.kroger .table-row:hover,
+.kroger tbody tr:hover {
+  background-color: rgba(8, 73, 153, 0.04) !important;
+}
+
+/* Kroger input focus states */
+.theme-kroger input:focus,
+.theme-kroger textarea:focus,
+.theme-kroger select:focus,
+.kroger input:focus,
+.kroger textarea:focus,
+.kroger select:focus {
+  border-color: #084999 !important;
+  outline-color: rgba(8, 73, 153, 0.3) !important;
+  outline-width: 3px !important;
+}
+
+/* Kroger link states */
+.theme-kroger a,
+.kroger a {
+  color: #084999 !important;
+}
+
+.theme-kroger a:hover,
+.kroger a:hover {
+  color: #06387A !important;
+}
+
+.theme-kroger a:visited,
+.kroger a:visited {
+  color: #5B21B6 !important;
+}
+
+.theme-kroger a:active,
+.kroger a:active {
+  color: #052D66 !important;
 }

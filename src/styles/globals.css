@@ -186,46 +186,136 @@
   --sidebar-ring: #6200EE;
 }
 
-/* Kroger Theme - HIGH SPECIFICITY */
+/* Kroger Theme - HIGH SPECIFICITY - Updated with Semantic Tokens */
 .theme-kroger,
 html.theme-kroger,
 html.theme-kroger body,
 :root.theme-kroger {
-  /* Kroger brand colors from thekrogerco.com */
+  /* ===== LEGACY TOKENS (Updated for compatibility) ===== */
   --background: #ffffff !important; /* Clean white background */
-  --foreground: #000000 !important; /* Black text for main content */
+  --foreground: #1A1F2E !important; /* Dark gray text for better readability */
   --card: #F7F8F8 !important; /* Light gray for cards */
-  --card-foreground: #000000 !important;
+  --card-foreground: #1A1F2E !important;
   --popover: #ffffff !important;
-  --popover-foreground: #000000 !important;
-  --primary: #0F3989 !important; /* Kroger brand blue */
+  --popover-foreground: #1A1F2E !important;
+  --primary: #084999 !important; /* Official Kroger brand blue (Pantone 2728 C) */
   --primary-foreground: #ffffff !important;
   --secondary: #32373c !important; /* Dark gray for buttons */
   --secondary-foreground: #ffffff !important;
   --muted: #F7F8F8 !important; /* Light gray */
-  --muted-foreground: #4A4A4A !important; /* Medium gray text */
+  --muted-foreground: #4A5568 !important; /* Medium gray text */
   --accent: #64C2EA !important; /* Light blue accent */
   --accent-foreground: #ffffff !important;
-  --destructive: #ef4444 !important; /* Red */
+  --destructive: #DC2626 !important; /* Red */
   --destructive-foreground: #ffffff !important;
   --border: rgba(0, 0, 0, 0.08) !important; /* Subtle border */
   --input: #ffffff !important; /* White input background */
   --input-background: #ffffff !important;
   --ring: #64C2EA !important; /* Light blue focus ring */
-  --chart-1: #0F3989 !important;
+  --chart-1: #084999 !important;
   --chart-2: #64C2EA !important;
   --chart-3: #FF6F00 !important;
-  --chart-4: #ef4444 !important;
-  --chart-5: #00C853 !important;
-  --success: #00C853 !important;
+  --chart-4: #DC2626 !important;
+  --chart-5: #0C8542 !important;
+  --success: #0C8542 !important;
   --success-foreground: #ffffff !important;
-  --warning: #FF6F00 !important;
+  --warning: #D97706 !important;
   --warning-foreground: #000000 !important;
-  --info: #64C2EA !important;
+  --info: #0369A1 !important;
   --info-foreground: #ffffff !important;
 
+  /* ===== SEMANTIC TOKENS - Background ===== */
+  --background-default: #FFFFFF !important;
+  --background-secondary: #F7F8F8 !important;
+  --background-inverse: #1A1F2E !important;
+
+  /* ===== SEMANTIC TOKENS - Surface ===== */
+  --surface-primary: #FFFFFF !important;
+  --surface-secondary: #F7F8F8 !important;
+  --surface-elevated: #FFFFFF !important;
+
+  /* ===== SEMANTIC TOKENS - Brand ===== */
+  --brand-primary: #084999 !important;
+  --brand-primary-hover: #06387A !important;
+  --brand-primary-active: #052D66 !important;
+  --brand-secondary: #64C2EA !important;
+  --brand-secondary-hover: #4AB3E0 !important;
+
+  /* ===== SEMANTIC TOKENS - Text ===== */
+  --text-primary: #1A1F2E !important;
+  --text-secondary: #4A5568 !important;
+  --text-muted: #718096 !important;
+  --text-inverse: #FFFFFF !important;
+  --text-on-brand: #FFFFFF !important;
+
+  /* ===== SEMANTIC TOKENS - Border ===== */
+  --border-default: rgba(0, 0, 0, 0.08) !important;
+  --border-subtle: rgba(0, 0, 0, 0.04) !important;
+  --border-focus: #084999 !important;
+
+  /* ===== SEMANTIC TOKENS - Status ===== */
+  --status-success: #0C8542 !important;
+  --status-success-bg: #E6F7ED !important;
+  --status-warning: #D97706 !important;
+  --status-warning-bg: #FEF3E6 !important;
+  --status-error: #DC2626 !important;
+  --status-error-bg: #FEE6E6 !important;
+  --status-info: #0369A1 !important;
+  --status-info-bg: #E6F3F9 !important;
+
+  /* ===== SEMANTIC TOKENS - Table ===== */
+  --table-header-bg: #F7F8F8 !important;
+  --table-header-text: #4A5568 !important;
+  --table-header-border: rgba(0, 0, 0, 0.08) !important;
+  --table-row-bg: #FFFFFF !important;
+  --table-row-hover: rgba(8, 73, 153, 0.04) !important;
+  --table-row-selected: rgba(8, 73, 153, 0.08) !important;
+  --table-row-border: rgba(0, 0, 0, 0.06) !important;
+  --table-cell-text: #1A1F2E !important;
+  --table-cell-muted: #718096 !important;
+
+  /* ===== SEMANTIC TOKENS - Button ===== */
+  --button-primary-bg: #084999 !important;
+  --button-primary-hover: #06387A !important;
+  --button-primary-active: #052D66 !important;
+  --button-primary-text: #FFFFFF !important;
+  --button-secondary-bg: #F7F8F8 !important;
+  --button-secondary-hover: #E5E7EB !important;
+  --button-secondary-active: #D1D5DB !important;
+  --button-secondary-text: #1A1F2E !important;
+  --button-outline-border: rgba(8, 73, 153, 0.3) !important;
+  --button-outline-hover-bg: rgba(8, 73, 153, 0.04) !important;
+
+  /* ===== SEMANTIC TOKENS - Navigation ===== */
+  --nav-background: #084999 !important;
+  --nav-text: #FFFFFF !important;
+  --nav-text-muted: rgba(255, 255, 255, 0.7) !important;
+  --nav-item-hover: rgba(255, 255, 255, 0.1) !important;
+  --nav-item-active: #64C2EA !important;
+  --nav-border: rgba(255, 255, 255, 0.1) !important;
+
+  /* ===== SEMANTIC TOKENS - Form ===== */
+  --form-label-text: #1A1F2E !important;
+  --form-label-required: #DC2626 !important;
+  --input-bg: #FFFFFF !important;
+  --input-border: rgba(0, 0, 0, 0.15) !important;
+  --input-border-hover: rgba(8, 73, 153, 0.3) !important;
+  --input-border-focus: #084999 !important;
+  --input-text: #1A1F2E !important;
+  --input-placeholder: #718096 !important;
+  --input-disabled-bg: #F7F8F8 !important;
+  --input-disabled-text: #A0AEC0 !important;
+  --input-error-border: #DC2626 !important;
+  --input-error-bg: rgba(220, 38, 38, 0.02) !important;
+
+  /* ===== SEMANTIC TOKENS - Link ===== */
+  --link-default: #084999 !important;
+  --link-hover: #06387A !important;
+  --link-visited: #5B21B6 !important;
+  --link-active: #052D66 !important;
+
   /* Kroger Sidebar - BLUE like their header/navigation */
-  --sidebar: #0F3989 !important; /* Kroger brand blue background */
+  --sidebar: #084999 !important; /* Official Kroger brand blue background */
   --sidebar-foreground: #ffffff !important; /* White text */
   --sidebar-primary: #64C2EA !important; /* Light blue for active items */
   --sidebar-primary-foreground: #ffffff !important;
@@ -241,7 +331,7 @@ html.theme-kroger body,
 /* Force Kroger sidebar background color */
 .theme-kroger .bg-sidebar,
 .theme-kroger [class*="bg-sidebar"] {
-  background-color: #0F3989 !important;
+  background-color: #084999 !important;
 }
 
 /* Force Kroger sidebar text color */

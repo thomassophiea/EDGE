@@ -128,6 +128,55 @@ export const STATUS = {
   },
 } as const;
 
+// ==================== Semantic Color Tokens (Kroger Theme) ====================
+export const SEMANTIC_COLORS = {
+  // Background
+  backgroundDefault: 'bg-[var(--background-default)]',
+  backgroundSecondary: 'bg-[var(--background-secondary)]',
+  backgroundInverse: 'bg-[var(--background-inverse)]',
+
+  // Surface
+  surfacePrimary: 'bg-[var(--surface-primary)]',
+  surfaceSecondary: 'bg-[var(--surface-secondary)]',
+  surfaceElevated: 'bg-[var(--surface-elevated)]',
+
+  // Brand
+  brandPrimary: 'bg-[var(--brand-primary)]',
+  brandPrimaryHover: 'hover:bg-[var(--brand-primary-hover)]',
+  brandPrimaryActive: 'active:bg-[var(--brand-primary-active)]',
+  brandSecondary: 'bg-[var(--brand-secondary)]',
+
+  // Text
+  textPrimary: 'text-[var(--text-primary)]',
+  textSecondary: 'text-[var(--text-secondary)]',
+  textMuted: 'text-[var(--text-muted)]',
+  textInverse: 'text-[var(--text-inverse)]',
+  textOnBrand: 'text-[var(--text-on-brand)]',
+
+  // Borders
+  borderDefault: 'border-[var(--border-default)]',
+  borderSubtle: 'border-[var(--border-subtle)]',
+  borderFocus: 'border-[var(--border-focus)]',
+} as const;
+
+// ==================== Table Semantic Tokens ====================
+export const TABLE_SEMANTIC = {
+  // Header
+  headerBg: 'bg-[var(--table-header-bg)]',
+  headerText: 'text-[var(--table-header-text)]',
+  headerBorder: 'border-[var(--table-header-border)]',
+
+  // Rows
+  rowBg: 'bg-[var(--table-row-bg)]',
+  rowHover: 'hover:bg-[var(--table-row-hover)]',
+  rowSelected: 'bg-[var(--table-row-selected)]',
+  rowBorder: 'border-[var(--table-row-border)]',
+
+  // Cells
+  cellText: 'text-[var(--table-cell-text)]',
+  cellMuted: 'text-[var(--table-cell-muted)]',
+} as const;
+
 // ==================== Badge Styles ====================
 export const BADGE_STYLES = {
   // Status Badges
