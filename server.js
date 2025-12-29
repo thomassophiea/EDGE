@@ -31,6 +31,17 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Version check endpoint - proves which commit is deployed
+app.get('/api/version', (req, res) => {
+  res.json({
+    version: 'v3-kroger-semantic-tokens',
+    commit: '39e23af9f110a5bc2348f6a9e175203c36ba3810',
+    blue: '#084999',
+    timestamp: 'Dec 29 2025 18:15',
+    message: 'Kroger blue semantic tokens - Official Pantone 2728 C'
+  });
+});
+
 // Proxy configuration
 const proxyOptions = {
   target: CAMPUS_CONTROLLER_URL,
