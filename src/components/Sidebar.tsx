@@ -89,9 +89,17 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center space-x-2">
-              <div className="text-foreground">
-                <span className="text-muted-foreground text-xs">{branding.fullName}</span>
-              </div>
+              {theme === 'kroger' ? (
+                <img
+                  src="/branding/kroger/logo.svg"
+                  alt="Kroger"
+                  className="h-8 w-auto"
+                />
+              ) : (
+                <div className="text-foreground">
+                  <span className="text-muted-foreground text-xs">{branding.fullName}</span>
+                </div>
+              )}
             </div>
           )}
           <Button
