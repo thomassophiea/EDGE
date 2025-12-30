@@ -825,7 +825,7 @@ export default function App() {
           onThemeToggle={toggleTheme}
         />
         
-        <main 
+        <main
           className="flex-1 overflow-auto transition-all duration-200"
           style={{
             paddingBottom: isDevModeOpen ? `${devPanelHeight}px` : '0'
@@ -835,7 +835,7 @@ export default function App() {
             {/* Top Bar with Test Tools */}
             <div className={`flex justify-between items-center kroger-top-bar ${
               theme === 'kroger'
-                ? 'bg-sidebar text-sidebar-foreground px-6 py-4 -mx-6 -mt-6 mb-6'
+                ? 'bg-sidebar text-sidebar-foreground px-6 py-4 mb-6'
                 : 'mb-6'
             }`}>
               <div className="flex items-center space-x-4">

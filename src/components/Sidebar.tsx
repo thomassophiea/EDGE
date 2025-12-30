@@ -91,9 +91,9 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
             <div className="flex items-center space-x-2">
               {theme === 'kroger' ? (
                 <img
-                  src="/branding/kroger/logo.svg"
+                  src="/branding/kroger/logo-circle.svg"
                   alt="Kroger"
-                  className="h-8 w-auto"
+                  className="h-10 w-10"
                 />
               ) : (
                 <div className="text-foreground">

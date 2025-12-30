@@ -6539,24 +6539,36 @@ html[data-theme="light"], html.light {
 }
 
 /* Kroger top bar buttons - Better readability on blue background */
-.theme-kroger .kroger-top-bar button,
-.kroger .kroger-top-bar button {
+.theme-kroger .kroger-top-bar button:not(:has(.avatar)),
+.kroger .kroger-top-bar button:not(:has(.avatar)) {
   background-color: rgba(255, 255, 255, 0.95) !important;
   color: #084999 !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
   font-weight: 500 !important;
 }
 
-.theme-kroger .kroger-top-bar button:hover,
-.kroger .kroger-top-bar button:hover {
+.theme-kroger .kroger-top-bar button:not(:has(.avatar)):hover,
+.kroger .kroger-top-bar button:not(:has(.avatar)):hover {
   background-color: #ffffff !important;
   color: #06387A !important;
   border-color: rgba(255, 255, 255, 0.5) !important;
 }
 
-.theme-kroger .kroger-top-bar button svg,
-.kroger .kroger-top-bar button svg {
+.theme-kroger .kroger-top-bar button:not(:has(.avatar)) svg,
+.kroger .kroger-top-bar button:not(:has(.avatar)) svg {
   color: #084999 !important;
+}
+
+/* Kroger top bar - UserMenu button stays visible */
+.theme-kroger .kroger-top-bar button:has(.avatar),
+.kroger .kroger-top-bar button:has(.avatar) {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.theme-kroger .kroger-top-bar button:has(.avatar):hover,
+.kroger .kroger-top-bar button:has(.avatar):hover {
+  background-color: rgba(255, 255, 255, 0.25) !important;
 }
 
 /* Kroger sidebar - darker blue for better contrast */

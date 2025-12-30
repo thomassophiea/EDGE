@@ -1,4 +1,4 @@
-// Version: Kroger Button Readability Fix - Dec 29 2025 v7 - 20:00
+// Version: Kroger Alignment & Logo Fix - Dec 29 2025 v8 - 20:15
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import cors from 'cors';
@@ -34,12 +34,12 @@ app.get('/health', (req, res) => {
 // Version check endpoint - proves which commit is deployed
 app.get('/api/version', (req, res) => {
   res.json({
-    version: 'v7-kroger-readability',
-    commit: '54fa2da3c9f8e7d6b5c4a3f2e1d0c9b8a7f6e5d4',
+    version: 'v8-kroger-alignment',
+    commit: 'pending',
     topBarBlue: '#084999',
     sidebarBlue: '#05316B',
-    timestamp: 'Dec 29 2025 20:00',
-    message: 'Top bar buttons with white background for readability, darker sidebar blue'
+    timestamp: 'Dec 29 2025 20:15',
+    message: 'Fixed alignment, UserMenu readability, and added circular Kroger logo'
   });
 });
 
