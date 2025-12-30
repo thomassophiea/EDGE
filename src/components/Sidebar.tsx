@@ -86,8 +86,7 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
     )}>
       {/* Header */}
       <div className={cn(
-        "border-b border-sidebar-border",
-        theme === 'kroger' ? 'px-4 py-[18px]' : 'p-4'
+        theme === 'kroger' ? 'px-4 py-3' : 'p-4 border-b border-sidebar-border'
       )}>
         <div className="flex items-center justify-between">
           {!isCollapsed && (
