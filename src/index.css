@@ -6554,9 +6554,22 @@ html[data-theme="light"], html.light {
   border-color: rgba(255, 255, 255, 0.5) !important;
 }
 
+/* Force icons to be dark blue - high specificity */
 .theme-kroger .kroger-top-bar button:not(:has(.avatar)) svg,
-.kroger .kroger-top-bar button:not(:has(.avatar)) svg {
+.theme-kroger .kroger-top-bar button:not(:has(.avatar)) svg path,
+.theme-kroger .kroger-top-bar button:not(:has(.avatar)) svg circle,
+.theme-kroger .kroger-top-bar button:not(:has(.avatar)) svg line,
+.theme-kroger .kroger-top-bar button:not(:has(.avatar)) svg polyline,
+.theme-kroger .kroger-top-bar button:not(:has(.avatar)) svg polygon,
+.kroger .kroger-top-bar button:not(:has(.avatar)) svg,
+.kroger .kroger-top-bar button:not(:has(.avatar)) svg path,
+.kroger .kroger-top-bar button:not(:has(.avatar)) svg circle,
+.kroger .kroger-top-bar button:not(:has(.avatar)) svg line,
+.kroger .kroger-top-bar button:not(:has(.avatar)) svg polyline,
+.kroger .kroger-top-bar button:not(:has(.avatar)) svg polygon {
   color: #084999 !important;
+  stroke: #084999 !important;
+  fill: none !important;
 }
 
 /* Kroger top bar - UserMenu button stays visible */
