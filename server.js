@@ -35,7 +35,7 @@ app.get('/health', (req, res) => {
 app.get('/api/version', (req, res) => {
   res.json({
     version: 'v8-kroger-alignment',
-    commit: 'pending',
+    commit: '4cf6350f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b',
     topBarBlue: '#084999',
     sidebarBlue: '#05316B',
     timestamp: 'Dec 29 2025 20:15',
