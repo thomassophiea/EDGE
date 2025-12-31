@@ -184,7 +184,7 @@ export function OperationalHealthSummary() {
   };
 
   const calculateServiceDegradation = (services: Service[], stations: Station[]) => {
-    // Services are considered degraded if they have issues or low client counts
+    // Services are considered degraded if they have active issues
     const degradedServices = services.filter(service => {
       const serviceStations = stations.filter(s =>
         s.serviceName === service.name ||
@@ -192,14 +192,22 @@ export function OperationalHealthSummary() {
         s.ssid === service.ssid
       );
 
-      // Consider degraded if: disabled, or has connected clients but low signal
-      const isDisabled = !service.enabled || service.status?.toLowerCase() === 'disabled';
+      // If service has connected clients, it's clearly active (not disabled)
+      const hasActiveClients = serviceStations.length > 0;
+
+      // Check for actual performance degradation
       const hasLowSignalClients = serviceStations.some(s =>
         (s.signalStrength && s.signalStrength < -80) ||
         (s.rss && s.rss < -80)
       );
 
-      return isDisabled || (serviceStations.length > 0 && hasLowSignalClients);
+      const hasHighRetryRate = serviceStations.some(s =>
+        s.retryRate && s.retryRate > 50
+      );
+
+      // Only flag as degraded if there's actual performance issues
+      // NOT just because enabled=false (which may be stale metadata)
+      return hasActiveClients && (hasLowSignalClients || hasHighRetryRate);
     });
 
     return {
@@ -514,9 +522,7 @@ export function OperationalHealthSummary() {
                     <li key={idx} className="flex items-center gap-2">
                       <AlertCircle className="h-4 w-4 text-yellow-600" />
                       <span>{service.name || service.serviceName || service.ssid}</span>
-                      {!service.enabled && (
-                        <Badge variant="outline" className="text-xs">Disabled</Badge>
-                      )}
+                      <Badge variant="outline" className="text-xs">Performance Issue</Badge>
                     </li>
                   ))}
                 </ul>
@@ -686,9 +692,7 @@ export function OperationalHealthSummary() {
                             <AlertCircle className="h-4 w-4 text-yellow-600" />
                             <span className="font-medium">{service.name || service.serviceName || service.ssid}</span>
                           </div>
-                          {!service.enabled && (
-                            <Badge variant="outline" className="text-xs">Disabled</Badge>
-                          )}
+                          <Badge variant="outline" className="text-xs">Performance Issue</Badge>
                         </div>
                       </div>
                     ))}
