@@ -76,6 +76,7 @@ export default function App() {
   const [isDevModeOpen, setIsDevModeOpen] = useState(false);
   const [apiLogs, setApiLogs] = useState<ApiCallLog[]>([]);
   const [devPanelHeight, setDevPanelHeight] = useState(0);
+  const [siteName, setSiteName] = useState<string>('');
 
   useEffect(() => {
     // Initialize theme from localStorage or system preference
@@ -98,14 +99,34 @@ export default function App() {
             // Token is valid
             setIsAuthenticated(true);
             setAdminRole(apiService.getAdminRole());
-            
+
+            // Load site information
+            try {
+              const SITE_ID = 'c7395471-aa5c-46dc-9211-3ed24c5789bd';
+              const site = await apiService.getSiteById(SITE_ID);
+              if (site) {
+                const displayName = site.displayName || site.name || site.siteName || 'Production Site';
+                setSiteName(displayName);
+              } else {
+                const sites = await apiService.getSites();
+                if (sites && sites.length > 0) {
+                  const firstSite = sites[0];
+                  const displayName = firstSite.displayName || firstSite.name || firstSite.siteName || 'Site';
+                  setSiteName(displayName);
+                }
+              }
+            } catch (error) {
+              console.error('[App] Failed to load site name:', error);
+              setSiteName('Production Site');
+            }
+
             // Show a subtle notification that session was restored
             console.log('[App] ✅ Session restored from storage - you are still logged in');
             toast.success('Session restored', {
               description: 'You are still logged in from your previous session.',
               duration: 3000
             });
-            
+
             // Start SLE data collection automatically on successful authentication
             console.log('[App] Starting SLE data collection service');
             sleDataCollectionService.startCollection();
@@ -606,10 +627,33 @@ export default function App() {
     });
   };
 
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = async () => {
     setIsAuthenticated(true);
     setAdminRole(apiService.getAdminRole());
-    
+
+    // Load site information
+    try {
+      const SITE_ID = 'c7395471-aa5c-46dc-9211-3ed24c5789bd';
+      const site = await apiService.getSiteById(SITE_ID);
+      if (site) {
+        const displayName = site.displayName || site.name || site.siteName || 'Production Site';
+        console.log('[App] Loaded site:', displayName);
+        setSiteName(displayName);
+      } else {
+        // Fallback to first available site
+        const sites = await apiService.getSites();
+        if (sites && sites.length > 0) {
+          const firstSite = sites[0];
+          const displayName = firstSite.displayName || firstSite.name || firstSite.siteName || 'Site';
+          console.log('[App] Fallback to first site:', displayName);
+          setSiteName(displayName);
+        }
+      }
+    } catch (error) {
+      console.error('[App] Failed to load site name:', error);
+      setSiteName('Production Site'); // Default fallback
+    }
+
     // Start SLE data collection on login
     console.log('[App] Starting SLE data collection service after login');
     sleDataCollectionService.startCollection();
@@ -846,6 +890,9 @@ export default function App() {
                 <h2 className={`text-lg font-semibold ${
                   theme === 'kroger' ? 'text-sidebar-foreground' : 'text-[rgba(255,255,255,1)]'
                 }`}>
+                  {siteName && (
+                    <span className="opacity-70 font-normal">{siteName} · </span>
+                  )}
                   {pageInfo[currentPage as keyof typeof pageInfo]?.title || 'Mobility Engine'}
                 </h2>
               </div>
