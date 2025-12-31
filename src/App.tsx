@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ServiceLevelsEnhanced } from './components/ServiceLevelsEnhanced';
+import { DashboardEnhanced } from './components/DashboardEnhanced';
 import { AlertsEventsEnhanced } from './components/AlertsEventsEnhanced';
 import { ReportWidgets } from './components/ReportWidgets';
 import { ConfigureNetworks } from './components/ConfigureNetworks';
@@ -727,7 +728,7 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'service-levels':
-        return <ServiceLevelsEnhanced />;
+        return <DashboardEnhanced />;
       case 'access-points':
         return <AccessPoints onShowDetail={handleShowAccessPointDetail} />;
       case 'connected-clients':
