@@ -3150,6 +3150,31 @@ class ApiService {
       return null;
     }
   }
+
+  /**
+   * Fetch detailed station/client information by MAC address
+   * Endpoint: GET /v1/stations/{macAddress}
+   */
+  async fetchStationDetails(macAddress: string): Promise<any> {
+    try {
+      const noCache = Date.now();
+      const endpoint = `/v1/stations/${encodeURIComponent(macAddress)}?noCache=${noCache}`;
+
+      console.log(`[API] Fetching station details for MAC: ${macAddress}`);
+      const response = await this.makeAuthenticatedRequest(endpoint, {}, 10000);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch station details: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log(`[API] Station details loaded for ${macAddress}:`, data);
+      return data;
+    } catch (error) {
+      console.error(`[API] Failed to fetch station details for ${macAddress}:`, error);
+      throw error;
+    }
+  }
 }
 
 export const apiService = new ApiService();

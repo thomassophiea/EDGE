@@ -1570,7 +1570,7 @@ export function DashboardEnhanced() {
           <CardContent>
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-2">
-                {stations.slice(0, 20).map((station) => {
+                {stations.map((station) => {
                   const rssi = station.rssi || 0;
                   const signalQuality = rssi >= -50 ? 'excellent' : rssi >= -60 ? 'good' : rssi >= -70 ? 'fair' : 'poor';
                   const SignalIcon = rssi >= -60 ? Signal : rssi >= -70 ? Signal : Signal;
@@ -1582,9 +1582,19 @@ export function DashboardEnhanced() {
                   return (
                     <div
                       key={station.macAddress}
-                      onClick={() => {
-                        setSelectedClient(station);
-                        setIsClientDialogOpen(true);
+                      onClick={async () => {
+                        try {
+                          // Fetch fresh station details from the API
+                          const stationDetails = await apiService.fetchStationDetails(station.macAddress);
+                          // Merge with existing station data
+                          setSelectedClient({ ...station, ...stationDetails });
+                          setIsClientDialogOpen(true);
+                        } catch (error) {
+                          console.error('[Dashboard] Failed to fetch client details:', error);
+                          // Fallback to existing station data
+                          setSelectedClient(station);
+                          setIsClientDialogOpen(true);
+                        }
                       }}
                       className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
                     >
@@ -1922,6 +1932,90 @@ export function DashboardEnhanced() {
                               {new Date(selectedClient.connectionTime).toLocaleTimeString()}
                             </p>
                           </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Radio & Protocol Information */}
+              {(selectedClient.protocol || selectedClient.channel || selectedClient.radioId) && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm">Radio & Protocol</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedClient.protocol && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Protocol</p>
+                          <Badge variant="outline">{selectedClient.protocol}</Badge>
+                        </div>
+                      )}
+                      {selectedClient.channel !== undefined && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Channel</p>
+                          <p className="text-sm font-medium">Channel {selectedClient.channel}</p>
+                        </div>
+                      )}
+                      {selectedClient.radioId !== undefined && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Radio Band</p>
+                          <p className="text-sm font-medium">
+                            {selectedClient.radioId === 1 ? '2.4 GHz' : selectedClient.radioId === 2 ? '5 GHz' : `Radio ${selectedClient.radioId}`}
+                          </p>
+                        </div>
+                      )}
+                      {selectedClient.transmittedRate !== undefined && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Tx Rate</p>
+                          <p className="text-sm font-medium">{selectedClient.transmittedRate} Mbps</p>
+                        </div>
+                      )}
+                      {selectedClient.receivedRate !== undefined && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Rx Rate</p>
+                          <p className="text-sm font-medium">{selectedClient.receivedRate} Mbps</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Role & Device Information */}
+              {(selectedClient.role || selectedClient.manufacturer || selectedClient.lastSeen) && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm">Device Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedClient.role && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Role</p>
+                          <Badge variant="secondary">{selectedClient.role}</Badge>
+                        </div>
+                      )}
+                      {selectedClient.manufacturer && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Manufacturer</p>
+                          <p className="text-sm font-medium">{selectedClient.manufacturer}</p>
+                        </div>
+                      )}
+                      {selectedClient.lastSeen !== undefined && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Last Seen</p>
+                          <p className="text-sm font-medium">
+                            {new Date(selectedClient.lastSeen).toLocaleString()}
+                          </p>
+                        </div>
+                      )}
+                      {selectedClient.accessPointName && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Access Point</p>
+                          <p className="text-sm font-medium">{selectedClient.accessPointName}</p>
                         </div>
                       )}
                     </div>
