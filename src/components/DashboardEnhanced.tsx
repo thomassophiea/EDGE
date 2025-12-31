@@ -1569,9 +1569,27 @@ export function DashboardEnhanced() {
                   const rssi = station.rssi || 0;
                   const signalQuality = rssi >= -50 ? 'excellent' : rssi >= -60 ? 'good' : rssi >= -70 ? 'fair' : 'poor';
                   const SignalIcon = rssi >= -60 ? Signal : rssi >= -70 ? Signal : Signal;
-                  
-                  const tx = station.txRate ? (station.txRate * 1000000) : ((station.outBytes || station.txBytes || 0) * 8);
-                  const rx = station.rxRate ? (station.rxRate * 1000000) : ((station.inBytes || station.rxBytes || 0) * 8);
+
+                  // Calculate throughput rates (bps)
+                  let tx = 0;
+                  let rx = 0;
+
+                  if (station.txRate !== undefined && station.txRate > 0) {
+                    tx = station.txRate * 1000000; // Mbps to bps
+                  } else {
+                    const uploadBytes = station.outBytes || station.txBytes || 0;
+                    const sessionSeconds = (station.uptime && station.uptime > 0) ? station.uptime : 3600;
+                    tx = (uploadBytes * 8) / sessionSeconds; // bytes to bps (rate)
+                  }
+
+                  if (station.rxRate !== undefined && station.rxRate > 0) {
+                    rx = station.rxRate * 1000000; // Mbps to bps
+                  } else {
+                    const downloadBytes = station.inBytes || station.rxBytes || 0;
+                    const sessionSeconds = (station.uptime && station.uptime > 0) ? station.uptime : 3600;
+                    rx = (downloadBytes * 8) / sessionSeconds; // bytes to bps (rate)
+                  }
+
                   const totalThroughput = tx + rx;
                   
                   return (
@@ -1655,11 +1673,9 @@ export function DashboardEnhanced() {
                   );
                 })}
               </div>
-              {stations.length > 20 && (
-                <div className="text-center text-sm text-muted-foreground mt-4">
-                  Showing 20 of {stations.length} clients
-                </div>
-              )}
+              <div className="text-center text-sm text-muted-foreground mt-4">
+                Showing all {stations.length} clients
+              </div>
             </ScrollArea>
           </CardContent>
         </Card>
