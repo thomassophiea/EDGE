@@ -1442,9 +1442,26 @@ export function DashboardEnhanced() {
           <CardContent>
             <div className="space-y-3">
               {topClients.map((client, idx) => (
-                <div 
-                  key={client.mac} 
-                  className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                <div
+                  key={client.mac}
+                  onClick={async () => {
+                    try {
+                      // Fetch fresh station details from the API
+                      const stationDetails = await apiService.fetchStationDetails(client.mac);
+                      // Find the full station object from stations array
+                      const fullStation = stations.find(s => s.macAddress === client.mac);
+                      // Merge all available data
+                      setSelectedClient({ ...fullStation, ...stationDetails, ...client });
+                      setIsClientDialogOpen(true);
+                    } catch (error) {
+                      console.error('[Dashboard] Failed to fetch client details:', error);
+                      // Fallback to existing client data
+                      const fullStation = stations.find(s => s.macAddress === client.mac);
+                      setSelectedClient(fullStation || client as any);
+                      setIsClientDialogOpen(true);
+                    }
+                  }}
+                  className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer transition-colors"
                 >
                   {/* Header Row */}
                   <div className="flex items-start justify-between mb-3">
