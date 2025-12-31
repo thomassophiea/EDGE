@@ -47,7 +47,7 @@ VITE_APP_COMMIT_DATE=${commitDate}
     branch: branch,
     buildDate: new Date().toISOString(),
     commitDate: commitDate,
-    message: 'API Dashboard Consistency & Optimization Audit Implementation (P0/P1)',
+    message: 'Campus Controller Integration: RFQI & Application Analytics',
     features: [
       'Data Normalization Layer (P0-002)',
       'Universal FilterBar Component (P0-003)',
@@ -55,7 +55,10 @@ VITE_APP_COMMIT_DATE=${commitDate}
       'Column Customization Hook (P1-002)',
       'Tab Visibility Polling Hook (P1-003)',
       'Aggressive Caching (P1-004)',
-      'Anomaly Detector Widget (P1-005)'
+      'Anomaly Detector Widget (P1-005)',
+      'RF Quality Index (RFQI) Widget',
+      'Application Analytics Widget',
+      'Campus Controller Widget API Integration'
     ]
   };
 
