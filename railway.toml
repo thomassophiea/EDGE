@@ -10,10 +10,12 @@ phases.install.cmds = [
   "echo 'Build started at:' $(date -u)"
 ]
 phases.build.cmds = [
-  "rm -rf node_modules/.vite build dist",
+  "rm -rf node_modules/.vite build dist .cache",
+  "echo 'Forcing clean build - clearing all caches'",
   "npm run build",
   "echo '{\"version\":\"'$(git describe --always)'\",\"commit\":\"'$(git rev-parse --short HEAD)'\",\"commitFull\":\"'$(git rev-parse HEAD)'\",\"buildDate\":\"'$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")'\",\"message\":\"Campus Controller Integration: RFQI & Application Analytics\"}' > build/version.json",
   "cat build/version.json",
+  "ls -la build/ | head -20",
   "echo 'Build completed at:' $(date -u)"
 ]
 
