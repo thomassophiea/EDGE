@@ -3175,6 +3175,111 @@ class ApiService {
       throw error;
     }
   }
+
+  // ==================== PHASE 1: STATE & ANALYTICS APIs ====================
+
+  /**
+   * Get real-time AP state information (optimized for dashboards)
+   * Endpoint: GET /v1/state/aps
+   */
+  async getAPStates(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching AP states (real-time)');
+      const response = await this.makeAuthenticatedRequest('/v1/state/aps', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`AP states API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} AP states`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch AP states:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get real-time site state information
+   * Endpoint: GET /v1/state/sites
+   */
+  async getSiteStates(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching site states (real-time)');
+      const response = await this.makeAuthenticatedRequest('/v1/state/sites', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`Site states API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} site states`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch site states:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get venue statistics for a site (comprehensive analytics)
+   * Endpoint: GET /v3/sites/{siteId}/report/venue
+   */
+  async getVenueStatistics(siteId: string, duration: string = '24H', resolution: number = 15): Promise<any> {
+    try {
+      const widgetList = [
+        'ulDlUsageTimeseries',
+        'ulDlThroughputTimeseries',
+        'uniqueClientsTotalScorecard',
+        'uniqueClientsPeakScorecard',
+        'totalTrafficScorecard',
+        'averageThroughputScorecard'
+      ].join(',');
+
+      const endpoint = `/v3/sites/${siteId}/report/venue?duration=${duration}&resolution=${resolution}&statType=sites&widgetList=${encodeURIComponent(widgetList)}`;
+
+      console.log(`[API] Fetching venue statistics for site: ${siteId}`);
+      const response = await this.makeAuthenticatedRequest(endpoint, {}, 15000);
+
+      if (!response.ok) {
+        console.warn(`Venue statistics API returned ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log('[API] ✓ Loaded venue statistics:', Object.keys(data || {}));
+      return data;
+    } catch (error) {
+      console.error(`[API] Failed to fetch venue statistics for site ${siteId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get all switches (NEW - currently not supported in app!)
+   * Endpoint: GET /v1/switches
+   */
+  async getSwitches(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching switches');
+      const response = await this.makeAuthenticatedRequest('/v1/switches', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`Switches API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} switches`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch switches:', error);
+      return [];
+    }
+  }
 }
 
 export const apiService = new ApiService();
