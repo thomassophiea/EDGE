@@ -789,6 +789,9 @@ export function ServiceLevelsEnhanced() {
             timeSeries={generateExperienceTimeSeries()}
           />
 
+          {/* Best Practices Widget */}
+          <BestPracticesWidget />
+
           {/* Service Overview */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {/* Reliability */}
@@ -1137,9 +1140,6 @@ export function ServiceLevelsEnhanced() {
               </Card>
             </TabsContent>
           </Tabs>
-
-          {/* Best Practices Widget */}
-          <BestPracticesWidget />
 
           {/* Application Analytics Widgets */}
           <ApplicationWidgets selectedService={selectedService || undefined} timeRange={timeRange} />

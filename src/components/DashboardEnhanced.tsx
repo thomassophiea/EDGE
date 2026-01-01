@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
-import { 
+import {
   RefreshCw,
   AlertTriangle,
   CheckCircle,
@@ -30,7 +30,10 @@ import {
   Router,
   Shield,
   Timer,
-  Info
+  Info,
+  ChevronDown,
+  ChevronUp,
+  Maximize2
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { throughputService, ThroughputSnapshot } from '../services/throughput';
@@ -38,7 +41,7 @@ import { toast } from 'sonner';
 import { getVendor, getVendorIcon, getShortVendor } from '../services/oui-lookup';
 import { formatBitsPerSecond, formatBytes as formatBytesUnit, formatThroughput, formatDataVolume, TOOLTIPS } from '../lib/units';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
-import { OperationalHealthSummary } from './OperationalHealthSummary';
+import { OperationalContextSummary } from './OperationalContextSummary';
 import { FilterBar } from './FilterBar';
 import { VersionBadge } from './VersionBadge';
 import { useGlobalFilters } from '../hooks/useGlobalFilters';
@@ -210,6 +213,10 @@ export function DashboardEnhanced() {
   // Service Filter Dialog
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [isServiceClientsDialogOpen, setIsServiceClientsDialogOpen] = useState(false);
+
+  // Collapsible sections state
+  const [isTopClientsCollapsed, setIsTopClientsCollapsed] = useState(true);
+  const [isConnectedClientsCollapsed, setIsConnectedClientsCollapsed] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
@@ -990,8 +997,8 @@ export function DashboardEnhanced() {
         }}
       />
 
-      {/* Operational Health Summary Widget (P1-001) */}
-      <OperationalHealthSummary />
+      {/* Operational Context Summary Widget (P1-001) */}
+      <OperationalContextSummary />
 
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -1110,28 +1117,6 @@ export function DashboardEnhanced() {
                     {formatBps((clientStats.throughputUpload + clientStats.throughputDownload) / clientStats.total)}
                   </span>
                 </div>
-              </div>
-            )}
-
-            {/* Throughput by Network */}
-            {networkThroughput.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-border space-y-2">
-                <div className="text-xs font-medium text-muted-foreground mb-2">By Network</div>
-                {networkThroughput.slice(0, 3).map((net, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs">
-                    <span className="truncate flex-1 mr-2">{net.network}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-blue-600 text-[10px]">↑{formatBps(net.upload)}</span>
-                      <span className="text-green-600 text-[10px]">↓{formatBps(net.download)}</span>
-                      <span className="font-medium min-w-[60px] text-right">{formatBps(net.total)}</span>
-                    </div>
-                  </div>
-                ))}
-                {networkThroughput.length > 3 && (
-                  <div className="text-[10px] text-muted-foreground text-center pt-1">
-                    +{networkThroughput.length - 3} more networks
-                  </div>
-                )}
               </div>
             )}
 
@@ -1571,11 +1556,25 @@ export function DashboardEnhanced() {
                   )}
                 </CardDescription>
               </div>
-              {vendorLookupsInProgress && (
-                <RefreshCw className="h-4 w-4 text-muted-foreground animate-spin" />
-              )}
+              <div className="flex items-center gap-2">
+                {vendorLookupsInProgress && (
+                  <RefreshCw className="h-4 w-4 text-muted-foreground animate-spin" />
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsTopClientsCollapsed(!isTopClientsCollapsed)}
+                >
+                  {isTopClientsCollapsed ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronUp className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           </CardHeader>
+          {!isTopClientsCollapsed && (
           <CardContent>
             <div className="space-y-3">
               {topClients.map((client, idx) => (
@@ -1701,6 +1700,7 @@ export function DashboardEnhanced() {
               ))}
             </div>
           </CardContent>
+          )}
         </Card>
       )}
 
@@ -1713,9 +1713,23 @@ export function DashboardEnhanced() {
                 <CardTitle>Connected Clients</CardTitle>
                 <CardDescription>Click on any client to view detailed information</CardDescription>
               </div>
-              <Badge variant="secondary">{stations.length} Total</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">{stations.length} Total</Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsConnectedClientsCollapsed(!isConnectedClientsCollapsed)}
+                >
+                  {isConnectedClientsCollapsed ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronUp className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           </CardHeader>
+          {!isConnectedClientsCollapsed && (
           <CardContent>
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-2">
@@ -1832,6 +1846,7 @@ export function DashboardEnhanced() {
               </div>
             </ScrollArea>
           </CardContent>
+          )}
         </Card>
       )}
 
@@ -1922,22 +1937,16 @@ export function DashboardEnhanced() {
         </Card>
       )}
 
-      {/* Phase 1 Widgets: Venue Statistics and Switches */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Venue Statistics Widget */}
-        {filters.site && filters.site !== 'all' && (
-          <VenueStatisticsWidget
-            siteId={filters.site}
-            duration={filters.timeRange === '15m' ? '15M' :
-                     filters.timeRange === '1h' ? '1H' :
-                     filters.timeRange === '7d' ? '7D' :
-                     filters.timeRange === '30d' ? '30D' : '24H'}
-          />
-        )}
-
-        {/* Switches Widget */}
-        <SwitchesWidget siteId={filters.site} />
-      </div>
+      {/* Phase 1 Widgets: Venue Statistics */}
+      {filters.site && filters.site !== 'all' && (
+        <VenueStatisticsWidget
+          siteId={filters.site}
+          duration={filters.timeRange === '15m' ? '15M' :
+                   filters.timeRange === '1h' ? '1H' :
+                   filters.timeRange === '7d' ? '7D' :
+                   filters.timeRange === '30d' ? '30D' : '24H'}
+        />
+      )}
 
       {/* Phase 5+ Widgets: Configuration Profiles and Audit Logs */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -1947,6 +1956,9 @@ export function DashboardEnhanced() {
         {/* Audit Logs Widget */}
         <AuditLogsWidget />
       </div>
+
+      {/* Network Switches Widget - Moved to Bottom */}
+      <SwitchesWidget siteId={filters.site} />
 
       {/* Client Detail Dialog */}
       <Dialog open={isClientDialogOpen} onOpenChange={setIsClientDialogOpen}>

@@ -1,8 +1,8 @@
 /**
- * Operational Health Summary Widget
+ * Operational Context Summary Widget
  *
- * Single-pane-of-glass network health overview with actionable drilldowns.
- * Displays: Organization Health Score, Critical Alerts, Service Degradation, Client Experience
+ * Single-pane-of-glass network operational overview with actionable drilldowns.
+ * Displays: Organization Context Score, Critical Alerts, Service Degradation, Client Experience
  *
  * Part of P1-001 implementation from API Dashboard Audit
  */
@@ -27,8 +27,8 @@ import {
 import { apiService, AccessPoint, Station, Service } from '../services/api';
 import { useGlobalFilters } from '../hooks/useGlobalFilters';
 
-interface HealthMetrics {
-  organizationHealth: {
+interface ContextMetrics {
+  organizationContext: {
     score: number;
     status: 'excellent' | 'good' | 'degraded' | 'critical';
     details: {
@@ -56,23 +56,23 @@ interface HealthMetrics {
   };
 }
 
-export function OperationalHealthSummary() {
+export function OperationalContextSummary() {
   const { filters } = useGlobalFilters();
-  const [metrics, setMetrics] = useState<HealthMetrics | null>(null);
+  const [metrics, setMetrics] = useState<ContextMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<'organization' | 'alerts' | 'services' | 'experience' | null>(null);
 
   useEffect(() => {
-    loadHealthMetrics();
+    loadContextMetrics();
 
     // Refresh every 2 minutes
-    const interval = setInterval(loadHealthMetrics, 120000);
+    const interval = setInterval(loadContextMetrics, 120000);
     return () => clearInterval(interval);
   }, [filters.site, filters.timeRange]);
 
-  const loadHealthMetrics = async () => {
+  const loadContextMetrics = async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -93,8 +93,8 @@ export function OperationalHealthSummary() {
         ? stations
         : stations.filter(s => s.siteName === filters.site || s.siteId === filters.site);
 
-      // Calculate Organization Health Score (weighted composite)
-      const organizationHealth = calculateOrganizationHealth(filteredAPs, filteredStations);
+      // Calculate Organization Context Score (weighted composite)
+      const organizationContext = calculateOrganizationContext(filteredAPs, filteredStations);
 
       // Get critical alerts
       const criticalAlerts = await getCriticalAlerts();
@@ -106,20 +106,20 @@ export function OperationalHealthSummary() {
       const clientExperience = calculateClientExperience(filteredStations);
 
       setMetrics({
-        organizationHealth,
+        organizationContext,
         criticalAlerts,
         serviceDegradation,
         clientExperience
       });
     } catch (error) {
-      console.error('[OperationalHealthSummary] Error loading metrics:', error);
-      setError('Failed to load health metrics');
+      console.error('[OperationalContextSummary] Error loading metrics:', error);
+      setError('Failed to load operational metrics');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const calculateOrganizationHealth = (aps: AccessPoint[], stations: Station[]) => {
+  const calculateOrganizationContext = (aps: AccessPoint[], stations: Station[]) => {
     // AP Uptime: percentage of APs that are "up" or "connected"
     const upAPs = aps.filter(ap =>
       ap.status?.toLowerCase() === 'up' ||
@@ -313,7 +313,7 @@ export function OperationalHealthSummary() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5" />
-            Operational Health Summary
+            Operational Context Summary
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -331,7 +331,7 @@ export function OperationalHealthSummary() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-red-600">
             <AlertTriangle className="h-5 w-5" />
-            Operational Health Summary
+            Operational Context Summary
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -347,7 +347,7 @@ export function OperationalHealthSummary() {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5" />
-            Operational Health Summary
+            Operational Context Summary
           </CardTitle>
           <Button
             variant="ghost"
@@ -371,7 +371,7 @@ export function OperationalHealthSummary() {
       <CardContent>
         {/* 4-card KPI layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Organization Health Score */}
+          {/* Organization Context Score */}
           <div
             className="p-4 border rounded-lg bg-card cursor-pointer hover:bg-muted/50 transition-colors"
             onClick={() => setSelectedMetric('organization')}
@@ -379,20 +379,20 @@ export function OperationalHealthSummary() {
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
-                  Organization Health
+                  Organization Context
                   <Info className="h-3 w-3" />
                 </div>
-                <div className={`text-3xl font-bold ${getStatusColor(metrics.organizationHealth.status)}`}>
-                  {metrics.organizationHealth.score}%
+                <div className={`text-3xl font-bold ${getStatusColor(metrics.organizationContext.status)}`}>
+                  {metrics.organizationContext.score}%
                 </div>
                 <Badge
-                  variant={getStatusBadgeVariant(metrics.organizationHealth.status)}
+                  variant={getStatusBadgeVariant(metrics.organizationContext.status)}
                   className="mt-2 text-xs"
                 >
-                  {metrics.organizationHealth.status.toUpperCase()}
+                  {metrics.organizationContext.status.toUpperCase()}
                 </Badge>
               </div>
-              {getStatusIcon(metrics.organizationHealth.status)}
+              {getStatusIcon(metrics.organizationContext.status)}
             </div>
           </div>
 
@@ -475,21 +475,21 @@ export function OperationalHealthSummary() {
         {/* Expandable Details Panel */}
         {isExpanded && (
           <div className="mt-6 pt-6 border-t space-y-4">
-            {/* Organization Health Details */}
+            {/* Organization Context Details */}
             <div>
-              <h4 className="font-semibold mb-2">Organization Health Breakdown</h4>
+              <h4 className="font-semibold mb-2">Organization Context Breakdown</h4>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">AP Uptime:</span>
-                  <span className="ml-2 font-medium">{metrics.organizationHealth.details.apUptime}%</span>
+                  <span className="ml-2 font-medium">{metrics.organizationContext.details.apUptime}%</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Client Success:</span>
-                  <span className="ml-2 font-medium">{metrics.organizationHealth.details.clientSuccessRate}%</span>
+                  <span className="ml-2 font-medium">{metrics.organizationContext.details.clientSuccessRate}%</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Throughput:</span>
-                  <span className="ml-2 font-medium">{metrics.organizationHealth.details.throughputEfficiency}%</span>
+                  <span className="ml-2 font-medium">{metrics.organizationContext.details.throughputEfficiency}%</span>
                 </div>
               </div>
             </div>
@@ -556,7 +556,7 @@ export function OperationalHealthSummary() {
               {selectedMetric === 'alerts' && <AlertTriangle className="h-5 w-5" />}
               {selectedMetric === 'services' && <TrendingDown className="h-5 w-5" />}
               {selectedMetric === 'experience' && <Users className="h-5 w-5" />}
-              {selectedMetric === 'organization' && 'Organization Health Details'}
+              {selectedMetric === 'organization' && 'Organization Context Details'}
               {selectedMetric === 'alerts' && 'Critical Alerts Details'}
               {selectedMetric === 'services' && 'Service Issues Details'}
               {selectedMetric === 'experience' && 'Client Experience Details'}
@@ -572,12 +572,12 @@ export function OperationalHealthSummary() {
                 <div className="p-4 rounded-lg border">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold">Overall Score</h3>
-                    <div className={`text-4xl font-bold ${getStatusColor(metrics.organizationHealth.status)}`}>
-                      {metrics.organizationHealth.score}%
+                    <div className={`text-4xl font-bold ${getStatusColor(metrics.organizationContext.status)}`}>
+                      {metrics.organizationContext.score}%
                     </div>
                   </div>
-                  <Badge variant={getStatusBadgeVariant(metrics.organizationHealth.status)}>
-                    {metrics.organizationHealth.status.toUpperCase()}
+                  <Badge variant={getStatusBadgeVariant(metrics.organizationContext.status)}>
+                    {metrics.organizationContext.status.toUpperCase()}
                   </Badge>
                 </div>
 
@@ -587,36 +587,36 @@ export function OperationalHealthSummary() {
                     <div className="p-3 rounded-lg border">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">AP Uptime</span>
-                        <span className="font-bold">{metrics.organizationHealth.details.apUptime}%</span>
+                        <span className="font-bold">{metrics.organizationContext.details.apUptime}%</span>
                       </div>
                       <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-primary transition-all"
-                          style={{ width: `${metrics.organizationHealth.details.apUptime}%` }}
+                          style={{ width: `${metrics.organizationContext.details.apUptime}%` }}
                         />
                       </div>
                     </div>
                     <div className="p-3 rounded-lg border">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">Client Success Rate</span>
-                        <span className="font-bold">{metrics.organizationHealth.details.clientSuccessRate}%</span>
+                        <span className="font-bold">{metrics.organizationContext.details.clientSuccessRate}%</span>
                       </div>
                       <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-green-500 transition-all"
-                          style={{ width: `${metrics.organizationHealth.details.clientSuccessRate}%` }}
+                          style={{ width: `${metrics.organizationContext.details.clientSuccessRate}%` }}
                         />
                       </div>
                     </div>
                     <div className="p-3 rounded-lg border">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">Throughput Efficiency</span>
-                        <span className="font-bold">{metrics.organizationHealth.details.throughputEfficiency}%</span>
+                        <span className="font-bold">{metrics.organizationContext.details.throughputEfficiency}%</span>
                       </div>
                       <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-blue-500 transition-all"
-                          style={{ width: `${metrics.organizationHealth.details.throughputEfficiency}%` }}
+                          style={{ width: `${metrics.organizationContext.details.throughputEfficiency}%` }}
                         />
                       </div>
                     </div>
@@ -625,7 +625,7 @@ export function OperationalHealthSummary() {
 
                 <div className="p-4 bg-muted/20 rounded-lg">
                   <p className="text-sm text-muted-foreground">
-                    The Organization Health score is a weighted composite of AP uptime (30%),
+                    The Organization Context score is a weighted composite of AP uptime (30%),
                     client success rate (30%), and throughput efficiency (40%). This provides
                     a single metric to assess overall network performance.
                   </p>
