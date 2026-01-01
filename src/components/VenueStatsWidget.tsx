@@ -169,7 +169,7 @@ export function VenueStatsWidget({ siteId, duration = '24H' }: VenueStatsWidgetP
               <TrendingUp className="h-4 w-4 text-purple-600" />
               <span className="text-sm text-muted-foreground">Peak Upload</span>
             </div>
-            <div className="text-lg font-bold">{formatBitsPerSecond(peakUpload * 1000000)}</div>
+            <div className="text-lg font-bold">{formatBitsPerSecond(peakUpload)}</div>
             <p className="text-xs text-muted-foreground mt-1">Maximum UL</p>
           </div>
 
@@ -179,7 +179,7 @@ export function VenueStatsWidget({ siteId, duration = '24H' }: VenueStatsWidgetP
               <TrendingUp className="h-4 w-4 text-cyan-600" />
               <span className="text-sm text-muted-foreground">Peak Download</span>
             </div>
-            <div className="text-lg font-bold">{formatBitsPerSecond(peakDownload * 1000000)}</div>
+            <div className="text-lg font-bold">{formatBitsPerSecond(peakDownload)}</div>
             <p className="text-xs text-muted-foreground mt-1">Maximum DL</p>
           </div>
         </div>
@@ -195,7 +195,7 @@ export function VenueStatsWidget({ siteId, duration = '24H' }: VenueStatsWidgetP
                   <XAxis dataKey="time" fontSize={12} />
                   <YAxis fontSize={12} />
                   <Tooltip
-                    formatter={(value: number) => formatBitsPerSecond(value * 1000000)}
+                    formatter={(value: number) => formatBitsPerSecond(value)}
                     labelStyle={{ color: '#000' }}
                   />
                   <Legend />
