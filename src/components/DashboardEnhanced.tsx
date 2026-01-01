@@ -44,6 +44,8 @@ import { VersionBadge } from './VersionBadge';
 import { useGlobalFilters } from '../hooks/useGlobalFilters';
 import { VenueStatisticsWidget } from './VenueStatisticsWidget';
 import { SwitchesWidget } from './SwitchesWidget';
+import { ConfigurationProfilesWidget } from './ConfigurationProfilesWidget';
+import { AuditLogsWidget } from './AuditLogsWidget';
 
 interface AccessPoint {
   serialNumber: string;
@@ -1935,6 +1937,15 @@ export function DashboardEnhanced() {
 
         {/* Switches Widget */}
         <SwitchesWidget siteId={filters.site} />
+      </div>
+
+      {/* Phase 5+ Widgets: Configuration Profiles and Audit Logs */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Configuration Profiles Widget */}
+        <ConfigurationProfilesWidget />
+
+        {/* Audit Logs Widget */}
+        <AuditLogsWidget />
       </div>
 
       {/* Client Detail Dialog */}

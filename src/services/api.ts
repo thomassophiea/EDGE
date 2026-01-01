@@ -3280,6 +3280,482 @@ class ApiService {
       return [];
     }
   }
+
+  // ==================== PHASE 5: DETAILED REPORTING APIs ====================
+
+  /**
+   * Get detailed AP report
+   * Endpoint: GET /v1/report/aps/{apSerialNumber}
+   */
+  async getAPReport(apSerialNumber: string, duration: string = '24H', resolution: number = 15): Promise<any> {
+    try {
+      const endpoint = `/v1/report/aps/${encodeURIComponent(apSerialNumber)}?duration=${duration}&resolution=${resolution}`;
+      console.log(`[API] Fetching AP report for: ${apSerialNumber}`);
+      const response = await this.makeAuthenticatedRequest(endpoint, {}, 15000);
+
+      if (!response.ok) {
+        console.warn(`AP report API returned ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log('[API] ✓ Loaded AP report');
+      return data;
+    } catch (error) {
+      console.error(`[API] Failed to fetch AP report for ${apSerialNumber}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get detailed site report
+   * Endpoint: GET /v1/report/sites/{siteId}
+   */
+  async getSiteReport(siteId: string, duration: string = '24H', resolution: number = 15): Promise<any> {
+    try {
+      const endpoint = `/v1/report/sites/${encodeURIComponent(siteId)}?duration=${duration}&resolution=${resolution}`;
+      console.log(`[API] Fetching site report for: ${siteId}`);
+      const response = await this.makeAuthenticatedRequest(endpoint, {}, 15000);
+
+      if (!response.ok) {
+        console.warn(`Site report API returned ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log('[API] ✓ Loaded site report');
+      return data;
+    } catch (error) {
+      console.error(`[API] Failed to fetch site report for ${siteId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get detailed station report
+   * Endpoint: GET /v1/report/stations/{stationId}
+   */
+  async getStationReport(stationId: string, duration: string = '24H'): Promise<any> {
+    try {
+      const endpoint = `/v1/report/stations/${encodeURIComponent(stationId)}?duration=${duration}`;
+      console.log(`[API] Fetching station report for: ${stationId}`);
+      const response = await this.makeAuthenticatedRequest(endpoint, {}, 15000);
+
+      if (!response.ok) {
+        console.warn(`Station report API returned ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log('[API] ✓ Loaded station report');
+      return data;
+    } catch (error) {
+      console.error(`[API] Failed to fetch station report for ${stationId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get detailed switch report
+   * Endpoint: GET /v1/report/switches/{switchSerialNumber}
+   */
+  async getSwitchReport(switchSerialNumber: string, duration: string = '24H'): Promise<any> {
+    try {
+      const endpoint = `/v1/report/switches/${encodeURIComponent(switchSerialNumber)}?duration=${duration}`;
+      console.log(`[API] Fetching switch report for: ${switchSerialNumber}`);
+      const response = await this.makeAuthenticatedRequest(endpoint, {}, 15000);
+
+      if (!response.ok) {
+        console.warn(`Switch report API returned ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log('[API] ✓ Loaded switch report');
+      return data;
+    } catch (error) {
+      console.error(`[API] Failed to fetch switch report for ${switchSerialNumber}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get detailed service report
+   * Endpoint: GET /v1/report/services/{serviceId}
+   */
+  async getServiceReport(serviceId: string, duration: string = '24H'): Promise<any> {
+    try {
+      const endpoint = `/v1/report/services/${encodeURIComponent(serviceId)}?duration=${duration}`;
+      console.log(`[API] Fetching service report for: ${serviceId}`);
+      const response = await this.makeAuthenticatedRequest(endpoint, {}, 15000);
+
+      if (!response.ok) {
+        console.warn(`Service report API returned ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log('[API] ✓ Loaded service report');
+      return data;
+    } catch (error) {
+      console.error(`[API] Failed to fetch service report for ${serviceId}:`, error);
+      return null;
+    }
+  }
+
+  // ==================== RF MANAGEMENT APIs ====================
+
+  /**
+   * Get all RF management profiles
+   * Endpoint: GET /v3/rfmgmt
+   */
+  async getRFManagementProfiles(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching RF management profiles');
+      const response = await this.makeAuthenticatedRequest('/v3/rfmgmt', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`RF management API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} RF management profiles`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch RF management profiles:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all IoT profiles
+   * Endpoint: GET /v3/iotprofile
+   */
+  async getIoTProfiles(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching IoT profiles');
+      const response = await this.makeAuthenticatedRequest('/v3/iotprofile', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`IoT profiles API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} IoT profiles`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch IoT profiles:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all ADSP profiles
+   * Endpoint: GET /v3/adsp
+   */
+  async getADSPProfiles(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching ADSP profiles');
+      const response = await this.makeAuthenticatedRequest('/v3/adsp', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`ADSP profiles API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} ADSP profiles`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch ADSP profiles:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all analytics profiles
+   * Endpoint: GET /v3/analytics
+   */
+  async getAnalyticsProfiles(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching analytics profiles');
+      const response = await this.makeAuthenticatedRequest('/v3/analytics', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`Analytics profiles API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} analytics profiles`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch analytics profiles:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all positioning profiles
+   * Endpoint: GET /v3/positioning
+   */
+  async getPositioningProfiles(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching positioning profiles');
+      const response = await this.makeAuthenticatedRequest('/v3/positioning', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`Positioning profiles API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} positioning profiles`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch positioning profiles:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all mesh points
+   * Endpoint: GET /v3/meshpoints
+   */
+  async getMeshPoints(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching mesh points');
+      const response = await this.makeAuthenticatedRequest('/v3/meshpoints', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`Mesh points API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} mesh points`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch mesh points:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all switch port profiles
+   * Endpoint: GET /v3/switchportprofile
+   */
+  async getSwitchPortProfiles(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching switch port profiles');
+      const response = await this.makeAuthenticatedRequest('/v3/switchportprofile', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`Switch port profiles API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} switch port profiles`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch switch port profiles:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get audit logs
+   * Endpoint: GET /v1/auditlogs
+   */
+  async getAuditLogs(startTime?: number, endTime?: number): Promise<any[]> {
+    try {
+      let endpoint = '/v1/auditlogs';
+      const params = [];
+      if (startTime) params.push(`startTime=${startTime}`);
+      if (endTime) params.push(`endTime=${endTime}`);
+      if (params.length > 0) endpoint += '?' + params.join('&');
+
+      console.log('[API] Fetching audit logs');
+      const response = await this.makeAuthenticatedRequest(endpoint, {}, 15000);
+
+      if (!response.ok) {
+        console.warn(`Audit logs API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} audit logs`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch audit logs:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get DPI signatures
+   * Endpoint: GET /v1/dpisignatures
+   */
+  async getDPISignatures(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching DPI signatures');
+      const response = await this.makeAuthenticatedRequest('/v1/dpisignatures', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`DPI signatures API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} DPI signatures`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch DPI signatures:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get rate limiters
+   * Endpoint: GET /v1/ratelimiters
+   */
+  async getRateLimiters(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching rate limiters');
+      const response = await this.makeAuthenticatedRequest('/v1/ratelimiters', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`Rate limiters API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} rate limiters`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch rate limiters:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get CoS (Class of Service) profiles
+   * Endpoint: GET /v1/cos
+   */
+  async getCoSProfiles(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching CoS profiles');
+      const response = await this.makeAuthenticatedRequest('/v1/cos', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`CoS profiles API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} CoS profiles`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch CoS profiles:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get available radio channels
+   * Endpoint: GET /v1/radios/channels
+   */
+  async getRadioChannels(): Promise<any> {
+    try {
+      console.log('[API] Fetching radio channels');
+      const response = await this.makeAuthenticatedRequest('/v1/radios/channels', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`Radio channels API returned ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log('[API] ✓ Loaded radio channels');
+      return data;
+    } catch (error) {
+      console.error('[API] Failed to fetch radio channels:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get SmartRF channels for a site
+   * Endpoint: GET /v3/radios/smartrfchannels
+   */
+  async getSmartRFChannels(siteId?: string): Promise<any> {
+    try {
+      const endpoint = siteId ? `/v3/radios/smartrfchannels?siteId=${encodeURIComponent(siteId)}` : '/v3/radios/smartrfchannels';
+      console.log('[API] Fetching SmartRF channels');
+      const response = await this.makeAuthenticatedRequest(endpoint, {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`SmartRF channels API returned ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log('[API] ✓ Loaded SmartRF channels');
+      return data;
+    } catch (error) {
+      console.error('[API] Failed to fetch SmartRF channels:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get AP upgrade image list
+   * Endpoint: GET /v1/aps/upgradeimagelist
+   */
+  async getAPUpgradeImageList(): Promise<any[]> {
+    try {
+      console.log('[API] Fetching AP upgrade image list');
+      const response = await this.makeAuthenticatedRequest('/v1/aps/upgradeimagelist', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`AP upgrade image list API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ Loaded ${data?.length || 0} upgrade images`);
+      return data || [];
+    } catch (error) {
+      console.error('[API] Failed to fetch AP upgrade image list:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get entity distribution (entity counts by type)
+   * Endpoint: GET /v1/state/entityDistribution
+   */
+  async getEntityDistribution(): Promise<any> {
+    try {
+      console.log('[API] Fetching entity distribution');
+      const response = await this.makeAuthenticatedRequest('/v1/state/entityDistribution', {}, 10000);
+
+      if (!response.ok) {
+        console.warn(`Entity distribution API returned ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log('[API] ✓ Loaded entity distribution');
+      return data;
+    } catch (error) {
+      console.error('[API] Failed to fetch entity distribution:', error);
+      return null;
+    }
+  }
 }
 
 export const apiService = new ApiService();
