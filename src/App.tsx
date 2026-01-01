@@ -831,7 +831,7 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'service-levels':
-        return <ServiceLevelsEnhanced />;
+        return <DashboardEnhanced />;
       case 'network-insights':
         return <NetworkInsights />;
       case 'access-points':
