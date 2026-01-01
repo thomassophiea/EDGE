@@ -42,6 +42,7 @@ import { BestPracticesWidget } from './BestPracticesWidget';
 import { NetworkRewind } from './NetworkRewind';
 import { ApplicationWidgets } from './ApplicationWidgets';
 import { ApplicationEndpointTester } from './ApplicationEndpointTester';
+import { ClientExperienceHero } from './ClientExperienceHero';
 import { useMetricsCollection } from '../hooks/useMetricsCollection';
 import { metricsStorage } from '../services/metricsStorage';
 
@@ -561,6 +562,77 @@ export function ServiceLevelsEnhanced() {
 
   const timeSeries = generateTimeSeries();
 
+  // Generate experience time series with calculated scores
+  const generateExperienceTimeSeries = () => {
+    if (!displayMetrics?.metrics) return [];
+
+    const points = [];
+    const now = Date.now();
+    const interval = timeRange === '1h' ? 300000 : timeRange === '24h' ? 3600000 : 86400000;
+    const count = timeRange === '1h' ? 12 : timeRange === '24h' ? 24 : 30;
+
+    for (let i = count - 1; i >= 0; i--) {
+      const timestamp = now - (i * interval);
+      const variation = 0.9 + Math.random() * 0.2;
+
+      // Calculate experience score for this point
+      let score = 0;
+      let factors = 0;
+
+      // Reliability (25%)
+      if (displayMetrics.metrics.reliability !== undefined) {
+        const reliabilityVariation = displayMetrics.metrics.reliability * (0.98 + Math.random() * 0.02);
+        score += (reliabilityVariation / 100) * 25;
+        factors++;
+      }
+
+      // Success Rate (20%)
+      if (displayMetrics.metrics.successRate !== undefined) {
+        const successVariation = displayMetrics.metrics.successRate * (0.98 + Math.random() * 0.02);
+        score += (successVariation / 100) * 20;
+        factors++;
+      }
+
+      // Latency (20%) - Lower is better
+      const latency = (displayMetrics.metrics.latency || 10) * (0.8 + Math.random() * 0.4);
+      const latencyScore = Math.max(0, 100 - (latency / 2));
+      score += (latencyScore / 100) * 20;
+      factors++;
+
+      // Signal Quality (20%) - RSSI
+      if (displayMetrics.metrics.averageRssi !== undefined) {
+        const rssiVariation = displayMetrics.metrics.averageRssi + (Math.random() - 0.5) * 10;
+        const signalScore = Math.max(0, Math.min(100, ((rssiVariation + 100) / 50) * 100));
+        score += (signalScore / 100) * 20;
+        factors++;
+      }
+
+      // Packet Loss (15%) - Lower is better
+      if (displayMetrics.metrics.packetLoss !== undefined) {
+        const plVariation = displayMetrics.metrics.packetLoss * (0.8 + Math.random() * 0.4);
+        const plScore = Math.max(0, 100 - (plVariation * 20));
+        score += (plScore / 100) * 15;
+        factors++;
+      }
+
+      const experienceScore = factors > 0 ? score : 75;
+
+      points.push({
+        timestamp,
+        time: new Date(timestamp).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          ...(timeRange === '7d' ? { month: 'short', day: 'numeric' } : {})
+        }),
+        experienceScore,
+        clientCount: Math.round((displayMetrics.metrics.clientCount || 0) * variation),
+        latency
+      });
+    }
+
+    return points;
+  };
+
   // Prepare radar chart data
   const radarData = displayMetrics?.metrics ? [
     {
@@ -710,6 +782,13 @@ export function ServiceLevelsEnhanced() {
 
       {currentService && serviceReport && (
         <>
+          {/* CLIENT EXPERIENCE HERO - Top and Center */}
+          <ClientExperienceHero
+            metrics={displayMetrics?.metrics || {}}
+            serviceName={currentService?.name}
+            timeSeries={generateExperienceTimeSeries()}
+          />
+
           {/* Service Overview */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {/* Reliability */}
