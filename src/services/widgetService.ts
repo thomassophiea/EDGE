@@ -59,7 +59,8 @@ export async function fetchWidgetData(request: WidgetRequest): Promise<WidgetRes
     const queryString = new URLSearchParams(params).toString();
     const fullEndpoint = `${endpoint}?${queryString}`;
 
-    const response = await apiService.makeAuthenticatedRequest(fullEndpoint, { method: 'GET' });
+    // Report endpoints can take 15-30 seconds to process analytics
+    const response = await apiService.makeAuthenticatedRequest(fullEndpoint, { method: 'GET' }, 30000);
     if (response.ok) {
       return await response.json();
     } else {
@@ -77,7 +78,7 @@ export async function fetchWidgetData(request: WidgetRequest): Promise<WidgetRes
 export async function fetchSystemInformation(): Promise<any> {
   try {
     const endpoint = `/platformmanager/v1/reports/systeminformation?noCache=${Date.now()}`;
-    const response = await apiService.makeAuthenticatedRequest(endpoint, { method: 'GET' });
+    const response = await apiService.makeAuthenticatedRequest(endpoint, { method: 'GET' }, 15000);
     if (response.ok) {
       return await response.json();
     } else {
