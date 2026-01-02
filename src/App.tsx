@@ -1,29 +1,31 @@
-import { useState, useEffect } from 'react';
-import { ServiceLevelsEnhanced } from './components/ServiceLevelsEnhanced';
-import { DashboardEnhanced } from './components/DashboardEnhanced';
-import { NetworkInsights } from './components/NetworkInsights';
-import { AlertsEventsEnhanced } from './components/AlertsEventsEnhanced';
-import { ReportWidgets } from './components/ReportWidgets';
-import { ConfigureNetworks } from './components/ConfigureNetworks';
-import { ConfigureSites } from './components/ConfigureSites';
-import { ConfigurePolicy } from './components/ConfigurePolicy';
-import { ConfigureAAAPolicies } from './components/ConfigureAAAPolicies';
-import { ConfigureAdoptionRules } from './components/ConfigureAdoptionRules';
-import { ConfigureGuest } from './components/ConfigureGuest';
-import { Administration } from './components/Administration';
-import { Tools } from './components/Tools';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { LoginForm } from './components/LoginForm';
 import { Sidebar } from './components/Sidebar';
-import { AccessPoints } from './components/AccessPoints';
-import { TrafficStatsConnectedClients } from './components/TrafficStatsConnectedClients';
-import { ApiTestTool } from './components/ApiTestTool';
 import { DetailSlideOut } from './components/DetailSlideOut';
-import { AccessPointDetail } from './components/AccessPointDetail';
-import { ClientDetail } from './components/ClientDetail';
-import { SiteDetail } from './components/SiteDetail';
-import { NetworkChatbot } from './components/NetworkChatbot';
-import { SynthwaveMusicPlayer } from './components/SynthwaveMusicPlayer';
 import { PlaceholderPage } from './components/PlaceholderPage';
+
+// Lazy load route components for better performance
+const DashboardEnhanced = lazy(() => import('./components/DashboardEnhanced').then(m => ({ default: m.DashboardEnhanced })));
+const NetworkInsights = lazy(() => import('./components/NetworkInsights').then(m => ({ default: m.NetworkInsights })));
+const AccessPoints = lazy(() => import('./components/AccessPoints').then(m => ({ default: m.AccessPoints })));
+const TrafficStatsConnectedClients = lazy(() => import('./components/TrafficStatsConnectedClients').then(m => ({ default: m.TrafficStatsConnectedClients })));
+const ServiceLevelsEnhanced = lazy(() => import('./components/ServiceLevelsEnhanced').then(m => ({ default: m.ServiceLevelsEnhanced })));
+const AlertsEventsEnhanced = lazy(() => import('./components/AlertsEventsEnhanced').then(m => ({ default: m.AlertsEventsEnhanced })));
+const ReportWidgets = lazy(() => import('./components/ReportWidgets').then(m => ({ default: m.ReportWidgets })));
+const ConfigureNetworks = lazy(() => import('./components/ConfigureNetworks').then(m => ({ default: m.ConfigureNetworks })));
+const ConfigureSites = lazy(() => import('./components/ConfigureSites').then(m => ({ default: m.ConfigureSites })));
+const ConfigurePolicy = lazy(() => import('./components/ConfigurePolicy').then(m => ({ default: m.ConfigurePolicy })));
+const ConfigureAAAPolicies = lazy(() => import('./components/ConfigureAAAPolicies').then(m => ({ default: m.ConfigureAAAPolicies })));
+const ConfigureAdoptionRules = lazy(() => import('./components/ConfigureAdoptionRules').then(m => ({ default: m.ConfigureAdoptionRules })));
+const ConfigureGuest = lazy(() => import('./components/ConfigureGuest').then(m => ({ default: m.ConfigureGuest })));
+const Administration = lazy(() => import('./components/Administration').then(m => ({ default: m.Administration })));
+const Tools = lazy(() => import('./components/Tools').then(m => ({ default: m.Tools })));
+const ApiTestTool = lazy(() => import('./components/ApiTestTool').then(m => ({ default: m.ApiTestTool })));
+const AccessPointDetail = lazy(() => import('./components/AccessPointDetail').then(m => ({ default: m.AccessPointDetail })));
+const ClientDetail = lazy(() => import('./components/ClientDetail').then(m => ({ default: m.ClientDetail })));
+const SiteDetail = lazy(() => import('./components/SiteDetail').then(m => ({ default: m.SiteDetail })));
+const NetworkChatbot = lazy(() => import('./components/NetworkChatbot').then(m => ({ default: m.NetworkChatbot })));
+const SynthwaveMusicPlayer = lazy(() => import('./components/SynthwaveMusicPlayer').then(m => ({ default: m.SynthwaveMusicPlayer })));
 import { apiService, ApiCallLog } from './services/api';
 import { sleDataCollectionService } from './services/sleDataCollection';
 import { Toaster } from './components/ui/sonner';
@@ -991,7 +993,18 @@ export default function App() {
             </div>
 
             <div className={theme === 'kroger' ? 'px-6' : ''}>
-              {renderPage()}
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-center">
+                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
+                      <span className="sr-only">Loading...</span>
+                    </div>
+                    <p className="mt-4 text-sm text-muted-foreground">Loading page...</p>
+                  </div>
+                </div>
+              }>
+                {renderPage()}
+              </Suspense>
             </div>
           </div>
         </main>

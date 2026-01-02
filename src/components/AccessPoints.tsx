@@ -505,9 +505,23 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
       return true;
     }
 
-    // Otherwise, check the status field
-    const status = ap.status?.toLowerCase();
-    return status === 'online' || status === 'connected' || status === 'up' || status === 'in-service' || status === 'inservice';
+    // Check multiple possible status fields (aligned with DashboardEnhanced logic)
+    const status = (ap.status || (ap as any).connectionState || (ap as any).operationalState || (ap as any).state || '').toLowerCase();
+    const isUp = (ap as any).isUp;
+    const isOnline = (ap as any).online;
+
+    // Consider an AP online if:
+    // 1. Status contains 'up', 'online', 'connected'
+    // 2. isUp or online boolean is true
+    // 3. No status field but AP exists in list (default to online)
+    return (
+      status.includes('up') ||
+      status.includes('online') ||
+      status.includes('connected') ||
+      isUp === true ||
+      isOnline === true ||
+      (!status && isUp !== false && isOnline !== false)
+    );
   };
 
   // Helper function to get connection status icon and color
