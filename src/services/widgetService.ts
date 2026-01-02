@@ -44,17 +44,18 @@ export async function fetchWidgetData(request: WidgetRequest): Promise<WidgetRes
   let fullEndpoint: string = '';
 
   try {
-    if (userGroups && siteId) {
-      // Venue report endpoint
+    if (siteId) {
+      // Use v3 venue report endpoint - supports widgetList parameter
       endpoint = `/v3/sites/${siteId}/report/venue`;
       params.statType = 'sites';
-      params.userGroups = JSON.stringify(userGroups);
-    } else if (siteId) {
-      // Site-specific report endpoint
-      endpoint = `/v1/report/sites/${siteId}`;
+
+      if (userGroups) {
+        params.userGroups = JSON.stringify(userGroups);
+      }
     } else {
-      // Deployment-wide report endpoint
-      endpoint = '/v1/report/sites';
+      // Deployment-wide venue report (no specific site)
+      endpoint = '/v3/sites/report/venue';
+      params.statType = 'sites';
     }
 
     // Build query string
