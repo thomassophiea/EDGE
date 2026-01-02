@@ -56,7 +56,7 @@ interface SidebarProps {
 // Navigation items with pirate and MI5-themed icons and labels
 const navigationItems = [
   { id: 'service-levels', label: 'Context Overview', pirateLabel: "Ship's Status", mi5Label: "Operations Status", icon: TrendingUp, pirateIcon: Anchor },
-  { id: 'network-insights', label: 'Network Insights', pirateLabel: "Treasure Charts", mi5Label: "Intelligence Analysis", icon: BarChart3, pirateIcon: Scroll },
+  { id: 'network-insights', label: 'Network Insights', pirateLabel: "Treasure Charts", mi5Label: "Intelligence Analysis", icon: BarChart3, pirateIcon: Scroll, badge: 'Under Construction' },
   { id: 'connected-clients', label: 'Connected Clients', pirateLabel: "Crew Aboard", mi5Label: "Field Agents", icon: Users, pirateIcon: Users },
   { id: 'access-points', label: 'Access Points', pirateLabel: "Signal Beacons", mi5Label: "Assets", icon: Wifi, pirateIcon: Radio },
   { id: 'report-widgets', label: 'Report Widgets', pirateLabel: "Treasure Maps", mi5Label: "Q Division", icon: BarChart3, pirateIcon: Scroll },
@@ -129,14 +129,23 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
               className={cn(
                 "w-full justify-start h-10",
                 isCollapsed ? "px-2" : "px-3",
-                currentPage === item.id 
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground" 
+                currentPage === item.id
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
               onClick={() => onPageChange(item.id)}
             >
               <Icon className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
-              {!isCollapsed && <span>{theme === 'pirate' ? item.pirateLabel : theme === 'mi5' ? item.mi5Label : item.label}</span>}
+              {!isCollapsed && (
+                <div className="flex items-center justify-between flex-1">
+                  <span>{theme === 'pirate' ? item.pirateLabel : theme === 'mi5' ? item.mi5Label : item.label}</span>
+                  {item.badge && (
+                    <span className="ml-2 px-1.5 py-0.5 text-[10px] font-semibold bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded">
+                      {item.badge}
+                    </span>
+                  )}
+                </div>
+              )}
             </Button>
           );
         })}
