@@ -20,6 +20,9 @@ try {
   // Get commit date
   const commitDate = execSync('git log -1 --format=%cd --date=iso', { encoding: 'utf-8' }).trim();
 
+  // Get commit message
+  const commitMessage = execSync('git log -1 --format=%s', { encoding: 'utf-8' }).trim();
+
   // Format version string
   const version = `v${commitCount}.${commitHash}`;
 
@@ -47,7 +50,7 @@ VITE_APP_COMMIT_DATE=${commitDate}
     branch: branch,
     buildDate: new Date().toISOString(),
     commitDate: commitDate,
-    message: 'Campus Controller Integration: RFQI & Application Analytics',
+    message: commitMessage,
     features: [
       'Data Normalization Layer (P0-002)',
       'Universal FilterBar Component (P0-003)',
