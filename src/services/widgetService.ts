@@ -1,4 +1,4 @@
-import { campusControllerApi } from './api';
+import { apiService } from './api';
 
 /**
  * Widget Service
@@ -55,8 +55,16 @@ export async function fetchWidgetData(request: WidgetRequest): Promise<WidgetRes
       endpoint = '/management/v1/report/sites';
     }
 
-    const response = await campusControllerApi.get(endpoint, { params });
-    return response.data;
+    // Build query string
+    const queryString = new URLSearchParams(params).toString();
+    const fullEndpoint = `${endpoint}?${queryString}`;
+
+    const response = await apiService.makeAuthenticatedRequest(fullEndpoint, { method: 'GET' });
+    if (response.ok) {
+      return await response.json();
+    } else {
+      throw new Error(`Failed to fetch widget data: ${response.status}`);
+    }
   } catch (error) {
     console.error('[WidgetService] Error fetching widget data:', error);
     throw error;
@@ -68,10 +76,13 @@ export async function fetchWidgetData(request: WidgetRequest): Promise<WidgetRes
  */
 export async function fetchSystemInformation(): Promise<any> {
   try {
-    const response = await campusControllerApi.get('/platformmanager/v1/reports/systeminformation', {
-      params: { noCache: Date.now() }
-    });
-    return response.data;
+    const endpoint = `/platformmanager/v1/reports/systeminformation?noCache=${Date.now()}`;
+    const response = await apiService.makeAuthenticatedRequest(endpoint, { method: 'GET' });
+    if (response.ok) {
+      return await response.json();
+    } else {
+      throw new Error(`Failed to fetch system information: ${response.status}`);
+    }
   } catch (error) {
     console.error('[WidgetService] Error fetching system information:', error);
     throw error;
