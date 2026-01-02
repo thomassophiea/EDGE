@@ -29,8 +29,19 @@ export async function fetchWidgetData(request: WidgetRequest): Promise<WidgetRes
     userGroups
   } = request;
 
-  // Build widgetList parameter (pipe-separated for some widgets)
-  const widgetList = widgets.join(',');
+  // Build widgetList parameter with proper format
+  // Some widgets need a filter suffix like |all, |2_4, |5
+  // Format: widgetName|filter,widgetName|filter,...
+  const widgetList = widgets.map(widget => {
+    // Widgets that need |all suffix for throughput/usage reports
+    if (widget.includes('Throughput') || widget.includes('Usage') ||
+        widget.includes('User') || widget.includes('Snr') ||
+        widget.includes('ChannelUtil')) {
+      return `${widget}|all`;
+    }
+    // Other widgets don't need a suffix
+    return widget;
+  }).join(',');
 
   const params: any = {
     duration,
@@ -45,17 +56,11 @@ export async function fetchWidgetData(request: WidgetRequest): Promise<WidgetRes
 
   try {
     if (siteId) {
-      // Use v3 venue report endpoint - supports widgetList parameter
-      endpoint = `/v3/sites/${siteId}/report/venue`;
-      params.statType = 'sites';
-
-      if (userGroups) {
-        params.userGroups = JSON.stringify(userGroups);
-      }
+      // Site-specific report endpoint (from HAR analysis)
+      endpoint = `/management/v1/report/sites/${siteId}`;
     } else {
-      // Deployment-wide venue report (no specific site)
-      endpoint = '/v3/sites/report/venue';
-      params.statType = 'sites';
+      // Deployment-wide report endpoint (from HAR analysis)
+      endpoint = '/management/v1/report/sites';
     }
 
     // Build query string
