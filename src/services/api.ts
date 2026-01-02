@@ -1815,38 +1815,47 @@ class ApiService {
 
   // Get access points filtered by site
   async getAccessPointsBySite(siteId?: string): Promise<AccessPoint[]> {
-    if (!siteId) {
+    if (!siteId || siteId === 'all') {
       return this.getAccessPoints();
     }
 
     return this.makeRequestWithRetry(async () => {
-      // First try to get all APs and filter client-side
+      // First get the site name from the site ID
+      const site = await this.getSiteById(siteId);
+      const siteName = site?.name || site?.siteName || null;
+
+      // Get all APs
       const allAPs = await this.getAccessPoints();
-      
-      console.log(`Filtering ${allAPs.length} access points for site: ${siteId}`);
-      
-      // Filter APs by site/location - check various possible field names
+
+      console.log(`Filtering ${allAPs.length} access points for site ID: ${siteId}, site name: ${siteName}`);
+
+      // Filter APs by matching hostSite against the site name OR site ID
       const filteredAPs = allAPs.filter(ap => {
-        // Check all possible site/location identification fields
-        // Prioritize hostSite first as it contains the actual location like "LAB Remote Site"
+        // Primary matching: hostSite field contains the site name (e.g., "Production Site", "LAB Remote Site")
+        if (siteName && ap.hostSite) {
+          const hostSiteMatch = String(ap.hostSite).trim().toLowerCase() === siteName.toLowerCase();
+          if (hostSiteMatch) {
+            return true;
+          }
+        }
+
+        // Fallback: try matching against site ID or other location fields
         const locationFields = [
-          ap.hostSite,
           ap.location,
           ap.locationName,
           ap.apLocation,
           ap.ap_location,
           ap.site,
-          ap.siteId, 
+          ap.siteId,
           ap.siteName,
           ap.site_name,
           ap.campus,
           ap.building,
           ap.place,
           ap.area,
-          ap.zone,
-          ap.siteName || ap.name
+          ap.zone
         ];
-        
+
         // Try to match any of the location/site fields with the provided siteId
         const matches = locationFields.some(field => {
           if (!field) return false;
@@ -1854,23 +1863,12 @@ class ApiService {
           const siteIdStr = String(siteId).trim();
           return fieldStr === siteIdStr || fieldStr.toLowerCase() === siteIdStr.toLowerCase();
         });
-        
-        if (matches) {
-          console.log(`AP ${ap.serialNumber} matches site ${siteId}:`, {
-            hostSite: ap.hostSite,
-            location: ap.location,
-            locationName: ap.locationName,
-            site: ap.site,
-            siteId: ap.siteId,
-            siteName: ap.siteName
-          });
-        }
-        
+
         return matches;
       });
-      
-      console.log(`Found ${filteredAPs.length} access points for site ${siteId}`);
-      
+
+      console.log(`Found ${filteredAPs.length} access points for site ${siteId} (${siteName})`);
+
       // If no APs found with site filtering, log the available location/site values for debugging
       if (filteredAPs.length === 0 && allAPs.length > 0) {
         console.log('No APs found for site. Available location/site values in APs:');
@@ -1880,12 +1878,12 @@ class ApiService {
             location: ap.location,
             locationName: ap.locationName,
             site: ap.site,
-            siteId: ap.siteId, 
+            siteId: ap.siteId,
             siteName: ap.siteName,
             campus: ap.campus,
             building: ap.building,
-            allLocationFields: Object.keys(ap).filter(key => 
-              key.toLowerCase().includes('site') || 
+            allLocationFields: Object.keys(ap).filter(key =>
+              key.toLowerCase().includes('site') ||
               key.toLowerCase().includes('location') ||
               key.toLowerCase().includes('campus') ||
               key.toLowerCase().includes('building') ||

@@ -203,9 +203,7 @@ export function NetworkInsights() {
       {/* Info Footer */}
       <div className="mt-8 p-4 bg-muted/20 rounded-lg border border-muted">
         <p className="text-sm text-muted-foreground">
-          <strong>Network Insights</strong> provides advanced analytics powered by the Campus Controller.
-          Use the site and time range filters to view data for specific locations and time periods.
-          Data updates automatically every 5 minutes per widget. Use the "Refresh All" button to manually update all widgets.
+          <strong>Sunil and Kurt - Add cool A.I. shit here</strong>
         </p>
       </div>
     </div>
