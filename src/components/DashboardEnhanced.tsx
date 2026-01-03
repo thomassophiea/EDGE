@@ -4,7 +4,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
+import { DetailSlideOut } from './DetailSlideOut';
 import { ScrollArea } from './ui/scroll-area';
 import {
   RefreshCw,
@@ -2044,20 +2044,15 @@ export function DashboardEnhanced() {
       <SwitchesWidget siteId={filters.site} />
 
       {/* Client Detail Dialog */}
-      <Dialog open={isClientDialogOpen} onOpenChange={setIsClientDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[90vw] lg:max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Client Details
-            </DialogTitle>
-            <DialogDescription>
-              Detailed information for {selectedClient?.hostName || selectedClient?.macAddress}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedClient && (
-            <div className="space-y-4 mt-4">
+      <DetailSlideOut
+        isOpen={isClientDialogOpen}
+        onClose={() => setIsClientDialogOpen(false)}
+        title="Client Details"
+        description={`Detailed information for ${selectedClient?.hostName || selectedClient?.macAddress}`}
+        width="xl"
+      >
+        {selectedClient && (
+          <div className="space-y-4">
               {/* Basic Information */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
@@ -2310,23 +2305,17 @@ export function DashboardEnhanced() {
               )}
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+      </DetailSlideOut>
 
       {/* Service Clients Dialog */}
-      <Dialog open={isServiceClientsDialogOpen} onOpenChange={setIsServiceClientsDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[90vw] lg:max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Network className="h-5 w-5" />
-              Clients on {selectedService}
-            </DialogTitle>
-            <DialogDescription>
-              {getClientsForService().length} client(s) connected to this service
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="h-[600px]">
-            <div className="space-y-2">
+      <DetailSlideOut
+        isOpen={isServiceClientsDialogOpen}
+        onClose={() => setIsServiceClientsDialogOpen(false)}
+        title={`Clients on ${selectedService}`}
+        description={`${getClientsForService().length} client(s) connected to this service`}
+        width="xl"
+      >
+        <div className="space-y-2">
               {getClientsForService().length === 0 ? (
                 <div className="text-center text-muted-foreground py-8">
                   <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -2381,10 +2370,8 @@ export function DashboardEnhanced() {
                   </Card>
                 ))
               )}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </DetailSlideOut>
     </div>
   );
 }
