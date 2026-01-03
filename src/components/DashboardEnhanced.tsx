@@ -1104,14 +1104,28 @@ export function DashboardEnhanced() {
         }}
       />
 
-      {/* Operational Context Summary Widget (P1-001) */}
-      <OperationalContextSummary />
+      {/* ========================================
+          SECTION 1: OPERATIONAL CONTEXT SUMMARY
+          ======================================== */}
+      <div className="space-y-4">
+        <div className="border-b pb-2">
+          <h3 className="text-lg font-semibold">Operational Context Summary</h3>
+          <p className="text-sm text-muted-foreground">Intelligent context-aware network insights</p>
+        </div>
+        <OperationalContextSummary />
+      </div>
 
-      {/* Best Practices Widget */}
-      <BestPracticesWidget />
+      {/* ========================================
+          SECTION 2: CORE OPERATIONAL ACTIVITY
+          ======================================== */}
+      <div className="space-y-4">
+        <div className="border-b pb-2">
+          <h3 className="text-lg font-semibold">Core Operational Activity</h3>
+          <p className="text-sm text-muted-foreground">Real-time network operations and status</p>
+        </div>
 
-      {/* Key Metrics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Key Metrics Grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Total APs */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1297,162 +1311,20 @@ export function DashboardEnhanced() {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
 
-      {/* AP Details */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Access Point Distribution</CardTitle>
-            <CardDescription>By role and power state</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* By Role */}
-            <div>
-              <h4 className="text-sm font-medium mb-3">By Role</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-purple-500" />
-                    <span className="text-sm">Primary</span>
-                  </div>
-                  <div className="text-sm font-medium">
-                    {apStats.primary} ({apStats.total > 0 ? Math.round((apStats.primary / apStats.total) * 100) : 0}%)
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-cyan-500" />
-                    <span className="text-sm">Backup</span>
-                  </div>
-                  <div className="text-sm font-medium">
-                    {apStats.backup} ({apStats.total > 0 ? Math.round((apStats.backup / apStats.total) * 100) : 0}%)
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-gray-500" />
-                    <span className="text-sm">Standby</span>
-                  </div>
-                  <div className="text-sm font-medium">
-                    {apStats.standby} ({apStats.total > 0 ? Math.round((apStats.standby / apStats.total) * 100) : 0}%)
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* ========================================
+          SECTION 3: PERFORMANCE AND HEALTH
+          ======================================== */}
+      <div className="space-y-4">
+        <div className="border-b pb-2">
+          <h3 className="text-lg font-semibold">Performance and Health</h3>
+          <p className="text-sm text-muted-foreground">Network quality and distribution analytics</p>
+        </div>
 
-            {/* By Power State */}
-            <div>
-              <h4 className="text-sm font-medium mb-3">By Power State</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Normal Power</span>
-                  </div>
-                  <div className="text-sm font-medium text-green-600">
-                    {apStats.normalPower} ({apStats.total > 0 ? Math.round((apStats.normalPower / apStats.total) * 100) : 0}%)
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-yellow-500" />
-                    <span className="text-sm">Low Power</span>
-                  </div>
-                  <div className="text-sm font-medium text-yellow-600">
-                    {apStats.lowPower} ({apStats.total > 0 ? Math.round((apStats.lowPower / apStats.total) * 100) : 0}%)
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Client Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Client Distribution</CardTitle>
-            <CardDescription>Across services and networks</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {clientStats.total === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No clients connected</p>
-              </div>
-            ) : clientDistribution.length > 0 ? (
-              <div className="space-y-4">
-                {/* List view */}
-                <div className="space-y-3">
-                  {clientDistribution.slice(0, 6).map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between cursor-pointer hover:bg-muted/50 rounded-md p-2 -mx-2 transition-colors"
-                      onClick={() => handleServiceClick(item.service)}
-                      title={`Click to view ${item.count} client(s) on ${item.service}`}
-                    >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: COLORS[idx % COLORS.length] }}
-                        />
-                        <span className="text-sm truncate">{item.service}</span>
-                      </div>
-                      <div className="flex items-center gap-3 ml-2">
-                        <span className="text-sm font-medium">{item.count}</span>
-                        <span className="text-xs text-muted-foreground w-10 text-right">{item.percentage}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Mini pie chart */}
-                {clientDistribution.length > 1 && (
-                  <div className="h-32">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={clientDistribution.slice(0, 6)}
-                          dataKey="count"
-                          nameKey="service"
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={50}
-                          isAnimationActive={false}
-                          onClick={(data) => {
-                            if (data && data.service) {
-                              handleServiceClick(data.service);
-                            }
-                          }}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          {clientDistribution.slice(0, 6).map((entry, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={COLORS[index % COLORS.length]}
-                              style={{ cursor: 'pointer' }}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>Unable to load client distribution</p>
-                <p className="text-xs mt-1">Service information not available</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Performance Metrics and Multi-Dimensional View */}
-      <div className="grid gap-4 md:grid-cols-2">
+        {/* Performance Metrics and Service Health Overview */}
+        <div className="grid gap-4 md:grid-cols-2">
         {/* Performance Metrics */}
         <Card>
           <CardHeader>
@@ -1621,6 +1493,160 @@ export function DashboardEnhanced() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+        {/* AP and Client Distribution */}
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Access Point Distribution */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Access Point Distribution</CardTitle>
+              <CardDescription>By role and power state</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* By Role */}
+              <div>
+                <h4 className="text-sm font-medium mb-3">By Role</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-purple-500" />
+                      <span className="text-sm">Primary</span>
+                    </div>
+                    <div className="text-sm font-medium">
+                      {apStats.primary} ({apStats.total > 0 ? Math.round((apStats.primary / apStats.total) * 100) : 0}%)
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-cyan-500" />
+                      <span className="text-sm">Backup</span>
+                    </div>
+                    <div className="text-sm font-medium">
+                      {apStats.backup} ({apStats.total > 0 ? Math.round((apStats.backup / apStats.total) * 100) : 0}%)
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-gray-500" />
+                      <span className="text-sm">Standby</span>
+                    </div>
+                    <div className="text-sm font-medium">
+                      {apStats.standby} ({apStats.total > 0 ? Math.round((apStats.standby / apStats.total) * 100) : 0}%)
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* By Power State */}
+              <div>
+                <h4 className="text-sm font-medium mb-3">By Power State</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">Normal Power</span>
+                    </div>
+                    <div className="text-sm font-medium text-green-600">
+                      {apStats.normalPower} ({apStats.total > 0 ? Math.round((apStats.normalPower / apStats.total) * 100) : 0}%)
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-yellow-500" />
+                      <span className="text-sm">Low Power</span>
+                    </div>
+                    <div className="text-sm font-medium text-yellow-600">
+                      {apStats.lowPower} ({apStats.total > 0 ? Math.round((apStats.lowPower / apStats.total) * 100) : 0}%)
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Client Distribution */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Client Distribution</CardTitle>
+              <CardDescription>Across services and networks</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {clientStats.total === 0 ? (
+                <div className="text-center text-muted-foreground py-8">
+                  <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No clients connected</p>
+                </div>
+              ) : clientDistribution.length > 0 ? (
+                <div className="space-y-4">
+                  {/* List view */}
+                  <div className="space-y-3">
+                    {clientDistribution.slice(0, 6).map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between cursor-pointer hover:bg-muted/50 rounded-md p-2 -mx-2 transition-colors"
+                        onClick={() => handleServiceClick(item.service)}
+                        title={`Click to view ${item.count} client(s) on ${item.service}`}
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div
+                            className="w-3 h-3 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                          />
+                          <span className="text-sm truncate">{item.service}</span>
+                        </div>
+                        <div className="flex items-center gap-3 ml-2">
+                          <span className="text-sm font-medium">{item.count}</span>
+                          <span className="text-xs text-muted-foreground w-10 text-right">{item.percentage}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Mini pie chart */}
+                  {clientDistribution.length > 1 && (
+                    <div className="h-32">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={clientDistribution.slice(0, 6)}
+                            dataKey="count"
+                            nameKey="service"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={50}
+                            isAnimationActive={false}
+                            onClick={(data) => {
+                              if (data && data.service) {
+                                handleServiceClick(data.service);
+                              }
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            {clientDistribution.slice(0, 6).map((entry, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                                style={{ cursor: 'pointer' }}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Unable to load client distribution</p>
+                  <p className="text-xs mt-1">Service information not available</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Top Clients */}
@@ -2042,6 +2068,17 @@ export function DashboardEnhanced() {
 
       {/* Network Switches Widget - Moved to Bottom */}
       <SwitchesWidget siteId={filters.site} />
+
+      {/* ========================================
+          SECTION 4: BEST PRACTICE EVALUATION
+          ======================================== */}
+      <div className="space-y-4">
+        <div className="border-b pb-2">
+          <h3 className="text-lg font-semibold">Best Practice Evaluation</h3>
+          <p className="text-sm text-muted-foreground">Network configuration and optimization recommendations</p>
+        </div>
+        <BestPracticesWidget />
+      </div>
 
       {/* Client Detail Dialog */}
       <DetailSlideOut
