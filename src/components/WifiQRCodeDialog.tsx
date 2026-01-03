@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
+import { DetailSlideOut } from './DetailSlideOut';
 import { Button } from './ui/button';
 import { QRCodeSVG } from 'qrcode.react';
 import { Download, Wifi, Shield, Radio } from 'lucide-react';
@@ -127,70 +127,65 @@ export function WifiQRCodeDialog({ open, onOpenChange, wlan }: WifiQRCodeDialogP
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Wifi className="h-5 w-5" />
-            WiFi QR Code
-          </DialogTitle>
-          <DialogDescription>
-            Scan with your phone to connect to this network
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 py-4">
-          {/* Network Info */}
-          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-            <div className="font-medium text-lg">{wlan.ssid}</div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {getSecurityBadge()}
-              {wlan.band && (
-                <Badge variant="outline" className="gap-1">
-                  <Radio className="h-3 w-3" />
-                  {wlan.band}
-                </Badge>
-              )}
-              {wlan.hidden && (
-                <Badge variant="outline" className="text-xs">
-                  Hidden
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          {/* QR Code */}
-          <div ref={qrRef} className="flex justify-center p-6 bg-white rounded-lg">
-            <QRCodeSVG
-              value={qrString}
-              size={256}
-              level="M"
-              includeMargin={false}
-            />
-          </div>
-
-          {/* Instructions */}
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p className="font-medium">How to use:</p>
-            <ol className="list-decimal list-inside space-y-1 ml-2">
-              <li>Open your phone's camera app</li>
-              <li>Point it at the QR code above</li>
-              <li>Tap the WiFi notification that appears</li>
-              <li>Your device will connect automatically</li>
-            </ol>
+    <DetailSlideOut
+      isOpen={open}
+      onClose={() => onOpenChange(false)}
+      title="WiFi QR Code"
+      description="Scan with your phone to connect to this network"
+      width="md"
+    >
+      <div className="space-y-4">
+        {/* Network Info */}
+        <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+          <div className="font-medium text-lg">{wlan.ssid}</div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {getSecurityBadge()}
+            {wlan.band && (
+              <Badge variant="outline" className="gap-1">
+                <Radio className="h-3 w-3" />
+                {wlan.band}
+              </Badge>
+            )}
+            {wlan.hidden && (
+              <Badge variant="outline" className="text-xs">
+                Hidden
+              </Badge>
+            )}
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        {/* QR Code */}
+        <div ref={qrRef} className="flex justify-center p-6 bg-white rounded-lg">
+          <QRCodeSVG
+            value={qrString}
+            size={256}
+            level="M"
+            includeMargin={false}
+          />
+        </div>
+
+        {/* Instructions */}
+        <div className="text-sm text-muted-foreground space-y-1">
+          <p className="font-medium">How to use:</p>
+          <ol className="list-decimal list-inside space-y-1 ml-2">
+            <li>Open your phone's camera app</li>
+            <li>Point it at the QR code above</li>
+            <li>Tap the WiFi notification that appears</li>
+            <li>Your device will connect automatically</li>
+          </ol>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-4 border-t">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
             Close
           </Button>
-          <Button onClick={handleDownload} className="gap-2">
+          <Button onClick={handleDownload} className="gap-2 flex-1">
             <Download className="h-4 w-4" />
             Download QR Code
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </DetailSlideOut>
   );
 }
