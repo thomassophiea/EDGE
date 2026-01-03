@@ -78,23 +78,32 @@ export function OperationalContextSummary() {
       setError(null);
 
       // Fetch data in parallel for better performance
+      // Use site-filtered API calls to get correct data (same as AccessPoints tab)
       const [aps, stations, services] = await Promise.all([
-        apiService.getAccessPoints(),
+        filters.site === 'all'
+          ? apiService.getAccessPoints()
+          : apiService.getAccessPointsBySite(filters.site),
         apiService.getStations(),
         apiService.getServices()
       ]);
 
-      // Apply site filter if needed
-      const filteredAPs = filters.site === 'all'
-        ? aps
-        : aps.filter(ap => ap.site === filters.site || ap.hostSite === filters.site);
+      // Filter stations by site if needed
+      // Note: APs are already filtered by getAccessPointsBySite
+      let filteredStations = stations;
+      if (filters.site !== 'all') {
+        // Get site name from site ID to filter stations
+        const site = await apiService.getSiteById(filters.site);
+        const siteName = site?.name || site?.siteName || filters.site;
 
-      const filteredStations = filters.site === 'all'
-        ? stations
-        : stations.filter(s => s.siteName === filters.site || s.siteId === filters.site);
+        filteredStations = stations.filter(s =>
+          s.siteName === siteName ||
+          s.siteId === filters.site ||
+          s.siteName === filters.site
+        );
+      }
 
       // Calculate Organization Context Score (weighted composite)
-      const organizationContext = calculateOrganizationContext(filteredAPs, filteredStations);
+      const organizationContext = calculateOrganizationContext(aps, filteredStations);
 
       // Get critical alerts
       const criticalAlerts = await getCriticalAlerts();
