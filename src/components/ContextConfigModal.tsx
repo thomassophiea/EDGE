@@ -293,10 +293,10 @@ export function ContextConfigModal({ open, onOpenChange }: ContextConfigModalPro
                     <div className="space-y-4">
                       <h4 className="font-semibold">Baseline Metrics</h4>
                       <Tabs defaultValue="performance" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
-                          <TabsTrigger value="performance">Performance</TabsTrigger>
-                          <TabsTrigger value="reliability">Reliability</TabsTrigger>
-                          <TabsTrigger value="quality">Quality</TabsTrigger>
+                        <TabsList className="grid w-full grid-cols-3 gap-1 p-1">
+                          <TabsTrigger value="performance" className="text-xs sm:text-sm px-2">Performance</TabsTrigger>
+                          <TabsTrigger value="reliability" className="text-xs sm:text-sm px-2">Reliability</TabsTrigger>
+                          <TabsTrigger value="quality" className="text-xs sm:text-sm px-2">Quality</TabsTrigger>
                         </TabsList>
 
                         {(['performance', 'reliability', 'quality'] as const).map((category) => (
