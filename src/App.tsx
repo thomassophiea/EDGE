@@ -76,6 +76,7 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentPage, setCurrentPage] = useState('service-levels');
   const [adminRole, setAdminRole] = useState<string | null>(null);
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark' | 'synthwave' | 'pirate' | 'mi5' | 'kroger' | 'system'>('system');
   const [detailPanel, setDetailPanel] = useState<DetailPanelState>({
@@ -102,6 +103,14 @@ export default function App() {
     // Check if user is already authenticated and validate session
     const initializeAuth = async () => {
       if (apiService.isAuthenticated()) {
+        // Skip validation if user just logged in to prevent immediate logout
+        if (justLoggedIn) {
+          console.log('[App] Skipping session validation - user just logged in');
+          setIsAuthenticated(true);
+          setAdminRole(apiService.getAdminRole());
+          return;
+        }
+
         // Attempt a lightweight API call to verify the token is still valid
         try {
           const response = await apiService.makeAuthenticatedRequest('/v1/sessions/self', { method: 'GET' }, 5000);
@@ -141,20 +150,23 @@ export default function App() {
             // Start SLE data collection automatically on successful authentication
             console.log('[App] Starting SLE data collection service');
             sleDataCollectionService.startCollection();
-          } else {
-            // Token is invalid - clear it and try auto-login
-            console.log('[App] Stored token is invalid - clearing session');
+          } else if (response.status === 401 || response.status === 403) {
+            // Token is explicitly unauthorized - clear it and try auto-login
+            console.log('[App] Stored token is unauthorized - clearing session');
             apiService.logout();
             setIsAuthenticated(false);
-            // Try auto-login after clearing stale session
             await attemptAutoLogin();
+          } else {
+            // Other errors (404, 500, etc.) - assume session is still valid
+            console.log(`[App] Session validation returned ${response.status} - keeping session`);
+            setIsAuthenticated(true);
+            setAdminRole(apiService.getAdminRole());
           }
         } catch (error) {
-          // If session validation fails, clear the stale session and try auto-login
-          console.log('[App] Session validation failed - clearing stale session');
-          apiService.logout();
-          setIsAuthenticated(false);
-          await attemptAutoLogin();
+          // Network error or timeout - assume session is still valid
+          console.log('[App] Session validation failed (network error) - keeping session');
+          setIsAuthenticated(true);
+          setAdminRole(apiService.getAdminRole());
         }
       } else {
         // No stored session - try auto-login if credentials are available
@@ -699,6 +711,10 @@ export default function App() {
   const handleLoginSuccess = async () => {
     setIsAuthenticated(true);
     setAdminRole(apiService.getAdminRole());
+    setJustLoggedIn(true);
+
+    // Clear the flag after 5 seconds to allow normal session validation
+    setTimeout(() => setJustLoggedIn(false), 5000);
 
     // Prefetch critical components for faster navigation
     prefetchCriticalComponents();
