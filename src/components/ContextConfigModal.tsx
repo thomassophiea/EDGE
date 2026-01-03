@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
+import { DetailSlideOut } from './DetailSlideOut';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -134,16 +134,14 @@ export function ContextConfigModal({ open, onOpenChange }: ContextConfigModalPro
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[98vw] max-w-6xl max-h-[95vh] overflow-hidden flex flex-col p-6">
-          <DialogHeader className="flex-shrink-0 pb-4">
-            <DialogTitle>Configure Site Contexts</DialogTitle>
-            <DialogDescription>
-              Define baseline metrics for different types of sites. Contexts help you understand what "healthy" means in different environments. AI will automatically determine optimal baselines once sufficient data is collected.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex gap-6 flex-1 min-h-0 overflow-hidden">
+      <DetailSlideOut
+        isOpen={open}
+        onClose={() => onOpenChange(false)}
+        title="Configure Site Contexts"
+        description="Define baseline metrics for different types of sites. Contexts help you understand what 'healthy' means in different environments."
+        width="xl"
+      >
+        <div className="flex gap-6 flex-1 min-h-0 overflow-hidden">
             {/* Context List */}
             <div className="w-72 border-r pr-6 flex-shrink-0">
               <div className="flex items-center justify-between mb-4">
@@ -321,8 +319,7 @@ export function ContextConfigModal({ open, onOpenChange }: ContextConfigModalPro
               )}
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </DetailSlideOut>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
