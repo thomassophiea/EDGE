@@ -120,12 +120,28 @@ export function OperationalContextSummary() {
   };
 
   const calculateOrganizationContext = (aps: AccessPoint[], stations: Station[]) => {
-    // AP Uptime: percentage of APs that are "up" or "connected"
-    const upAPs = aps.filter(ap =>
-      ap.status?.toLowerCase() === 'up' ||
-      ap.status?.toLowerCase() === 'connected' ||
-      ap.connectionState?.toLowerCase() === 'up'
-    ).length;
+    // AP Uptime: percentage of APs that are online
+    // Use same logic as AccessPoints.tsx for consistency
+    const upAPs = aps.filter(ap => {
+      const status = (ap.status || (ap as any).connectionState || (ap as any).operationalState || (ap as any).state || '').toLowerCase();
+      const isUp = (ap as any).isUp;
+      const isOnline = (ap as any).online;
+
+      // Consider an AP online if:
+      // 1. Status is "inservice" (case-insensitive) - primary status from Campus Controller
+      // 2. Status contains 'up', 'online', 'connected'
+      // 3. isUp or online boolean is true
+      // 4. No status field but AP exists in list (default to online)
+      return (
+        status === 'inservice' ||
+        status.includes('up') ||
+        status.includes('online') ||
+        status.includes('connected') ||
+        isUp === true ||
+        isOnline === true ||
+        (!status && isUp !== false && isOnline !== false)
+      );
+    }).length;
     const apUptime = aps.length > 0 ? (upAPs / aps.length) * 100 : 100;
 
     // Client Success Rate: percentage of clients with good status
