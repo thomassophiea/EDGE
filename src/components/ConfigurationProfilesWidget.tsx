@@ -259,7 +259,7 @@ export function ConfigurationProfilesWidget() {
                 RF Management Profiles ({profiles.rfMgmt.length})
               </h4>
               {profiles.rfMgmt.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2">
                   {profiles.rfMgmt.map((profile: any, idx: number) => (
                     <div key={idx} className="p-2 rounded border bg-card text-sm">
                       <div className="font-medium">{profile.name || profile.id || `Profile ${idx + 1}`}</div>
@@ -280,7 +280,7 @@ export function ConfigurationProfilesWidget() {
                 IoT Profiles ({profiles.iot.length})
               </h4>
               {profiles.iot.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2">
                   {profiles.iot.map((profile: any, idx: number) => (
                     <div key={idx} className="p-2 rounded border bg-card text-sm">
                       <div className="font-medium">{profile.name || profile.id || `Profile ${idx + 1}`}</div>
@@ -306,7 +306,7 @@ export function ConfigurationProfilesWidget() {
                 Roles & Policies ({profiles.roles.length})
               </h4>
               {profiles.roles.length > 0 ? (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2">
                   {profiles.roles.map((role: any, idx: number) => (
                     <div key={idx} className="p-2 rounded border bg-card text-sm">
                       <div className="font-medium">{role.name || role.id || `Role ${idx + 1}`}</div>
@@ -335,7 +335,7 @@ export function ConfigurationProfilesWidget() {
                 CoS Profiles ({profiles.cos.length})
               </h4>
               {profiles.cos.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2">
                   {profiles.cos.map((profile: any, idx: number) => (
                     <div key={idx} className="p-2 rounded border bg-card text-sm">
                       <div className="font-medium">{getCoSProfileName(profile)}</div>
@@ -353,7 +353,7 @@ export function ConfigurationProfilesWidget() {
                 Rate Limiters ({profiles.rateLimiters.length})
               </h4>
               {profiles.rateLimiters.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2">
                   {profiles.rateLimiters.map((limiter: any, idx: number) => (
                     <div key={idx} className="p-2 rounded border bg-card text-sm">
                       <div className="font-medium">{limiter.name || limiter.id || `Limiter ${idx + 1}`}</div>
@@ -381,7 +381,7 @@ export function ConfigurationProfilesWidget() {
                 ADSP Profiles ({profiles.adsp.length})
               </h4>
               {profiles.adsp.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2">
                   {profiles.adsp.map((profile: any, idx: number) => (
                     <div key={idx} className="p-2 rounded border bg-card text-sm">
                       <div className="font-medium">{profile.name || profile.id || `ADSP ${idx + 1}`}</div>
