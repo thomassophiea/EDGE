@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
+import { DetailSlideOut } from '../DetailSlideOut';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Checkbox } from '../ui/checkbox';
@@ -98,19 +98,14 @@ export function ProfilePicker({
   const isValid = mode === 'INCLUDE_ONLY' ? localSelection.size > 0 : true;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            {getTitle()}
-          </DialogTitle>
-          <DialogDescription>
-            {getDescription()} at <span className="font-medium">{siteName}</span>
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 py-4">
+    <DetailSlideOut
+      isOpen={open}
+      onClose={() => onOpenChange(false)}
+      title={getTitle()}
+      description={`${getDescription()} at ${siteName}`}
+      width="lg"
+    >
+      <div className="space-y-4">
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -197,17 +192,17 @@ export function ProfilePicker({
               </div>
             )}
           </ScrollArea>
-        </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={handleCancel}>
+        {/* Footer Actions */}
+        <div className="flex gap-2 pt-6 border-t mt-6">
+          <Button variant="outline" onClick={handleCancel} className="flex-1">
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!isValid}>
+          <Button onClick={handleConfirm} disabled={!isValid} className="flex-1">
             {getConfirmText()}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </DetailSlideOut>
   );
 }
