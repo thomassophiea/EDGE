@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
+import { DetailSlideOut } from './DetailSlideOut';
 import {
   Activity,
   AlertTriangle,
@@ -572,26 +572,21 @@ export function OperationalContextSummary() {
         )}
       </CardContent>
 
-      {/* Detail Dialog */}
-      <Dialog open={selectedMetric !== null} onOpenChange={() => setSelectedMetric(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {selectedMetric === 'organization' && <Activity className="h-5 w-5" />}
-              {selectedMetric === 'alerts' && <AlertTriangle className="h-5 w-5" />}
-              {selectedMetric === 'services' && <TrendingDown className="h-5 w-5" />}
-              {selectedMetric === 'experience' && <Users className="h-5 w-5" />}
-              {selectedMetric === 'organization' && 'Organization Context Details'}
-              {selectedMetric === 'alerts' && 'Critical Alerts Details'}
-              {selectedMetric === 'services' && 'Service Issues Details'}
-              {selectedMetric === 'experience' && 'Client Experience Details'}
-            </DialogTitle>
-            <DialogDescription>
-              Detailed breakdown and insights
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 mt-4">
+      {/* Detail Slide-Out */}
+      <DetailSlideOut
+        isOpen={selectedMetric !== null}
+        onClose={() => setSelectedMetric(null)}
+        title={
+          selectedMetric === 'organization' ? 'Organization Context Details' :
+          selectedMetric === 'alerts' ? 'Critical Alerts Details' :
+          selectedMetric === 'services' ? 'Service Issues Details' :
+          selectedMetric === 'experience' ? 'Client Experience Details' :
+          'Details'
+        }
+        description="Detailed breakdown and insights"
+        width="lg"
+      >
+        <div className="space-y-4">
             {selectedMetric === 'organization' && (
               <>
                 <div className="p-4 rounded-lg border">
@@ -782,9 +777,8 @@ export function OperationalContextSummary() {
                 </div>
               </>
             )}
-          </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </DetailSlideOut>
     </Card>
   );
 }
