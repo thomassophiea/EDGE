@@ -464,7 +464,7 @@ export function OperationalContextSummary() {
                   variant={metrics.serviceDegradation.count > 0 ? 'outline' : 'default'}
                   className="mt-2 text-xs"
                 >
-                  {metrics.serviceDegradation.count > 0 ? 'DEGRADED' : 'HEALTHY'}
+                  {metrics.serviceDegradation.count > 0 ? 'DEGRADED' : 'ALL CLEAR'}
                 </Badge>
               </div>
               <TrendingDown className={`h-5 w-5 ${metrics.serviceDegradation.count > 0 ? 'text-yellow-600' : 'text-green-600'}`} />
@@ -698,7 +698,7 @@ export function OperationalContextSummary() {
                     </div>
                   </div>
                   <Badge variant={metrics.serviceDegradation.count > 0 ? 'outline' : 'default'}>
-                    {metrics.serviceDegradation.count > 0 ? 'DEGRADED' : 'HEALTHY'}
+                    {metrics.serviceDegradation.count > 0 ? 'DEGRADED' : 'ALL CLEAR'}
                   </Badge>
                 </div>
 
