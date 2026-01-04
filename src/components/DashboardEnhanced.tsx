@@ -252,12 +252,14 @@ export function DashboardEnhanced() {
   useEffect(() => {
     const loadStationEvents = async () => {
       if (selectedClient && isClientDialogOpen) {
+        console.log(`[Dashboard] Loading station events for client:`, selectedClient.macAddress);
         setIsLoadingEvents(true);
         try {
           const events = await apiService.fetchStationEvents(selectedClient.macAddress);
+          console.log(`[Dashboard] Received ${events.length} events:`, events.slice(0, 3));
           setStationEvents(events);
         } catch (error) {
-          console.error('Failed to load station events:', error);
+          console.error('[Dashboard] Failed to load station events:', error);
           toast.error('Failed to load station events');
         } finally {
           setIsLoadingEvents(false);

@@ -3242,6 +3242,11 @@ class ApiService {
       }
 
       const data = await response.json();
+      console.log(`[API] Station events response structure:`, {
+        hasStationEvents: !!data.stationEvents,
+        responseKeys: Object.keys(data),
+        sampleData: data.stationEvents ? data.stationEvents.slice(0, 2) : data
+      });
       const events = data.stationEvents || [];
       console.log(`[API] ✓ Loaded ${events.length} station events for ${macAddress}`);
       return events;
