@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Network, AlertCircle, CheckCircle, Clock, MapPin } from 'lucide-react';
 import { apiService } from '../services/api';

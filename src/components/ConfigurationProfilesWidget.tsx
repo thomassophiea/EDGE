@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect ,  memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Settings, Shield, Wifi, Target, TrendingUp, Network, Layers } from 'lucide-react';
 import { Badge } from './ui/badge';

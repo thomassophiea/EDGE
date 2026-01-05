@@ -7,7 +7,7 @@
  * Part of P1-001 implementation from API Dashboard Audit
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -56,7 +56,7 @@ interface ContextMetrics {
   };
 }
 
-export function OperationalContextSummary() {
+function OperationalContextSummaryComponent() {
   const { filters } = useGlobalFilters();
   const [metrics, setMetrics] = useState<ContextMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -782,3 +782,6 @@ export function OperationalContextSummary() {
     </Card>
   );
 }
+
+// Export memoized component for better performance
+export const OperationalContextSummary = memo(OperationalContextSummaryComponent);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect ,  memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { BarChart3, TrendingUp, Users, Activity, Download, Upload } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
