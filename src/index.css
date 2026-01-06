@@ -6445,16 +6445,18 @@ html[data-theme="light"], html.light {
   border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Kroger main background - White */
+/* Kroger main background - White with dark text */
 .theme-kroger,
 .kroger {
   background-color: #ffffff !important;
+  color: #1A1F2E !important;
 }
 
-/* Kroger cards - Light gray */
+/* Kroger cards - Light gray with dark text */
 .theme-kroger .bg-card,
 .kroger .bg-card {
   background-color: #F7F8F8 !important;
+  color: #1A1F2E !important;
 }
 
 /* Kroger primary buttons - Official Brand blue */
