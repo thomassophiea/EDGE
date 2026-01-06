@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AURA (Autonomous Unified Radio Agent) v500 (w/3rd party)</title>
 
+    <!-- Inline script to prevent FOUC - apply theme immediately -->
+    <script>
+      (function() {
+        const theme = localStorage.getItem('theme') || 'system';
+        const effectiveTheme = theme === 'system'
+          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : theme === 'light' ? 'default' : theme;
+
+        document.documentElement.classList.add(effectiveTheme === 'default' ? 'light' : effectiveTheme);
+        document.documentElement.classList.add(`theme-${effectiveTheme}`);
+      })();
+    </script>
+
     <!-- Performance optimizations -->
     <link rel="dns-prefetch" href="https://ufqjnesldbacyltbsvys.supabase.co" />
     <link rel="preconnect" href="https://ufqjnesldbacyltbsvys.supabase.co" crossorigin />
