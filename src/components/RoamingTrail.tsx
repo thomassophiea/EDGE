@@ -8,7 +8,8 @@ import {
   Clock,
   Wifi,
   Activity,
-  Signal
+  Signal,
+  X
 } from 'lucide-react';
 import { StationEvent } from '../services/api';
 
@@ -387,7 +388,10 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
         </div>
 
         {/* Timeline chart */}
-        <div className="flex-1 overflow-auto relative">
+        <div
+          className="flex-1 overflow-auto relative"
+          onClick={() => setSelectedEvent(null)}
+        >
           <div
             className="relative min-w-full"
             style={{ height: `${CHART_HEIGHT}px`, minWidth: '1200px' }}
@@ -468,7 +472,10 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
               return (
                 <React.Fragment key={idx}>
                   <div
-                    onClick={() => setSelectedEvent(event)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedEvent(event);
+                    }}
                     className={`
                       absolute w-6 h-6 rounded-full border-4 border-background
                       hover:scale-125 transition-transform cursor-pointer z-10
@@ -485,6 +492,7 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
+                        e.stopPropagation();
                         setSelectedEvent(event);
                       }
                     }}
@@ -517,10 +525,22 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
 
         {/* Event details sidebar */}
         {selectedEvent && (
-          <div className="w-96 border-l bg-muted/20 p-4 overflow-y-auto">
+          <div
+            className="w-96 border-l bg-muted/20 p-4 overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h4 className="font-semibold">Event Details</h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold">Event Details</h4>
+                  <button
+                    onClick={() => setSelectedEvent(null)}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Close event details"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
                 <p className="text-xs text-muted-foreground">{formatTime(selectedEvent.timestamp)}</p>
               </div>
               <div className="flex flex-col gap-2 items-end">
