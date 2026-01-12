@@ -225,7 +225,7 @@ function DashboardEnhancedComponent() {
   const [isServiceClientsDialogOpen, setIsServiceClientsDialogOpen] = useState(false);
 
   // Collapsible sections state
-  const [isTopClientsCollapsed, setIsTopClientsCollapsed] = useState(false);
+  const [isTopClientsCollapsed, setIsTopClientsCollapsed] = useState(true);
   const [isConnectedClientsCollapsed, setIsConnectedClientsCollapsed] = useState(true);
 
   useEffect(() => {

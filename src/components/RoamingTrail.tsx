@@ -43,6 +43,8 @@ interface RoamingEvent {
   isBandSteering?: boolean; // True if roaming on same AP (different radio)
   bandSteeringFrom?: string; // Previous band for band steering
   bandSteeringTo?: string; // New band for band steering
+  previousApName?: string; // Previous AP name for regular roaming
+  previousFrequency?: string; // Previous frequency for showing roaming context
 }
 
 type FilterType = 'time' | 'count';
@@ -124,8 +126,8 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
           else status = 'bad';
         }
 
-        // Get SSID from event or parsed details
-        const ssid = event.ssid || parsedDetails.SSID || parsedDetails.Ssid || 'N/A';
+        // Get SSID from event or parsed details (Network field is the SSID)
+        const ssid = event.ssid || parsedDetails.SSID || parsedDetails.Ssid || parsedDetails.Network || 'N/A';
 
         return {
           timestamp: parseInt(event.timestamp),
@@ -151,10 +153,14 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
       })
       .sort((a, b) => a.timestamp - b.timestamp);
 
-    // Detect band steering (roaming on same AP but different radio/band)
+    // Detect band steering and capture previous AP/frequency context
     for (let i = 1; i < filtered.length; i++) {
       const prev = filtered[i - 1];
       const curr = filtered[i];
+
+      // Always store previous AP and frequency for context
+      curr.previousApName = prev.apName;
+      curr.previousFrequency = prev.frequency || prev.band || '';
 
       // Check if same AP (by name or serial) but different frequency/radio
       const sameAP = (prev.apName === curr.apName || prev.apSerial === curr.apSerial);
@@ -721,11 +727,23 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
 
                 // Build summary based on available information
                 if (selectedEvent.isBandSteering) {
-                  parts.push(`Band steering on ${selectedEvent.apName}`);
+                  // Band steering: same AP, different frequency
+                  const summary = `Band steering on ${selectedEvent.apName}`;
                   if (selectedEvent.bandSteeringFrom && selectedEvent.bandSteeringTo) {
-                    parts.push(`from ${selectedEvent.bandSteeringFrom} to ${selectedEvent.bandSteeringTo}`);
+                    parts.push(`${summary}: ${selectedEvent.bandSteeringFrom} → ${selectedEvent.bandSteeringTo}`);
+                  } else {
+                    parts.push(summary);
+                  }
+                } else if (selectedEvent.previousApName) {
+                  // Regular roaming: different AP
+                  const apChange = `${selectedEvent.previousApName} → ${selectedEvent.apName}`;
+                  if (selectedEvent.previousFrequency && selectedEvent.frequency) {
+                    parts.push(`Roamed from ${apChange} (${selectedEvent.previousFrequency} → ${selectedEvent.frequency})`);
+                  } else {
+                    parts.push(`Roamed from ${apChange}`);
                   }
                 } else if (parsed.from || parsed.From) {
+                  // Fallback to parsing from details
                   const fromAP = parsed.from || parsed.From;
                   parts.push(`Roamed from ${fromAP} to ${selectedEvent.apName}`);
                 }
@@ -745,18 +763,6 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
 
                 if (parsed.FT && parsed.FT !== 'None') {
                   parts.push(`Fast Transition: ${parsed.FT}`);
-                }
-
-                // Add frequency information using proper language
-                if (selectedEvent.frequency) {
-                  parts.push(`Frequency: ${selectedEvent.frequency}`);
-                } else if (parsed.Radio) {
-                  const radio = parsed.Radio;
-                  let freq = '';
-                  if (radio === '1' || radio === 'Radio1') freq = '2.4GHz';
-                  else if (radio === '2' || radio === 'Radio2') freq = '5GHz';
-                  else if (radio === '3' || radio === 'Radio3') freq = '6GHz';
-                  if (freq) parts.push(`Frequency: ${freq}`);
                 }
 
                 return parts.length > 0 ? (

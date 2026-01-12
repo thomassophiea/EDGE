@@ -119,6 +119,7 @@ export const CLIENTS_TABLE_COLUMNS: ColumnConfig<Station>[] = [
     dataType: 'string',
     fieldPath: 'manufacturer',
     defaultVisible: true,
+    sortable: true,
     renderCell: (station) => {
       return (
         <div className="text-sm">
@@ -136,6 +137,7 @@ export const CLIENTS_TABLE_COLUMNS: ColumnConfig<Station>[] = [
     dataType: 'string',
     fieldPath: 'username',
     defaultVisible: true,
+    sortable: true,
     renderCell: (station) => {
       return (
         <div className="text-sm">
@@ -307,6 +309,7 @@ export const CLIENTS_TABLE_COLUMNS: ColumnConfig<Station>[] = [
     dataType: 'string',
     fieldPath: 'capabilities',
     defaultVisible: false,
+    sortable: true,
     renderCell: (station) => station.capabilities || '—'
   },
 
@@ -318,6 +321,7 @@ export const CLIENTS_TABLE_COLUMNS: ColumnConfig<Station>[] = [
     dataType: 'number',
     fieldPath: 'inBytes',
     defaultVisible: true,
+    sortable: true,
     renderCell: (station) => {
       const inBytes = station.inBytes || 0;
       const outBytes = station.outBytes || 0;
