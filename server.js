@@ -62,12 +62,17 @@ const proxyOptions = {
   timeout: 60000, // 60 second timeout for incoming requests
   proxyTimeout: 60000, // 60 second timeout for outgoing proxy requests
   pathRewrite: (path, req) => {
-    // Remove /api prefix and keep the rest
-    // /api/management/v1/services -> /management/v1/services
-    // /api/management/platformmanager/v2/... -> /platformmanager/v2/...
-    const rewritten = path.replace(/^\/management/, '');
-    console.log(`[Proxy] Path rewrite: ${path} -> ${rewritten}`);
-    return rewritten;
+    // Special case: /platformmanager endpoints should not have /management prefix
+    // /management/platformmanager/v2/... -> /platformmanager/v2/...
+    if (path.includes('/platformmanager/')) {
+      const rewritten = path.replace(/^\/management\/platformmanager/, '/platformmanager');
+      console.log(`[Proxy] Path rewrite (platformmanager): ${path} -> ${rewritten}`);
+      return rewritten;
+    }
+    // All other paths keep /management prefix
+    // /management/v1/services -> /management/v1/services
+    console.log(`[Proxy] Path preserved: ${path}`);
+    return path;
   },
 
   onProxyReq: (proxyReq, req, res) => {
