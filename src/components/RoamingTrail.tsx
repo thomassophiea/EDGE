@@ -236,14 +236,27 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-sm text-muted-foreground mr-2">Roam Type:</span>
+            <span className="text-sm text-muted-foreground mr-2">Connection:</span>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-0.5 bg-primary/40"></div>
+              <svg width="24" height="3" viewBox="0 0 24 3">
+                <line x1="0" y1="1.5" x2="24" y2="1.5" stroke="currentColor" strokeWidth="3" className="text-primary/40" />
+              </svg>
               <span className="text-sm font-medium">AP Roam</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-0.5 bg-blue-500 border-t-2 border-dashed border-blue-500"></div>
+              <svg width="24" height="3" viewBox="0 0 24 3">
+                <line x1="0" y1="1.5" x2="24" y2="1.5" stroke="#3b82f6" strokeWidth="3" strokeDasharray="4,2" />
+              </svg>
               <span className="text-sm font-medium">Band Steering</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-sm text-muted-foreground mr-2">Indicator:</span>
+            <div className="flex items-center gap-2">
+              <svg width="12" height="10" viewBox="0 0 12 10">
+                <path d="M 1.5 0 L 10.5 0 L 6 8 Z" fill="#3b82f6" stroke="#ffffff" strokeWidth="1" />
+              </svg>
+              <span className="text-sm font-medium">Band Steering Event</span>
             </div>
           </div>
         </div>
