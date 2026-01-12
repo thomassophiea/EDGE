@@ -22,7 +22,8 @@ import {
   Upload,
   Package,
   FileText,
-  Route
+  Route,
+  ArrowLeft
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { apiService, Station, StationEvent } from '../services/api';
@@ -1027,26 +1028,45 @@ export function ClientDetail({ macAddress }: ClientDetailProps) {
         </CardContent>
       </Card>
 
-      {/* Roaming Trail Dialog */}
-      <Dialog open={showRoamingTrail} onOpenChange={setShowRoamingTrail}>
-        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0">
-          <DialogHeader className="px-6 pt-6 pb-4">
-            <DialogTitle className="flex items-center gap-2">
-              <Route className="h-5 w-5" />
-              Roaming Trail - {clientDetails?.hostName || macAddress}
-            </DialogTitle>
-            <DialogDescription>
-              Visual timeline showing how this client roamed between access points
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-hidden">
-            <RoamingTrail
-              events={stationEvents}
-              macAddress={macAddress}
-            />
+      {/* Roaming Trail Full Page */}
+      {showRoamingTrail && (
+        <div className="fixed inset-0 z-50 bg-background">
+          <div className="h-full flex flex-col">
+            {/* Page Header */}
+            <div className="border-b bg-background px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowRoamingTrail(false)}
+                  className="mr-2"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
+                <Route className="h-6 w-6 text-primary" />
+                <div>
+                  <h1 className="text-2xl font-bold">
+                    Roaming Trail - {clientDetails?.hostName || macAddress}
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    Visual timeline showing how this client roamed between access points
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Roaming Trail Content */}
+            <div className="flex-1 overflow-hidden">
+              <RoamingTrail
+                events={stationEvents}
+                macAddress={macAddress}
+                hostName={clientDetails?.hostName}
+              />
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

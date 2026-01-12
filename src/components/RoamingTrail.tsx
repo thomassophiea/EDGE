@@ -15,6 +15,7 @@ import { StationEvent } from '../services/api';
 interface RoamingTrailProps {
   events: StationEvent[];
   macAddress: string;
+  hostName?: string;
 }
 
 interface RoamingEvent {
