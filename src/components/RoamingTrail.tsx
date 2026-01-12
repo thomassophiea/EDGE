@@ -30,6 +30,13 @@ interface RoamingEvent {
   signalStrength?: number;
   rssi?: number;
   status: 'good' | 'warning' | 'bad';
+  code?: string;
+  statusCode?: string;
+  channel?: string;
+  band?: string;
+  ipAddress?: string;
+  ipv6Address?: string;
+  authMethod?: string;
 }
 
 export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
@@ -76,6 +83,13 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
           details: event.details || '',
           cause: parsedDetails.Cause,
           reason: parsedDetails.Reason,
+          code: parsedDetails.Code,
+          statusCode: parsedDetails.Status,
+          channel: parsedDetails.Channel,
+          band: parsedDetails.Band,
+          authMethod: parsedDetails.Auth || parsedDetails.AuthMethod,
+          ipAddress: event.ipAddress,
+          ipv6Address: event.ipv6Address,
           rssi,
           status
         } as RoamingEvent;
@@ -158,18 +172,19 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
             {formatTimeShort(timeRange.min)} - {formatTimeShort(timeRange.max)}
           </p>
         </div>
-        <div className="flex items-center gap-8 text-base">
-          <div className="flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full bg-green-500"></div>
-            <span className="font-medium">Good</span>
+        <div className="flex items-center gap-6">
+          <span className="text-sm text-muted-foreground mr-2">Roam Status:</span>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+            <span className="text-sm font-medium">Good (-60 dBm or better)</span>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full bg-orange-500"></div>
-            <span className="font-medium">Warning</span>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+            <span className="text-sm font-medium">Warning (-70 to -60 dBm)</span>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full bg-red-500"></div>
-            <span className="font-medium">Bad</span>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+            <span className="text-sm font-medium">Bad (Below -70 dBm)</span>
           </div>
         </div>
       </div>
@@ -345,7 +360,52 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
                     <Signal className="h-4 w-4 text-primary" />
                     <span className="font-medium">Signal Strength</span>
                   </div>
-                  <div className="ml-6 text-muted-foreground">{selectedEvent.rssi} dBm</div>
+                  <div className="ml-6 flex items-center gap-2">
+                    <span className="text-muted-foreground">{selectedEvent.rssi} dBm</span>
+                    <Badge variant={
+                      selectedEvent.status === 'good' ? 'default' :
+                      selectedEvent.status === 'warning' ? 'secondary' :
+                      'destructive'
+                    } className="text-xs">
+                      {selectedEvent.status}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+
+              {(selectedEvent.channel || selectedEvent.band) && (
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Activity className="h-4 w-4 text-primary" />
+                    <span className="font-medium">Channel/Band</span>
+                  </div>
+                  <div className="ml-6 text-muted-foreground">
+                    {selectedEvent.channel && `Channel ${selectedEvent.channel}`}
+                    {selectedEvent.channel && selectedEvent.band && ' - '}
+                    {selectedEvent.band && `${selectedEvent.band}`}
+                  </div>
+                </div>
+              )}
+
+              {(selectedEvent.ipAddress || selectedEvent.ipv6Address) && (
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <span className="font-medium">IP Address</span>
+                  </div>
+                  {selectedEvent.ipAddress && (
+                    <div className="ml-6 text-muted-foreground font-mono text-xs">{selectedEvent.ipAddress}</div>
+                  )}
+                  {selectedEvent.ipv6Address && (
+                    <div className="ml-6 text-muted-foreground font-mono text-xs">{selectedEvent.ipv6Address}</div>
+                  )}
+                </div>
+              )}
+
+              {selectedEvent.authMethod && (
+                <div>
+                  <span className="font-medium">Auth Method: </span>
+                  <span className="text-muted-foreground">{selectedEvent.authMethod}</span>
                 </div>
               )}
 
@@ -363,10 +423,21 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
                 </div>
               )}
 
+              {(selectedEvent.code || selectedEvent.statusCode) && (
+                <div>
+                  <span className="font-medium">
+                    {selectedEvent.code ? 'Code: ' : 'Status Code: '}
+                  </span>
+                  <span className="text-muted-foreground font-mono">
+                    {selectedEvent.code || selectedEvent.statusCode}
+                  </span>
+                </div>
+              )}
+
               {selectedEvent.details && (
                 <div>
-                  <div className="font-medium mb-1">Details</div>
-                  <div className="ml-0 text-xs text-muted-foreground font-mono bg-background/50 p-2 rounded">
+                  <div className="font-medium mb-1">Raw Details</div>
+                  <div className="ml-0 text-xs text-muted-foreground font-mono bg-background/50 p-2 rounded break-words">
                     {selectedEvent.details}
                   </div>
                 </div>

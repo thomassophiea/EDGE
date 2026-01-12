@@ -470,31 +470,24 @@ export function ClientDetail({ macAddress }: ClientDetailProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center space-x-2">
-              <Signal className="h-4 w-4 text-muted-foreground" />
+          <div className="grid grid-cols-2 gap-6">
+            <div className="flex items-center space-x-3">
+              <Signal className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Signal Strength</p>
-                <p className="font-medium">
-                  {(trafficStats?.rss || trafficStats?.signalStrength || clientDetails.signalStrength) 
-                    ? `${trafficStats?.rss || trafficStats?.signalStrength || clientDetails.signalStrength} dBm` 
+                <p className="font-medium text-lg">
+                  {(trafficStats?.rss || trafficStats?.signalStrength || clientDetails.signalStrength)
+                    ? `${trafficStats?.rss || trafficStats?.signalStrength || clientDetails.signalStrength} dBm`
                     : 'N/A'}
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Activity className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground">Data Rate</p>
-                <p className="font-medium">{clientDetails.rxRate || clientDetails.dataRate || 'N/A'}</p>
-              </div>
-            </div>
 
-            <div className="flex items-center space-x-2">
-              <Shield className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center space-x-3">
+              <Shield className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Protocol</p>
-                <p className="font-medium">{clientDetails.protocol || 'N/A'}</p>
+                <p className="font-medium text-lg">{clientDetails.protocol || 'N/A'}</p>
               </div>
             </div>
           </div>
