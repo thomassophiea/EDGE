@@ -52,11 +52,16 @@ export function UserMenu({ onLogout, theme, onThemeToggle, userEmail }: UserMenu
     return orgName.charAt(0).toUpperCase() + orgName.slice(1);
   };
 
+  // Only show user info if we have real data
+  if (!userEmail) {
+    return null; // Don't render if no real user data available
+  }
+
   const userInfo = {
-    name: userEmail ? getNameFromEmail(userEmail) : 'User',
-    email: userEmail || 'user@example.com',
-    organization: userEmail ? getOrganizationFromEmail(userEmail) : 'Organization',
-    initials: userEmail ? getInitialsFromEmail(userEmail) : 'U'
+    name: getNameFromEmail(userEmail),
+    email: userEmail,
+    organization: getOrganizationFromEmail(userEmail),
+    initials: getInitialsFromEmail(userEmail)
   };
 
   const menuItems = [

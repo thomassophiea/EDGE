@@ -805,12 +805,19 @@ export function ClientDetail({ macAddress }: ClientDetailProps) {
                         className="p-3 rounded-lg border bg-card hover:bg-accent transition-colors"
                       >
                         <div className="flex items-start justify-between mb-2">
-                          <Badge variant="outline" className="text-xs">
+                          <Badge
+                            variant={
+                              event.eventType === 'Associate' || event.eventType === 'Authenticate' || event.eventType === 'Registration' ? 'default' :
+                              event.eventType === 'Disassociate' || event.eventType === 'De-registration' ? 'destructive' :
+                              'secondary'
+                            }
+                            className="text-xs"
+                          >
                             {event.eventType || 'Event'}
                           </Badge>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
-                            {event.timestamp ? new Date(event.timestamp).toLocaleString('en-US', {
+                            {event.timestamp ? new Date(parseInt(event.timestamp)).toLocaleString('en-US', {
                               month: 'short',
                               day: 'numeric',
                               hour: '2-digit',
@@ -819,14 +826,151 @@ export function ClientDetail({ macAddress }: ClientDetailProps) {
                             }) : 'N/A'}
                           </div>
                         </div>
-                        <div className="text-sm">
-                          {event.description || event.message || 'No description'}
+
+                        {/* Parse and display structured details */}
+                        {event.details && (() => {
+                          const parseDetails = (details: string) => {
+                            const parsed: Record<string, string> = {};
+                            const regex = /(\w+)\[([^\]]+)\]/g;
+                            let match;
+                            while ((match = regex.exec(details)) !== null) {
+                              parsed[match[1]] = match[2];
+                            }
+                            return parsed;
+                          };
+
+                          const parsedDetails = parseDetails(event.details);
+                          const hasStructuredData = Object.keys(parsedDetails).length > 0;
+
+                          return (
+                            <div className="mb-2">
+                              {hasStructuredData ? (
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-2">
+                                  {parsedDetails.Cause && (
+                                    <div>
+                                      <span className="text-muted-foreground">Cause: </span>
+                                      <span className="font-medium">{parsedDetails.Cause}</span>
+                                    </div>
+                                  )}
+                                  {parsedDetails.Reason && (
+                                    <div>
+                                      <span className="text-muted-foreground">Reason: </span>
+                                      <span className="font-medium">{parsedDetails.Reason}</span>
+                                    </div>
+                                  )}
+                                  {parsedDetails.Status && (
+                                    <div>
+                                      <span className="text-muted-foreground">Status: </span>
+                                      <span className="font-medium">{parsedDetails.Status}</span>
+                                    </div>
+                                  )}
+                                  {parsedDetails.Code && (
+                                    <div>
+                                      <span className="text-muted-foreground">Code: </span>
+                                      <span className="font-mono font-medium">{parsedDetails.Code}</span>
+                                    </div>
+                                  )}
+                                  {parsedDetails.DevFamily && (
+                                    <div>
+                                      <span className="text-muted-foreground">Device: </span>
+                                      <span className="font-medium">{parsedDetails.DevFamily}</span>
+                                    </div>
+                                  )}
+                                  {parsedDetails.Hostname && (
+                                    <div>
+                                      <span className="text-muted-foreground">Hostname: </span>
+                                      <span className="font-medium">{parsedDetails.Hostname}</span>
+                                    </div>
+                                  )}
+                                  {parsedDetails.Port && (
+                                    <div>
+                                      <span className="text-muted-foreground">Port: </span>
+                                      <span className="font-medium">{parsedDetails.Port}</span>
+                                    </div>
+                                  )}
+                                  {parsedDetails.Network && (
+                                    <div>
+                                      <span className="text-muted-foreground">Network: </span>
+                                      <span className="font-medium">{parsedDetails.Network}</span>
+                                    </div>
+                                  )}
+                                  {parsedDetails.FT && (
+                                    <div>
+                                      <span className="text-muted-foreground">Fast Transition: </span>
+                                      <span className="font-medium">{parsedDetails.FT}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-foreground mb-2">{event.details}</p>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        {/* Display all available event fields */}
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                          {event.apName && (
+                            <div>
+                              <span className="text-muted-foreground">AP: </span>
+                              <span className="font-medium">{event.apName}</span>
+                            </div>
+                          )}
+                          {event.apSerial && (
+                            <div>
+                              <span className="text-muted-foreground">AP Serial: </span>
+                              <span className="font-mono text-xs font-medium">{event.apSerial}</span>
+                            </div>
+                          )}
+                          {event.ssid && (
+                            <div>
+                              <span className="text-muted-foreground">SSID: </span>
+                              <span className="font-medium">{event.ssid}</span>
+                            </div>
+                          )}
+                          {event.ipAddress && (
+                            <div>
+                              <span className="text-muted-foreground">IP: </span>
+                              <span className="font-mono font-medium">{event.ipAddress}</span>
+                            </div>
+                          )}
+                          {event.ipv6Address && (
+                            <div className="col-span-2">
+                              <span className="text-muted-foreground">IPv6: </span>
+                              <span className="font-mono text-xs font-medium">{event.ipv6Address}</span>
+                            </div>
+                          )}
+                          {event.type && (
+                            <div>
+                              <span className="text-muted-foreground">Type: </span>
+                              <span className="font-medium">{event.type}</span>
+                            </div>
+                          )}
+                          {event.level && (
+                            <div>
+                              <span className="text-muted-foreground">Level: </span>
+                              <span className="font-medium">{event.level}</span>
+                            </div>
+                          )}
+                          {event.category && (
+                            <div>
+                              <span className="text-muted-foreground">Category: </span>
+                              <span className="font-medium">{event.category}</span>
+                            </div>
+                          )}
+                          {event.context && (
+                            <div>
+                              <span className="text-muted-foreground">Context: </span>
+                              <span className="font-medium">{event.context}</span>
+                            </div>
+                          )}
+                          {event.id && (
+                            <div className="col-span-2">
+                              <span className="text-muted-foreground">Event ID: </span>
+                              <span className="font-mono text-xs">{event.id}</span>
+                            </div>
+                          )}
                         </div>
-                        {event.status && (
-                          <div className="mt-2 text-xs text-muted-foreground">
-                            Status: {event.status}
-                          </div>
-                        )}
                       </div>
                     ))}
                 </div>

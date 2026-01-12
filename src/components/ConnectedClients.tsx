@@ -731,7 +731,7 @@ function ConnectedClientsComponent({ onShowDetail }: ConnectedClientsProps) {
         onClose={() => setIsModalOpen(false)}
         title={`Client Details - ${selectedStation?.hostName || selectedStation?.macAddress}`}
         description="Detailed information and events for this connected client"
-        width="xl"
+        width="3xl"
       >
           
           {selectedStation && (
@@ -953,15 +953,81 @@ function ConnectedClientsComponent({ onShowDetail }: ConnectedClientsProps) {
                                         </span>
                                       </div>
 
-                                      {event.details && (
-                                        <p className="text-sm text-foreground mb-2">{event.details}</p>
-                                      )}
+                                      {event.details && (() => {
+                                        // Parse details field for structured information
+                                        const parseDetails = (details: string) => {
+                                          const parsed: Record<string, string> = {};
+                                          const regex = /(\w+)\[([^\]]+)\]/g;
+                                          let match;
+                                          while ((match = regex.exec(details)) !== null) {
+                                            parsed[match[1]] = match[2];
+                                          }
+                                          return parsed;
+                                        };
+
+                                        const parsedDetails = parseDetails(event.details);
+                                        const hasStructuredData = Object.keys(parsedDetails).length > 0;
+
+                                        return (
+                                          <div className="mb-2">
+                                            {/* Show structured details if available */}
+                                            {hasStructuredData ? (
+                                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-2">
+                                                {parsedDetails.Cause && (
+                                                  <div>
+                                                    <span className="text-muted-foreground">Cause: </span>
+                                                    <span className="font-medium">{parsedDetails.Cause}</span>
+                                                  </div>
+                                                )}
+                                                {parsedDetails.Reason && (
+                                                  <div>
+                                                    <span className="text-muted-foreground">Reason: </span>
+                                                    <span className="font-medium">{parsedDetails.Reason}</span>
+                                                  </div>
+                                                )}
+                                                {parsedDetails.Status && (
+                                                  <div>
+                                                    <span className="text-muted-foreground">Status: </span>
+                                                    <span className="font-medium">{parsedDetails.Status}</span>
+                                                  </div>
+                                                )}
+                                                {parsedDetails.Code && (
+                                                  <div>
+                                                    <span className="text-muted-foreground">Code: </span>
+                                                    <span className="font-mono font-medium">{parsedDetails.Code}</span>
+                                                  </div>
+                                                )}
+                                                {parsedDetails.DevFamily && (
+                                                  <div>
+                                                    <span className="text-muted-foreground">Device: </span>
+                                                    <span className="font-medium">{parsedDetails.DevFamily}</span>
+                                                  </div>
+                                                )}
+                                                {parsedDetails.Hostname && (
+                                                  <div>
+                                                    <span className="text-muted-foreground">Hostname: </span>
+                                                    <span className="font-medium">{parsedDetails.Hostname}</span>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            ) : (
+                                              <p className="text-sm text-foreground">{event.details}</p>
+                                            )}
+                                          </div>
+                                        );
+                                      })()}
 
                                       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                                         {event.apName && (
                                           <div>
                                             <span className="text-muted-foreground">AP: </span>
                                             <span className="font-medium">{event.apName}</span>
+                                          </div>
+                                        )}
+                                        {event.apSerial && (
+                                          <div>
+                                            <span className="text-muted-foreground">AP Serial: </span>
+                                            <span className="font-mono text-xs font-medium">{event.apSerial}</span>
                                           </div>
                                         )}
                                         {event.ssid && (
@@ -976,10 +1042,40 @@ function ConnectedClientsComponent({ onShowDetail }: ConnectedClientsProps) {
                                             <span className="font-mono font-medium">{event.ipAddress}</span>
                                           </div>
                                         )}
+                                        {event.ipv6Address && (
+                                          <div className="col-span-2">
+                                            <span className="text-muted-foreground">IPv6: </span>
+                                            <span className="font-mono text-xs font-medium">{event.ipv6Address}</span>
+                                          </div>
+                                        )}
+                                        {event.type && (
+                                          <div>
+                                            <span className="text-muted-foreground">Type: </span>
+                                            <span className="font-medium">{event.type}</span>
+                                          </div>
+                                        )}
                                         {event.level && (
                                           <div>
                                             <span className="text-muted-foreground">Level: </span>
                                             <span className="font-medium">{event.level}</span>
+                                          </div>
+                                        )}
+                                        {event.category && (
+                                          <div>
+                                            <span className="text-muted-foreground">Category: </span>
+                                            <span className="font-medium">{event.category}</span>
+                                          </div>
+                                        )}
+                                        {event.context && (
+                                          <div>
+                                            <span className="text-muted-foreground">Context: </span>
+                                            <span className="font-medium">{event.context}</span>
+                                          </div>
+                                        )}
+                                        {event.id && (
+                                          <div className="col-span-2">
+                                            <span className="text-muted-foreground">Event ID: </span>
+                                            <span className="font-mono text-xs">{event.id}</span>
                                           </div>
                                         )}
                                       </div>
