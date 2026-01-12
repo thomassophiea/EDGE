@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
@@ -37,6 +37,7 @@ interface RoamingEvent {
   ipAddress?: string;
   ipv6Address?: string;
   authMethod?: string;
+  isBandSteering?: boolean; // True if roaming on same AP (different radio)
 }
 
 export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
@@ -95,6 +96,21 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
         } as RoamingEvent;
       })
       .sort((a, b) => a.timestamp - b.timestamp);
+
+    // Detect band steering (roaming on same AP but different radio/band)
+    for (let i = 1; i < filtered.length; i++) {
+      const prev = filtered[i - 1];
+      const curr = filtered[i];
+
+      // Check if same AP (by name or serial) but different band/channel
+      const sameAP = (prev.apName === curr.apName || prev.apSerial === curr.apSerial);
+      const differentBand = prev.band !== curr.band && prev.band && curr.band;
+      const differentChannel = prev.channel !== curr.channel && prev.channel && curr.channel;
+
+      if (sameAP && (differentBand || differentChannel)) {
+        curr.isBandSteering = true;
+      }
+    }
 
     return filtered;
   }, [events]);
@@ -172,19 +188,32 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
             {formatTimeShort(timeRange.min)} - {formatTimeShort(timeRange.max)}
           </p>
         </div>
-        <div className="flex items-center gap-6">
-          <span className="text-sm text-muted-foreground mr-2">Roam Status:</span>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span className="text-sm font-medium">Good (-60 dBm or better)</span>
+        <div className="flex items-center gap-8">
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">Signal Quality:</span>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <span className="text-sm font-medium">Good</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+              <span className="text-sm font-medium">Warning</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+              <span className="text-sm font-medium">Bad</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-            <span className="text-sm font-medium">Warning (-70 to -60 dBm)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <span className="text-sm font-medium">Bad (Below -70 dBm)</span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">Roam Type:</span>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-0.5 bg-primary/40"></div>
+              <span className="text-sm font-medium">AP Roam</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-0.5 bg-blue-500 border-t-2 border-dashed border-blue-500"></div>
+              <span className="text-sm font-medium">Band Steering</span>
+            </div>
           </div>
         </div>
       </div>
@@ -254,6 +283,9 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
               const x2 = getTimelinePosition(nextEvent.timestamp);
               const y2 = getAPRow(nextEvent.apName) * TIMELINE_HEIGHT + 90;
 
+              // Check if next event is band steering
+              const isBandSteering = nextEvent.isBandSteering;
+
               return (
                 <svg
                   key={`line-${idx}`}
@@ -270,9 +302,10 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
                     y1={y1}
                     x2={`${x2}%`}
                     y2={y2}
-                    stroke="currentColor"
+                    stroke={isBandSteering ? '#3b82f6' : 'currentColor'}
                     strokeWidth="3"
-                    className="text-primary/40"
+                    strokeDasharray={isBandSteering ? '8,4' : 'none'}
+                    className={isBandSteering ? '' : 'text-primary/40'}
                   />
                 </svg>
               );
@@ -289,29 +322,50 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
                 'bg-red-500';
 
               return (
-                <div
-                  key={idx}
-                  onClick={() => setSelectedEvent(event)}
-                  className={`
-                    absolute w-6 h-6 rounded-full border-4 border-background
-                    hover:scale-125 transition-transform cursor-pointer z-10
-                    overflow-hidden
-                    ${dotColor}
-                    ${selectedEvent === event ? 'ring-4 ring-primary ring-offset-2 scale-125' : ''}
-                  `}
-                  style={{
-                    left: `${x}%`,
-                    top: `${y}px`,
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      setSelectedEvent(event);
-                    }
-                  }}
-                />
+                <React.Fragment key={idx}>
+                  <div
+                    onClick={() => setSelectedEvent(event)}
+                    className={`
+                      absolute w-6 h-6 rounded-full border-4 border-background
+                      hover:scale-125 transition-transform cursor-pointer z-10
+                      overflow-hidden
+                      ${dotColor}
+                      ${selectedEvent === event ? 'ring-4 ring-primary ring-offset-2 scale-125' : ''}
+                    `}
+                    style={{
+                      left: `${x}%`,
+                      top: `${y}px`,
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        setSelectedEvent(event);
+                      }
+                    }}
+                  />
+                  {/* Band steering indicator */}
+                  {event.isBandSteering && (
+                    <div
+                      className="absolute z-20 pointer-events-none"
+                      style={{
+                        left: `${x}%`,
+                        top: `${y - 18}px`,
+                        transform: 'translate(-50%, 0)'
+                      }}
+                    >
+                      <svg width="16" height="12" viewBox="0 0 16 12">
+                        <path
+                          d="M 8 0 L 14 10 L 2 10 Z"
+                          fill="#3b82f6"
+                          stroke="#ffffff"
+                          strokeWidth="1.5"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </React.Fragment>
               );
             })}
           </div>
@@ -325,15 +379,22 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
                 <h4 className="font-semibold">Event Details</h4>
                 <p className="text-xs text-muted-foreground">{formatTime(selectedEvent.timestamp)}</p>
               </div>
-              <Badge
-                variant={
-                  selectedEvent.eventType === 'Registration' || selectedEvent.eventType === 'Associate' ? 'default' :
-                  selectedEvent.eventType === 'De-registration' || selectedEvent.eventType === 'Disassociate' ? 'destructive' :
-                  'secondary'
-                }
-              >
-                {selectedEvent.eventType}
-              </Badge>
+              <div className="flex flex-col gap-2 items-end">
+                <Badge
+                  variant={
+                    selectedEvent.eventType === 'Registration' || selectedEvent.eventType === 'Associate' ? 'default' :
+                    selectedEvent.eventType === 'De-registration' || selectedEvent.eventType === 'Disassociate' ? 'destructive' :
+                    'secondary'
+                  }
+                >
+                  {selectedEvent.eventType}
+                </Badge>
+                {selectedEvent.isBandSteering && (
+                  <Badge className="bg-blue-500 text-white">
+                    Band Steering
+                  </Badge>
+                )}
+              </div>
             </div>
 
             <div className="space-y-3 text-sm">
