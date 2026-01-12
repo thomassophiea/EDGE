@@ -88,8 +88,14 @@ export function ClientDetail({ macAddress }: ClientDetailProps) {
         apSn: details.apSn,
         accessPointSerial: details.accessPointSerial,
         siteId: details.siteId,
-        siteName: details.siteName
+        siteName: details.siteName,
+        rxRate: details.rxRate,
+        dataRate: details.dataRate,
+        txRate: details.txRate
       });
+
+      // Log ALL fields to see what's actually available
+      console.log('All station fields:', details);
       
       // Load site name if siteId is available
       if (details.siteId) {
