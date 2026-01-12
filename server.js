@@ -61,8 +61,13 @@ const proxyOptions = {
   logLevel: 'debug',
   timeout: 60000, // 60 second timeout for incoming requests
   proxyTimeout: 60000, // 60 second timeout for outgoing proxy requests
-  pathRewrite: {
-    '^/management': '/management', // Ensure path is preserved
+  pathRewrite: (path, req) => {
+    // Remove /api prefix and keep the rest
+    // /api/management/v1/services -> /management/v1/services
+    // /api/management/platformmanager/v2/... -> /platformmanager/v2/...
+    const rewritten = path.replace(/^\/management/, '');
+    console.log(`[Proxy] Path rewrite: ${path} -> ${rewritten}`);
+    return rewritten;
   },
 
   onProxyReq: (proxyReq, req, res) => {
