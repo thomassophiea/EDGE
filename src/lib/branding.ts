@@ -27,34 +27,6 @@ export const branding: Record<ThemeMode, BrandConfig> = {
     tagline: 'Autonomous Unified Radio Agent',
     logo: '/logo.svg',
     icon: '/favicon.ico'
-  },
-  synthwave: {
-    name: 'AURA',
-    fullName: 'Extreme Platform ONE | AURA',
-    tagline: 'Autonomous Unified Radio Agent',
-    logo: '/logo.svg',
-    icon: '/favicon.ico'
-  },
-  pirate: {
-    name: 'AURA',
-    fullName: 'Extreme Platform ONE | AURA',
-    tagline: 'Autonomous Unified Radio Agent',
-    logo: '/logo.svg',
-    icon: '/favicon.ico'
-  },
-  mi5: {
-    name: 'AURA',
-    fullName: 'Extreme Platform ONE | AURA',
-    tagline: 'Autonomous Unified Radio Agent',
-    logo: '/logo.svg',
-    icon: '/favicon.ico'
-  },
-  kroger: {
-    name: 'Kroger',
-    fullName: 'Kroger Network Management',
-    tagline: 'Fresh for Everyone',
-    logo: '/branding/kroger/logo.svg',
-    icon: '/branding/kroger/icon.png'
   }
 };
 

@@ -34,7 +34,6 @@ const AccessPointDetail = lazy(() => import('./components/AccessPointDetail').th
 const ClientDetail = lazy(() => import('./components/ClientDetail').then(m => ({ default: m.ClientDetail })));
 const SiteDetail = lazy(() => import('./components/SiteDetail').then(m => ({ default: m.SiteDetail })));
 const NetworkChatbot = lazy(() => import('./components/NetworkChatbot').then(m => ({ default: m.NetworkChatbot })));
-const SynthwaveMusicPlayer = lazy(() => import('./components/SynthwaveMusicPlayer').then(m => ({ default: m.SynthwaveMusicPlayer })));
 import { apiService, ApiCallLog } from './services/api';
 import { sleDataCollectionService } from './services/sleDataCollection';
 import { Toaster } from './components/ui/sonner';
@@ -78,7 +77,7 @@ export default function App() {
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [justLoggedIn, setJustLoggedIn] = useState(false);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark' | 'synthwave' | 'pirate' | 'mi5' | 'kroger' | 'system'>('system');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
   const [detailPanel, setDetailPanel] = useState<DetailPanelState>({
     isOpen: false,
     type: null,
@@ -93,7 +92,7 @@ export default function App() {
   useEffect(() => {
     // Initialize theme from localStorage or system preference
     const initializeTheme = () => {
-      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'synthwave' | 'pirate' | 'mi5' | 'kroger' | 'system' | null;
+      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
       const initialTheme = savedTheme || 'system';
 
       setTheme(initialTheme);
@@ -540,14 +539,14 @@ export default function App() {
   }, []);
 
   // Helper function to apply theme to document
-  const applyTheme = (newTheme: 'light' | 'dark' | 'synthwave' | 'pirate' | 'mi5' | 'kroger') => {
+  const applyTheme = (newTheme: 'light' | 'dark') => {
     const root = document.documentElement;
 
     // Apply color variables from themes.ts
     applyThemeColors(newTheme === 'light' ? 'default' : newTheme);
 
     // Remove existing theme classes
-    root.classList.remove('light', 'dark', 'synthwave', 'pirate', 'mi5', 'kroger');
+    root.classList.remove('light', 'dark');
 
     // Add new theme class
     root.classList.add(newTheme);
@@ -556,12 +555,12 @@ export default function App() {
     root.setAttribute('data-theme', newTheme);
 
     // Ensure body also gets the theme class
-    document.body.classList.remove('light', 'dark', 'synthwave', 'pirate', 'mi5', 'kroger');
+    document.body.classList.remove('light', 'dark');
     document.body.classList.add(newTheme);
   };
 
   // Helper function to apply theme based on mode (handles system detection)
-  const applyThemeForMode = (mode: 'light' | 'dark' | 'synthwave' | 'pirate' | 'mi5' | 'kroger' | 'system') => {
+  const applyThemeForMode = (mode: 'light' | 'dark' | 'system') => {
     if (mode === 'system') {
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       applyTheme(systemTheme);
@@ -573,11 +572,7 @@ export default function App() {
   const toggleTheme = () => {
     const newTheme =
       theme === 'light' ? 'dark' :
-      theme === 'dark' ? 'synthwave' :
-      theme === 'synthwave' ? 'pirate' :
-      theme === 'pirate' ? 'mi5' :
-      theme === 'mi5' ? 'kroger' :
-      theme === 'kroger' ? 'system' :
+      theme === 'dark' ? 'system' :
       'light';
     setTheme(newTheme);
     applyThemeForMode(newTheme);
@@ -588,18 +583,10 @@ export default function App() {
     // Show a toast notification
     const themeLabel =
       newTheme === 'system' ? 'System (Auto)' :
-      newTheme === 'synthwave' ? 'Miami Vice' :
-      newTheme === 'pirate' ? 'Pirate' :
-      newTheme === 'mi5' ? 'MI5' :
-      newTheme === 'kroger' ? 'Kroger' :
       newTheme.charAt(0).toUpperCase() + newTheme.slice(1);
 
     const themeDescription =
       newTheme === 'system' ? 'The interface will now follow your system preference.' :
-      newTheme === 'synthwave' ? "You've got to know the rules before you can break 'em. Otherwise, it's no fun." :
-      newTheme === 'pirate' ? "Arrr! Dead men tell no tales, but this UI tells all the metrics ye need!" :
-      newTheme === 'mi5' ? "Your mission, should you choose to accept it, is to monitor all network metrics." :
-      newTheme === 'kroger' ? "Fresh network management for everyone!" :
       `The interface is now using ${newTheme} theme.`;
 
     toast.success(`Switched to ${themeLabel} mode`, {
@@ -871,17 +858,11 @@ export default function App() {
             paddingBottom: isDevModeOpen ? `${devPanelHeight}px` : '0'
           }}
         >
-          <div className={theme === 'kroger' ? '' : 'p-6'}>
+          <div className="p-6">
             {/* Top Bar with Test Tools */}
-            <div className={`flex justify-between items-center kroger-top-bar ${
-              theme === 'kroger'
-                ? 'bg-sidebar text-sidebar-foreground px-6 py-3 mb-6'
-                : 'mb-6'
-            }`}>
+            <div className="flex justify-between items-center mb-6">
               <div className="flex items-center space-x-4">
-                <h2 className={`text-lg font-semibold ${
-                  theme === 'kroger' ? 'text-sidebar-foreground' : 'text-[rgba(255,255,255,1)]'
-                }`}>
+                <h2 className="text-lg font-semibold text-[rgba(255,255,255,1)]">
                   {pageInfo[currentPage as keyof typeof pageInfo]?.title || 'Mobility Engine'}
                 </h2>
               </div>
@@ -925,7 +906,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className={theme === 'kroger' ? 'px-6' : ''}>
+            <div>
               <Suspense fallback={
                 <div className="flex items-center justify-center h-64">
                   <div className="text-center">
@@ -953,14 +934,6 @@ export default function App() {
         isOpen={isChatbotOpen}
         onToggle={() => setIsChatbotOpen(!isChatbotOpen)}
       />
-
-      {/* Miami Vice Music Player - Only in Miami Vice Mode */}
-      {theme === 'synthwave' && (
-        <SynthwaveMusicPlayer
-          isVisible={true}
-          onClose={() => {/* Music player always visible in Miami Vice mode */}}
-        />
-      )}
 
       {/* Developer Mode Panel */}
       <DevModePanel

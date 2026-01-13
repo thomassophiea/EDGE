@@ -2,10 +2,8 @@ import {
   Users,
   Wifi,
   MapPin,
-  AlertTriangle,
   Settings,
   TrendingUp,
-  Compass,
   LogOut,
   Menu,
   ChevronDown,
@@ -19,21 +17,7 @@ import {
   Moon,
   Monitor,
   BarChart3,
-  Share2,
-  Database,
-  GitBranch,
-  LayoutDashboard,
-  Wrench,
-  Palette,
-  Skull,
-  Anchor,
-  Radio,
-  Scroll,
-  Map,
-  Swords,
-  Flag,
-  Eye,
-  ShoppingCart
+  Wrench
 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import extremeNetworksLogo from 'figma:asset/cc372b1d703a0b056a9f8c590da6c8e1cb4947fd.png';
@@ -49,25 +33,25 @@ interface SidebarProps {
   adminRole: string | null;
   currentPage: string;
   onPageChange: (page: string) => void;
-  theme?: 'light' | 'dark' | 'synthwave' | 'pirate' | 'mi5' | 'kroger' | 'system';
+  theme?: 'light' | 'dark' | 'system';
   onThemeToggle?: () => void;
 }
 
-// Navigation items with pirate and MI5-themed icons and labels
+// Navigation items
 const navigationItems = [
-  { id: 'service-levels', label: 'Contextual Insights', pirateLabel: "Ship's Status", mi5Label: "Operations Status", icon: TrendingUp, pirateIcon: Anchor },
-  { id: 'connected-clients', label: 'Connected Clients', pirateLabel: "Crew Aboard", mi5Label: "Field Agents", icon: Users, pirateIcon: Users },
-  { id: 'access-points', label: 'Access Points', pirateLabel: "Signal Beacons", mi5Label: "Assets", icon: Wifi, pirateIcon: Radio },
-  { id: 'report-widgets', label: 'Report Widgets', pirateLabel: "Treasure Maps", mi5Label: "Q Division", icon: BarChart3, pirateIcon: Scroll },
+  { id: 'service-levels', label: 'Contextual Insights', icon: TrendingUp },
+  { id: 'connected-clients', label: 'Connected Clients', icon: Users },
+  { id: 'access-points', label: 'Access Points', icon: Wifi },
+  { id: 'report-widgets', label: 'Report Widgets', icon: BarChart3 },
 ];
 
-// Configure items with pirate and MI5-themed icons and labels
+// Configure items
 const configureItems = [
-  { id: 'configure-sites', label: 'Sites', pirateLabel: "Islands", mi5Label: "Safe Houses", icon: MapPin, pirateIcon: Map },
-  { id: 'configure-networks', label: 'Networks', pirateLabel: "Sea Routes", mi5Label: "Secure Channels", icon: Network, pirateIcon: Compass },
-  { id: 'configure-policy', label: 'Policy', pirateLabel: "Ship's Code", mi5Label: "Protocols", icon: Shield, pirateIcon: Shield },
-  { id: 'configure-aaa-policies', label: 'AAA Policies', pirateLabel: "Sword Guard", mi5Label: "Clearance Levels", icon: UserCheck, pirateIcon: Swords },
-  { id: 'configure-guest', label: 'Guest', pirateLabel: "Welcome Mateys", mi5Label: "Recruits", icon: UserPlus, pirateIcon: Flag },
+  { id: 'configure-sites', label: 'Sites', icon: MapPin },
+  { id: 'configure-networks', label: 'Networks', icon: Network },
+  { id: 'configure-policy', label: 'Policy', icon: Shield },
+  { id: 'configure-aaa-policies', label: 'AAA Policies', icon: UserCheck },
+  { id: 'configure-guest', label: 'Guest', icon: UserPlus },
 ];
 
 export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme = 'system', onThemeToggle }: SidebarProps) {
@@ -86,24 +70,13 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
       isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
-      <div className={cn(
-        theme === 'kroger' ? 'px-4 py-3' : 'p-4 border-b border-sidebar-border'
-      )}>
+      <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center space-x-2">
-              {theme === 'kroger' ? (
-                <img
-                  src="/branding/kroger/logo.svg"
-                  alt="Kroger"
-                  className="h-8 w-auto brightness-0 invert"
-                  style={{ filter: 'brightness(0) invert(1)' }}
-                />
-              ) : (
-                <div className="text-foreground">
-                  <span className="text-muted-foreground text-xs">{branding.fullName}</span>
-                </div>
-              )}
+              <div className="text-foreground">
+                <span className="text-muted-foreground text-xs">{branding.fullName}</span>
+              </div>
             </div>
           )}
           <Button
@@ -120,7 +93,7 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
       {/* Navigation */}
       <nav className="flex-1 p-2 space-y-1">
         {navigationItems.map((item) => {
-          const Icon = theme === 'pirate' ? item.pirateIcon : item.icon;
+          const Icon = item.icon;
           return (
             <Button
               key={item.id}
@@ -135,7 +108,7 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
               onClick={() => onPageChange(item.id)}
             >
               <Icon className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
-              {!isCollapsed && <span>{theme === 'pirate' ? item.pirateLabel : theme === 'mi5' ? item.mi5Label : item.label}</span>}
+              {!isCollapsed && <span>{item.label}</span>}
             </Button>
           );
         })}
@@ -160,7 +133,7 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
             <Cog className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
             {!isCollapsed && (
               <>
-                <span className="flex-1 text-left">{theme === 'pirate' ? "Ship's Riggin'" : theme === 'mi5' ? "Mission Control" : "Configure"}</span>
+                <span className="flex-1 text-left">Configure</span>
                 {isConfigureExpanded ? (
                   <ChevronDown className="h-4 w-4" />
                 ) : (
@@ -174,7 +147,7 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
           {!isCollapsed && isConfigureExpanded && (
             <div className="ml-6 space-y-1">
               {configureItems.map((item) => {
-                const Icon = theme === 'pirate' ? item.pirateIcon : item.icon;
+                const Icon = item.icon;
                 return (
                   <Button
                     key={item.id}
@@ -182,14 +155,14 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
                     className={cn(
                       "w-full justify-start h-9 text-sm",
                       "px-3",
-                      currentPage === item.id 
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground" 
+                      currentPage === item.id
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
                         : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     )}
                     onClick={() => onPageChange(item.id)}
                   >
                     <Icon className="h-3 w-3 mr-2" />
-                    <span>{theme === 'pirate' ? item.pirateLabel : theme === 'mi5' ? item.mi5Label : item.label}</span>
+                    <span>{item.label}</span>
                   </Button>
                 );
               })}
@@ -226,7 +199,7 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
           onClick={() => onPageChange('administration')}
         >
           <Settings className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
-          {!isCollapsed && <span>{theme === 'pirate' ? "Captain's Quarters" : theme === 'mi5' ? "HQ" : "Administration"}</span>}
+          {!isCollapsed && <span>Administration</span>}
         </Button>
       </nav>
 
@@ -250,8 +223,7 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
             onClick={onThemeToggle}
             className={cn(
               "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent",
-              isCollapsed ? "px-2" : "px-3",
-              theme === 'synthwave' && "bg-gradient-to-r from-pink-500/20 to-purple-500/20 border border-pink-500/50"
+              isCollapsed ? "px-2" : "px-3"
             )}
             title={`Switch theme (current: ${theme === 'system' ? 'auto' : theme})`}
           >
@@ -259,30 +231,13 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
               <Sun className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
             ) : theme === 'dark' ? (
               <Moon className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
-            ) : theme === 'synthwave' ? (
-              <Palette className={cn("h-4 w-4 text-pink-400", !isCollapsed && "mr-2")} />
-            ) : theme === 'pirate' ? (
-              <Skull className={cn("h-4 w-4 text-yellow-600", !isCollapsed && "mr-2")} />
-            ) : theme === 'mi5' ? (
-              <Eye className={cn("h-4 w-4 text-red-600", !isCollapsed && "mr-2")} />
-            ) : theme === 'kroger' ? (
-              <ShoppingCart className={cn("h-4 w-4 text-blue-700", !isCollapsed && "mr-2")} />
             ) : (
               <Monitor className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
             )}
             {!isCollapsed && (
-              <span className={
-                theme === 'synthwave' ? 'text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 font-bold' :
-                theme === 'pirate' ? 'text-yellow-600 font-bold' :
-                theme === 'mi5' ? 'text-red-600 font-bold' :
-                theme === 'kroger' ? 'text-blue-700 font-bold' : ''
-              }>
+              <span>
                 {theme === 'light' ? 'Light' :
                  theme === 'dark' ? 'Dark' :
-                 theme === 'synthwave' ? 'Miami Vice' :
-                 theme === 'pirate' ? 'Pirate' :
-                 theme === 'mi5' ? 'MI5' :
-                 theme === 'kroger' ? 'Kroger' :
                  'Auto'}
               </span>
             )}
