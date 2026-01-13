@@ -106,12 +106,17 @@ export function AuditLogsWidget() {
   };
 
   const getActionBadge = (log: AuditLog) => {
-    const action = log.action || log.actionType || 'Unknown';
+    const action = log.action || log.actionType;
     const status = log.status || '';
 
     if (status.toLowerCase().includes('error') || status.toLowerCase().includes('fail')) {
       return <Badge variant="destructive" className="text-xs">Error</Badge>;
     }
+
+    if (!action) {
+      return null; // Don't show badge if action is unknown
+    }
+
     if (action.toLowerCase().includes('create') || action.toLowerCase().includes('add')) {
       return <Badge variant="default" className="text-xs bg-green-600">Create</Badge>;
     }
@@ -190,7 +195,7 @@ export function AuditLogsWidget() {
               {filteredLogs.map((log, idx) => {
                 const timestamp = log.timestamp || log.time;
                 const user = log.user || log.userId || log.username;
-                const action = log.action || log.actionType || 'Unknown action';
+                const action = log.action || log.actionType;
                 const resource = log.resource || log.resourceType;
                 const description = log.description || log.message;
 
@@ -213,10 +218,12 @@ export function AuditLogsWidget() {
                             </div>
                           )}
                         </div>
-                        <div className="text-sm font-medium mb-1">
-                          {action}
-                          {resource && <span className="text-muted-foreground"> on {resource}</span>}
-                        </div>
+                        {action && (
+                          <div className="text-sm font-medium mb-1">
+                            {action}
+                            {resource && <span className="text-muted-foreground"> on {resource}</span>}
+                          </div>
+                        )}
                         {description && (
                           <div className="text-xs text-muted-foreground mb-2">
                             {description}
