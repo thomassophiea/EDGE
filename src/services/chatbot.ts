@@ -10,13 +10,32 @@ export interface ChatMessage {
   data?: any; // Additional structured data for rich responses
   // Deep link support
   actions?: ChatAction[];
+  // Follow-up suggestions
+  suggestions?: string[];
+  // Evidence trail
+  evidence?: EvidenceTrail;
+  // Copyable values
+  copyableValues?: CopyableValue[];
 }
 
 export interface ChatAction {
   label: string;
-  type: 'client' | 'access-point' | 'site';
+  type: 'client' | 'access-point' | 'site' | 'quick-action';
   entityId: string;
   entityName?: string;
+  action?: 'disassociate' | 'refresh' | 'reboot';
+}
+
+export interface EvidenceTrail {
+  endpointsCalled: string[];
+  dataFields: string[];
+  timestamp: Date;
+}
+
+export interface CopyableValue {
+  label: string;
+  value: string;
+  type: 'mac' | 'ip' | 'serial';
 }
 
 // Assistant context from UI (what entity is currently focused)
@@ -108,6 +127,9 @@ export class ChatbotService {
       let response: string;
       let data: any = null;
       let actions: ChatAction[] = [];
+      let suggestions: string[] | undefined;
+      let evidence: EvidenceTrail | undefined;
+      let copyableValues: CopyableValue[] | undefined;
 
       switch (intent.type) {
         case 'access_points_status':
@@ -132,6 +154,21 @@ export class ChatbotService {
           response = apHealthResult.response;
           actions = apHealthResult.actions;
           break;
+        case 'worst_clients':
+          const worstClientsResult = await this.handleWorstClientsQuery(normalizedQuery, intent, uiContext);
+          response = worstClientsResult.response;
+          actions = worstClientsResult.actions;
+          suggestions = worstClientsResult.suggestions;
+          evidence = worstClientsResult.evidence;
+          copyableValues = worstClientsResult.copyableValues;
+          break;
+        case 'what_changed':
+          const whatChangedResult = await this.handleWhatChangedQuery(normalizedQuery, intent, uiContext);
+          response = whatChangedResult.response;
+          actions = whatChangedResult.actions;
+          suggestions = whatChangedResult.suggestions;
+          evidence = whatChangedResult.evidence;
+          break;
         case 'network_settings':
           response = await this.handleNetworkSettingsQuery(normalizedQuery, intent);
           break;
@@ -154,7 +191,10 @@ export class ChatbotService {
         content: response,
         timestamp: new Date(),
         data,
-        actions: actions.length > 0 ? actions : undefined
+        actions: actions.length > 0 ? actions : undefined,
+        suggestions,
+        evidence,
+        copyableValues
       };
     } catch (error) {
       console.error('Error processing chatbot query:', error);
@@ -224,6 +264,27 @@ export class ChatbotService {
         /is\s+this\s+an?\s+(rf|uplink)\s+issue/,
         /ap\s+status\s+check/,
         /show\s+ap\s+health/
+      ],
+      worst_clients: [
+        /worst\s+clients?/,
+        /problem\s+clients?/,
+        /clients?\s+with\s+issues/,
+        /struggling\s+clients?/,
+        /bad\s+clients?/,
+        /clients?\s+(having|with)\s+(problems?|issues?|trouble)/,
+        /unhealthy\s+clients?/,
+        /poor\s+(performing\s+)?clients?/,
+        /triage\s+clients?/
+      ],
+      what_changed: [
+        /what\s+(changed|happened)/,
+        /recent\s+changes?/,
+        /what's\s+(new|different)/,
+        /any\s+changes?/,
+        /show\s+(me\s+)?changes?/,
+        /events?\s+(in\s+)?(the\s+)?(last|past)/,
+        /activity\s+(log|history)/,
+        /recent\s+(events?|activity)/
       ],
       network_settings: [
         /settings?|config|configuration/,
@@ -1113,6 +1174,268 @@ ${recentList}
     response += `\n💡 **Tip**: Click the buttons below to drill into specific entities.`;
 
     return { response, actions };
+  }
+
+  private async handleWorstClientsQuery(
+    query: string,
+    intent: any,
+    uiContext?: AssistantUIContext
+  ): Promise<{
+    response: string;
+    actions: ChatAction[];
+    suggestions: string[];
+    evidence: EvidenceTrail;
+    copyableValues: CopyableValue[];
+  }> {
+    const stations = this.context.stations || [];
+    const actions: ChatAction[] = [];
+    const copyableValues: CopyableValue[] = [];
+
+    // Score each client based on various health metrics
+    const scoredClients = stations.map(client => {
+      let score = 100; // Start with perfect score
+      const issues: string[] = [];
+
+      // Signal strength scoring
+      const rssi = parseInt(client.rss || client.signalStrength);
+      if (!isNaN(rssi)) {
+        if (rssi < -85) {
+          score -= 40;
+          issues.push('Very weak signal');
+        } else if (rssi < -75) {
+          score -= 20;
+          issues.push('Weak signal');
+        } else if (rssi < -65) {
+          score -= 5;
+        }
+      }
+
+      // Data rate scoring
+      const txRate = parseInt(client.txRate) || 0;
+      const rxRate = parseInt(client.rxRate) || 0;
+      if (txRate < 50 && rxRate < 50) {
+        score -= 25;
+        issues.push('Low data rates');
+      }
+
+      // Band scoring (2.4GHz is less optimal)
+      const band = client.band || client.frequency || '';
+      if (band.includes('2.4')) {
+        score -= 10;
+        issues.push('On 2.4GHz');
+      }
+
+      // Connection status
+      const status = client.status?.toLowerCase();
+      if (status !== 'connected' && status !== 'associated') {
+        score -= 50;
+        issues.push('Disconnected');
+      }
+
+      return {
+        ...client,
+        healthScore: Math.max(0, score),
+        issues
+      };
+    });
+
+    // Sort by health score (worst first)
+    const worstClients = scoredClients
+      .filter(c => c.healthScore < 80) // Only show clients with issues
+      .sort((a, b) => a.healthScore - b.healthScore)
+      .slice(0, 10);
+
+    if (worstClients.length === 0) {
+      return {
+        response: `✅ **All Clients Healthy!**\n\nNo clients with significant issues found. All ${stations.length} connected clients are performing well.`,
+        actions: [],
+        suggestions: ['Show me connected clients', 'How many APs are online?', 'Show site health status'],
+        evidence: {
+          endpointsCalled: ['/v1/stations'],
+          dataFields: ['rss', 'txRate', 'rxRate', 'band', 'status'],
+          timestamp: new Date()
+        },
+        copyableValues: []
+      };
+    }
+
+    // Build response
+    let response = `⚠️ **Clients Needing Attention** (${worstClients.length} found)\n\n`;
+
+    worstClients.forEach((client, index) => {
+      const name = client.hostName || client.macAddress;
+      const scoreEmoji = client.healthScore < 40 ? '🔴' : client.healthScore < 70 ? '🟡' : '🟢';
+      const issueText = client.issues.slice(0, 2).join(', ');
+
+      response += `${index + 1}. ${scoreEmoji} **${name}**\n`;
+      response += `   Score: ${client.healthScore}/100 • ${issueText}\n`;
+      response += `   AP: ${client.apName || 'Unknown'} • Signal: ${client.rss || 'N/A'} dBm\n\n`;
+
+      // Add action
+      actions.push({
+        label: name.length > 20 ? name.substring(0, 20) + '...' : name,
+        type: 'client',
+        entityId: client.macAddress,
+        entityName: client.hostName
+      });
+
+      // Add copyable MAC
+      copyableValues.push({
+        label: name,
+        value: client.macAddress,
+        type: 'mac'
+      });
+    });
+
+    return {
+      response,
+      actions: actions.slice(0, 5), // Limit to 5 action buttons
+      suggestions: [
+        'Is this client healthy?',
+        'Show roaming history',
+        'How is this AP performing?'
+      ],
+      evidence: {
+        endpointsCalled: ['/v1/stations'],
+        dataFields: ['rss', 'txRate', 'rxRate', 'band', 'status', 'hostName', 'apName'],
+        timestamp: new Date()
+      },
+      copyableValues
+    };
+  }
+
+  private async handleWhatChangedQuery(
+    query: string,
+    intent: any,
+    uiContext?: AssistantUIContext
+  ): Promise<{
+    response: string;
+    actions: ChatAction[];
+    suggestions: string[];
+    evidence: EvidenceTrail;
+  }> {
+    const actions: ChatAction[] = [];
+    const endpointsCalled: string[] = [];
+
+    // Try to get recent events from various sources
+    let allEvents: any[] = [];
+
+    // If we have a client context, get client events
+    if (uiContext?.type === 'client' && uiContext.entityId) {
+      try {
+        const events = await apiService.fetchStationEvents(uiContext.entityId);
+        endpointsCalled.push('/platformmanager/v2/logging/stations/events/query');
+        allEvents = events.map(e => ({
+          ...e,
+          source: 'client',
+          entityName: uiContext.entityName
+        }));
+      } catch (e) {
+        // Continue
+      }
+    }
+
+    // Try to get audit logs
+    try {
+      const auditLogs = await apiService.getAuditLogs?.() || [];
+      endpointsCalled.push('/v1/audit/logs');
+      allEvents = [
+        ...allEvents,
+        ...auditLogs.slice(0, 20).map((log: any) => ({
+          timestamp: log.timestamp,
+          eventType: log.action || log.type || 'Config Change',
+          details: log.message || log.details,
+          source: 'audit'
+        }))
+      ];
+    } catch (e) {
+      // Continue without audit logs
+    }
+
+    // Sort by timestamp (most recent first)
+    allEvents.sort((a, b) => {
+      const timeA = parseInt(a.timestamp) || new Date(a.timestamp).getTime();
+      const timeB = parseInt(b.timestamp) || new Date(b.timestamp).getTime();
+      return timeB - timeA;
+    });
+
+    // Filter to last hour by default
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    const recentEvents = allEvents.filter(e => {
+      const eventTime = parseInt(e.timestamp) || new Date(e.timestamp).getTime();
+      return eventTime > oneHourAgo;
+    }).slice(0, 15);
+
+    if (recentEvents.length === 0) {
+      const contextText = uiContext?.entityName ? ` for ${uiContext.entityName}` : '';
+      return {
+        response: `📋 **Recent Activity${contextText}**\n\nNo significant changes detected in the last hour.\n\n💡 Try expanding the time range or checking specific clients/APs.`,
+        actions: [],
+        suggestions: [
+          'Show worst clients',
+          'Show site health status',
+          'Are there any offline devices?'
+        ],
+        evidence: {
+          endpointsCalled,
+          dataFields: ['timestamp', 'eventType', 'details'],
+          timestamp: new Date()
+        }
+      };
+    }
+
+    // Build response
+    const contextText = uiContext?.entityName ? ` for ${uiContext.entityName}` : '';
+    let response = `📋 **Recent Activity${contextText}** (Last Hour)\n\n`;
+
+    // Group events by type
+    const eventCounts: Record<string, number> = {};
+    recentEvents.forEach(e => {
+      const type = e.eventType || 'Unknown';
+      eventCounts[type] = (eventCounts[type] || 0) + 1;
+    });
+
+    response += `**Summary:**\n`;
+    Object.entries(eventCounts).forEach(([type, count]) => {
+      const emoji = type.includes('Roam') ? '🔄' :
+                    type.includes('Associate') || type.includes('Registration') ? '✅' :
+                    type.includes('Disassociate') || type.includes('De-registration') ? '❌' :
+                    type.includes('Config') ? '⚙️' : '📍';
+      response += `${emoji} ${type}: ${count}\n`;
+    });
+
+    response += `\n**Recent Events:**\n`;
+    recentEvents.slice(0, 8).forEach(event => {
+      const time = new Date(parseInt(event.timestamp) || event.timestamp).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      const emoji = event.eventType?.includes('Roam') ? '🔄' :
+                    event.eventType?.includes('Associate') ? '✅' :
+                    event.eventType?.includes('Disassociate') ? '❌' : '📍';
+      response += `${emoji} ${time} - ${event.eventType || 'Event'}`;
+      if (event.apName) response += ` → ${event.apName}`;
+      response += '\n';
+    });
+
+    if (recentEvents.length > 8) {
+      response += `\n...and ${recentEvents.length - 8} more events`;
+    }
+
+    return {
+      response,
+      actions,
+      suggestions: [
+        'Is this client healthy?',
+        'Show worst clients',
+        'Show roaming history'
+      ],
+      evidence: {
+        endpointsCalled,
+        dataFields: ['timestamp', 'eventType', 'apName', 'details'],
+        timestamp: new Date()
+      }
+    };
   }
 
   private async handleNetworkSettingsQuery(query: string, intent: any): Promise<string> {

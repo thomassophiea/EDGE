@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -19,10 +19,18 @@ import {
   Maximize2,
   Expand,
   Shrink,
-  X
+  X,
+  Copy,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Database
 } from 'lucide-react';
-import { chatbotService, ChatMessage, ChatAction, AssistantUIContext } from '../services/chatbot';
+import { chatbotService, ChatMessage, ChatAction, AssistantUIContext, CopyableValue, EvidenceTrail } from '../services/chatbot';
 import { toast } from 'sonner';
+
+// Storage key for chat history persistence
+const CHAT_HISTORY_KEY = 'network-assistant-history';
 
 // Context types for the Network Assistant
 export interface AssistantContext {
@@ -65,8 +73,58 @@ export function NetworkChatbot({
   const [isMinimized, setIsMinimized] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [copiedValue, setCopiedValue] = useState<string | null>(null);
+  const [expandedEvidence, setExpandedEvidence] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load chat history from localStorage
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem(CHAT_HISTORY_KEY);
+      if (savedHistory) {
+        const parsed = JSON.parse(savedHistory);
+        // Restore timestamps as Date objects
+        const restored = parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+        setMessages(restored);
+      }
+    } catch (e) {
+      console.warn('Failed to load chat history:', e);
+    }
+  }, []);
+
+  // Save chat history to localStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        // Keep only last 50 messages to avoid localStorage limits
+        const toSave = messages.slice(-50);
+        localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(toSave));
+      } catch (e) {
+        console.warn('Failed to save chat history:', e);
+      }
+    }
+  }, [messages]);
+
+  // Keyboard shortcut: Cmd/Ctrl + K to toggle assistant
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        onToggle?.();
+      }
+      // Escape to close when open
+      if (e.key === 'Escape' && isOpen) {
+        onToggle?.();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onToggle, isOpen]);
 
   useEffect(() => {
     initializeChatbot();
@@ -273,7 +331,135 @@ export function NetworkChatbot({
       case 'site':
         onShowSiteDetail?.(action.entityId, action.entityName || action.entityId);
         break;
+      case 'quick-action':
+        // Handle quick actions like disassociate, refresh, reboot
+        if (action.action === 'refresh') {
+          handleRefreshContext();
+        } else {
+          toast.info(`Quick action: ${action.action} for ${action.entityName || action.entityId}`);
+        }
+        break;
     }
+  };
+
+  const handleCopyValue = useCallback(async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedValue(value);
+      toast.success(`Copied ${label}`);
+      setTimeout(() => setCopiedValue(null), 2000);
+    } catch (e) {
+      toast.error('Failed to copy to clipboard');
+    }
+  }, []);
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setInputValue(suggestion);
+    // Auto-send the suggestion
+    setTimeout(() => {
+      const syntheticEvent = { key: 'Enter', shiftKey: false, preventDefault: () => {} };
+      handleKeyPress(syntheticEvent as React.KeyboardEvent);
+    }, 100);
+  };
+
+  const clearChatHistory = () => {
+    setMessages([]);
+    localStorage.removeItem(CHAT_HISTORY_KEY);
+    toast.success('Chat history cleared');
+  };
+
+  // Render copyable values (MAC, IP, Serial)
+  const renderCopyableValues = (copyableValues: CopyableValue[] | undefined, compact = false) => {
+    if (!copyableValues || copyableValues.length === 0) return null;
+
+    return (
+      <div className={`flex flex-wrap gap-1 ${compact ? 'mt-1' : 'mt-2'}`}>
+        {copyableValues.slice(0, compact ? 3 : 6).map((item, idx) => (
+          <Button
+            key={idx}
+            variant="ghost"
+            size="sm"
+            className={`${compact ? 'h-5 text-[10px] px-1.5' : 'h-6 text-xs px-2'} font-mono bg-muted/50 hover:bg-muted`}
+            onClick={() => handleCopyValue(item.value, item.label)}
+          >
+            {copiedValue === item.value ? (
+              <Check className={`${compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} mr-1 text-green-500`} />
+            ) : (
+              <Copy className={`${compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} mr-1`} />
+            )}
+            <span className="truncate max-w-[100px]">{item.value}</span>
+          </Button>
+        ))}
+      </div>
+    );
+  };
+
+  // Render evidence trail
+  const renderEvidenceTrail = (evidence: EvidenceTrail | undefined, messageId: string, compact = false) => {
+    if (!evidence) return null;
+
+    const isExpanded = expandedEvidence === messageId;
+
+    return (
+      <div className={`${compact ? 'mt-1' : 'mt-2'} pt-1 border-t border-border/30`}>
+        <button
+          onClick={() => setExpandedEvidence(isExpanded ? null : messageId)}
+          className={`flex items-center gap-1 text-muted-foreground hover:text-foreground ${compact ? 'text-[10px]' : 'text-xs'}`}
+        >
+          <Database className={compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
+          <span>Evidence trail</span>
+          {isExpanded ? (
+            <ChevronUp className={compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
+          ) : (
+            <ChevronDown className={compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
+          )}
+        </button>
+        {isExpanded && (
+          <div className={`${compact ? 'mt-1 text-[10px]' : 'mt-2 text-xs'} text-muted-foreground space-y-1`}>
+            <div>
+              <span className="font-medium">Endpoints:</span>
+              <div className="ml-2">
+                {evidence.endpointsCalled.map((ep, i) => (
+                  <div key={i} className="font-mono">{ep}</div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="font-medium">Data fields:</span>
+              <span className="ml-1">{evidence.dataFields.join(', ')}</span>
+            </div>
+            <div>
+              <span className="font-medium">Retrieved:</span>
+              <span className="ml-1">{evidence.timestamp.toLocaleTimeString()}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render follow-up suggestions
+  const renderSuggestions = (suggestions: string[] | undefined, compact = false) => {
+    if (!suggestions || suggestions.length === 0) return null;
+
+    return (
+      <div className={`${compact ? 'mt-1.5' : 'mt-2'} pt-1.5 border-t border-border/30`}>
+        <div className={`${compact ? 'text-[10px]' : 'text-xs'} text-muted-foreground mb-1`}>Follow-up questions:</div>
+        <div className="flex flex-wrap gap-1">
+          {suggestions.slice(0, compact ? 2 : 3).map((suggestion, idx) => (
+            <Button
+              key={idx}
+              variant="outline"
+              size="sm"
+              className={`${compact ? 'h-5 text-[10px] px-1.5' : 'h-6 text-xs px-2'}`}
+              onClick={() => handleSuggestionClick(suggestion)}
+            >
+              {suggestion}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   const getContextBanner = () => {
@@ -318,25 +504,73 @@ export function NetworkChatbot({
   const formatMessageContent = (content: string) => {
     // Convert markdown-style formatting to HTML-like JSX
     const parts = content.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`|•.*?(?=\n|$))/g);
-    
+
+    // MAC address pattern
+    const macPattern = /([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}/g;
+
+    const formatPart = (text: string, keyPrefix: string) => {
+      // Check for MAC addresses in the text and make them clickable
+      const macMatches = text.match(macPattern);
+      if (macMatches) {
+        const segments = text.split(macPattern);
+        const result: React.ReactNode[] = [];
+        let macIndex = 0;
+
+        segments.forEach((segment, segIdx) => {
+          if (segment) {
+            result.push(<span key={`${keyPrefix}-seg-${segIdx}`}>{segment}</span>);
+          }
+          if (macIndex < macMatches.length) {
+            const mac = macMatches[macIndex];
+            result.push(
+              <button
+                key={`${keyPrefix}-mac-${macIndex}`}
+                className="font-mono text-primary hover:underline cursor-pointer"
+                onClick={() => onShowClientDetail?.(mac)}
+              >
+                {mac}
+              </button>
+            );
+            macIndex++;
+          }
+        });
+        return result;
+      }
+      return text;
+    };
+
     return parts.map((part, index) => {
       if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={index} className="text-foreground">{part.slice(2, -2)}</strong>;
+        const innerText = part.slice(2, -2);
+        return <strong key={index} className="text-foreground">{formatPart(innerText, `strong-${index}`)}</strong>;
       }
       if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
         return <em key={index}>{part.slice(1, -1)}</em>;
       }
       if (part.startsWith('`') && part.endsWith('`')) {
-        return <code key={index} className="bg-muted px-1 py-0.5 rounded text-xs font-mono">{part.slice(1, -1)}</code>;
+        const codeContent = part.slice(1, -1);
+        // Check if it's a MAC address
+        if (macPattern.test(codeContent)) {
+          return (
+            <button
+              key={index}
+              className="bg-muted px-1 py-0.5 rounded text-xs font-mono text-primary hover:underline cursor-pointer"
+              onClick={() => onShowClientDetail?.(codeContent)}
+            >
+              {codeContent}
+            </button>
+          );
+        }
+        return <code key={index} className="bg-muted px-1 py-0.5 rounded text-xs font-mono">{codeContent}</code>;
       }
       if (part.startsWith('• ')) {
-        return <div key={index} className="ml-2">{part}</div>;
+        return <div key={index} className="ml-2">{formatPart(part, `bullet-${index}`)}</div>;
       }
-      
+
       // Handle emojis and line breaks
       return part.split('\n').map((line, lineIndex) => (
         <span key={`${index}-${lineIndex}`}>
-          {line}
+          {formatPart(line, `line-${index}-${lineIndex}`)}
           {lineIndex < part.split('\n').length - 1 && <br />}
         </span>
       ));
@@ -525,12 +759,18 @@ export function NetworkChatbot({
                                   className="h-7 text-xs"
                                   onClick={() => handleActionClick(action)}
                                 >
-                                  {action.type === 'client' ? '👤' : action.type === 'access-point' ? '📡' : '🏢'}
+                                  {action.type === 'client' ? '👤' : action.type === 'access-point' ? '📡' : action.type === 'quick-action' ? '⚡' : '🏢'}
                                   <span className="ml-1">{action.label}</span>
                                 </Button>
                               ))}
                             </div>
                           )}
+                          {/* Copyable values (MAC, IP) */}
+                          {renderCopyableValues(message.copyableValues, false)}
+                          {/* Follow-up suggestions */}
+                          {renderSuggestions(message.suggestions, false)}
+                          {/* Evidence trail */}
+                          {renderEvidenceTrail(message.evidence, message.id, false)}
                         </div>
                       </div>
                     </div>
@@ -598,21 +838,33 @@ export function NetworkChatbot({
 
               <div className="flex items-center justify-between mt-3 max-w-3xl mx-auto">
                 <div className="text-sm text-muted-foreground">
-                  Press Enter to send • Shift+Enter for new line
+                  Press Enter to send • <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">⌘K</kbd> to toggle
                 </div>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setInputValue('help');
-                    setTimeout(() => handleSendMessage(), 100);
-                  }}
-                  className="text-sm"
-                >
-                  <HelpCircle className="h-4 w-4 mr-1" />
-                  Help
-                </Button>
+                <div className="flex items-center gap-2">
+                  {messages.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearChatHistory}
+                      className="text-sm text-muted-foreground hover:text-destructive"
+                    >
+                      Clear history
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setInputValue('help');
+                      setTimeout(() => handleSendMessage(), 100);
+                    }}
+                    className="text-sm"
+                  >
+                    <HelpCircle className="h-4 w-4 mr-1" />
+                    Help
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -763,7 +1015,7 @@ export function NetworkChatbot({
                                     className="h-6 text-xs px-2"
                                     onClick={() => handleActionClick(action)}
                                   >
-                                    {action.type === 'client' ? '👤' : action.type === 'access-point' ? '📡' : '🏢'}
+                                    {action.type === 'client' ? '👤' : action.type === 'access-point' ? '📡' : action.type === 'quick-action' ? '⚡' : '🏢'}
                                     <span className="ml-1 truncate max-w-[100px]">{action.label}</span>
                                   </Button>
                                 ))}
@@ -774,6 +1026,12 @@ export function NetworkChatbot({
                                 )}
                               </div>
                             )}
+                            {/* Copyable values (MAC, IP) - compact mode */}
+                            {renderCopyableValues(message.copyableValues, true)}
+                            {/* Follow-up suggestions - compact mode */}
+                            {renderSuggestions(message.suggestions, true)}
+                            {/* Evidence trail - compact mode */}
+                            {renderEvidenceTrail(message.evidence, message.id, true)}
                           </div>
                         </div>
                       </div>
@@ -861,27 +1119,39 @@ export function NetworkChatbot({
               
               <div className={`flex items-center justify-between ${isMobile ? 'mt-1' : 'mt-2'}`}>
                 <div className={`text-xs text-muted-foreground ${isMobile ? 'hidden' : ''}`}>
-                  Press Enter to send • Shift+Enter for new line
+                  <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">⌘K</kbd> to toggle
                 </div>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    const helpMessage: ChatMessage = {
-                      id: `user-help-${Date.now()}`,
-                      type: 'user',
-                      content: 'help',
-                      timestamp: new Date()
-                    };
-                    setMessages(prev => [...prev, helpMessage]);
-                    handleSendMessage();
-                  }}
-                  className={`text-xs h-6 px-2 ${isMobile ? 'ml-auto' : ''}`}
-                >
-                  <HelpCircle className="h-3 w-3 mr-1" />
-                  Help
-                </Button>
+
+                <div className={`flex items-center gap-1 ${isMobile ? 'ml-auto' : ''}`}>
+                  {messages.length > 0 && !isMobile && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearChatHistory}
+                      className="text-xs h-6 px-2 text-muted-foreground hover:text-destructive"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const helpMessage: ChatMessage = {
+                        id: `user-help-${Date.now()}`,
+                        type: 'user',
+                        content: 'help',
+                        timestamp: new Date()
+                      };
+                      setMessages(prev => [...prev, helpMessage]);
+                      handleSendMessage();
+                    }}
+                    className="text-xs h-6 px-2"
+                  >
+                    <HelpCircle className="h-3 w-3 mr-1" />
+                    Help
+                  </Button>
+                </div>
               </div>
             </div>
           </>
