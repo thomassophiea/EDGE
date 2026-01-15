@@ -375,17 +375,39 @@ Need details about a specific client? Provide the MAC address!`;
     // Extract search term from query
     const searchTerm = this.extractSearchTerm(query);
 
-    if (!searchTerm) {
-      return `🔍 **Client Search**
+    // If no search term or generic query, show list of connected clients
+    if (!searchTerm || searchTerm === 'by name or mac' || searchTerm === 'name or mac') {
+      const connectedClients = stations
+        .filter(s => s.status?.toLowerCase() === 'connected' || s.status?.toLowerCase() === 'associated')
+        .slice(0, 10);
 
-Please provide a search term. You can search by:
-• **Name/Hostname** - e.g., "find client John's iPhone"
-• **MAC Address** - e.g., "search client aa:bb:cc:dd:ee:ff"
-• **IP Address** - e.g., "find device 192.168.1.50"
-• **Device Type** - e.g., "search for iPhone"
-• **Site** - e.g., "find clients at HQ"
+      if (connectedClients.length === 0) {
+        return `🔍 **Client Search**
 
-Example: "find client MacBook" or "search device 192.168.1.100"`;
+No connected clients found. Please specify a search term.
+
+Example: "find client aa:bb:cc:dd:ee:ff"`;
+      }
+
+      const clientList = connectedClients.map(client => {
+        const name = client.hostName || 'Unknown';
+        const mac = client.macAddress;
+        const ip = client.ipAddress || 'No IP';
+        const site = client.siteName || '';
+        const deviceType = client.deviceType || '';
+        const info = [deviceType, site].filter(Boolean).join(' • ');
+        return `• **${name}** - ${ip}\n  \`${mac}\`${info ? ` (${info})` : ''}`;
+      }).join('\n\n');
+
+      return `🔍 **Client Search - Connected Clients**
+
+Type "find client" followed by a name, MAC, or IP:
+
+${clientList}${stations.length > 10 ? `\n\n...and ${stations.length - 10} more clients` : ''}
+
+**Example queries:**
+• "find client ${connectedClients[0]?.hostName || connectedClients[0]?.macAddress}"
+• "find client ${connectedClients[0]?.macAddress}"`;
     }
 
     const searchLower = searchTerm.toLowerCase();
@@ -478,15 +500,38 @@ ${clientList}${matchingClients.length > 8 ? `\n\n...and ${matchingClients.length
     // Extract client identifier from query
     const searchTerm = this.extractRoamingSearchTerm(query);
 
-    if (!searchTerm) {
-      return `📍 **Client Roaming**
+    // If no search term or generic query, show list of connected clients
+    if (!searchTerm || searchTerm === 'a client' || searchTerm === 'client') {
+      const connectedClients = stations
+        .filter(s => s.status?.toLowerCase() === 'connected' || s.status?.toLowerCase() === 'associated')
+        .slice(0, 10);
 
-Please specify a client to see their roaming history. You can search by:
-• **Name/Hostname** - e.g., "roaming of iPhone"
-• **MAC Address** - e.g., "roaming aa:bb:cc:dd:ee:ff"
-• **IP Address** - e.g., "roaming history 192.168.1.50"
+      if (connectedClients.length === 0) {
+        return `📍 **Client Roaming**
 
-Example: "roaming of John's MacBook" or "show roaming aa:bb:cc:dd:ee:ff"`;
+No connected clients found. Please specify a client MAC address or hostname.
+
+Example: "roaming aa:bb:cc:dd:ee:ff"`;
+      }
+
+      const clientList = connectedClients.map(client => {
+        const name = client.hostName || 'Unknown';
+        const mac = client.macAddress;
+        const site = client.siteName || '';
+        const deviceType = client.deviceType || '';
+        const info = [deviceType, site].filter(Boolean).join(' • ');
+        return `• **${name}**\n  \`${mac}\`${info ? ` (${info})` : ''}`;
+      }).join('\n\n');
+
+      return `📍 **Client Roaming - Select a Client**
+
+Type "roaming" followed by a name or MAC address:
+
+${clientList}${stations.length > 10 ? `\n\n...and ${stations.length - 10} more clients` : ''}
+
+**Example queries:**
+• "roaming ${connectedClients[0]?.hostName || connectedClients[0]?.macAddress}"
+• "roaming ${connectedClients[0]?.macAddress}"`;
     }
 
     const searchLower = searchTerm.toLowerCase();

@@ -337,10 +337,11 @@ export function NetworkChatbot({ isOpen = false, onToggle, className = '' }: Net
           </div>
         </CardHeader>
 
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden" style={{ minHeight: 0 }}>
           {/* Main chat area */}
-          <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
-            <ScrollArea className="flex-1 p-6">
+          <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-4" style={{ minHeight: 0 }}>
+            <ScrollArea className="flex-1" style={{ minHeight: 0 }}>
+              <div className="p-6">
               <div className="space-y-4">
                 {messages.length === 0 && !isLoading && (
                   <div className="text-center py-12">
@@ -414,6 +415,7 @@ export function NetworkChatbot({ isOpen = false, onToggle, className = '' }: Net
                 )}
               </div>
               <div ref={messagesEndRef} />
+              </div>
             </ScrollArea>
 
             <div className="border-t border-border p-4">
