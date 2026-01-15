@@ -8,6 +8,25 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   data?: any; // Additional structured data for rich responses
+  // Deep link support
+  actions?: ChatAction[];
+}
+
+export interface ChatAction {
+  label: string;
+  type: 'client' | 'access-point' | 'site';
+  entityId: string;
+  entityName?: string;
+}
+
+// Assistant context from UI (what entity is currently focused)
+export interface AssistantUIContext {
+  type: 'site' | 'client' | 'access-point' | 'wlan' | null;
+  entityId?: string;
+  entityName?: string;
+  siteId?: string;
+  siteName?: string;
+  timeRange?: string;
 }
 
 export interface QueryContext {
@@ -76,18 +95,19 @@ export class ChatbotService {
     }
   }
 
-  async processQuery(query: string): Promise<ChatMessage> {
+  async processQuery(query: string, uiContext?: AssistantUIContext): Promise<ChatMessage> {
     await this.initialize();
-    
+
     const normalizedQuery = query.toLowerCase().trim();
     const messageId = `bot-${Date.now()}`;
 
     try {
       // Intent detection based on keywords
       const intent = this.detectIntent(normalizedQuery);
-      
+
       let response: string;
       let data: any = null;
+      let actions: ChatAction[] = [];
 
       switch (intent.type) {
         case 'access_points_status':
@@ -101,6 +121,16 @@ export class ChatbotService {
           break;
         case 'roaming_info':
           response = await this.handleRoamingQuery(normalizedQuery, intent);
+          break;
+        case 'client_health':
+          const clientHealthResult = await this.handleClientHealthQuery(normalizedQuery, intent, uiContext);
+          response = clientHealthResult.response;
+          actions = clientHealthResult.actions;
+          break;
+        case 'ap_health':
+          const apHealthResult = await this.handleAPHealthQuery(normalizedQuery, intent, uiContext);
+          response = apHealthResult.response;
+          actions = apHealthResult.actions;
           break;
         case 'network_settings':
           response = await this.handleNetworkSettingsQuery(normalizedQuery, intent);
@@ -123,7 +153,8 @@ export class ChatbotService {
         type: 'bot',
         content: response,
         timestamp: new Date(),
-        data
+        data,
+        actions: actions.length > 0 ? actions : undefined
       };
     } catch (error) {
       console.error('Error processing chatbot query:', error);
@@ -171,6 +202,28 @@ export class ChatbotService {
         /where\s+(has|did)\s+.+\s+(roam|move|connect)/,
         /movement\s+(of|for)/,
         /connection\s+history/
+      ],
+      client_health: [
+        /is\s+(this\s+)?client\s+healthy/,
+        /client\s+health/,
+        /why\s+is\s+(this\s+)?(client|device)\s+slow/,
+        /is\s+it\s+a\s+wi-?fi\s+issue/,
+        /client\s+connection\s+(details|info)/,
+        /how\s+is\s+(this\s+)?client/,
+        /what('s|\s+is)\s+(wrong\s+with|the\s+issue\s+with)\s+(this\s+)?client/,
+        /show\s+(me\s+)?connection\s+details/,
+        /client\s+status/
+      ],
+      ap_health: [
+        /is\s+(this\s+)?ap\s+healthy/,
+        /how\s+is\s+(this\s+)?ap\s+perform/,
+        /ap\s+health\s+check/,
+        /how\s+is\s+(this\s+)?(access\s+point|ap)\s+(doing|performing)?/,
+        /are\s+clients\s+having\s+issues/,
+        /is\s+(any\s+)?radio\s+overloaded/,
+        /is\s+this\s+an?\s+(rf|uplink)\s+issue/,
+        /ap\s+status\s+check/,
+        /show\s+ap\s+health/
       ],
       network_settings: [
         /settings?|config|configuration/,
@@ -660,6 +713,406 @@ ${recentList}
 
 ⚠️ Unable to fetch detailed roaming history at this time. Please check the client details page for the full Roaming Trail.`;
     }
+  }
+
+  private async handleClientHealthQuery(
+    query: string,
+    intent: any,
+    uiContext?: AssistantUIContext
+  ): Promise<{ response: string; actions: ChatAction[] }> {
+    const stations = this.context.stations || [];
+    const actions: ChatAction[] = [];
+
+    // If we have client context from UI, use it
+    let targetClient: any = null;
+    if (uiContext?.type === 'client' && uiContext.entityId) {
+      targetClient = stations.find(s =>
+        s.macAddress?.toLowerCase() === uiContext.entityId?.toLowerCase()
+      );
+    }
+
+    // If no context, try to extract from query or ask for selection
+    if (!targetClient) {
+      const searchTerm = this.extractSearchTerm(query);
+      if (searchTerm && searchTerm !== 'this client' && searchTerm !== 'client') {
+        const matches = stations.filter(s =>
+          s.macAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.hostName?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        if (matches.length === 1) {
+          targetClient = matches[0];
+        } else if (matches.length > 1) {
+          const clientList = matches.slice(0, 5).map(c => {
+            const name = c.hostName || c.macAddress;
+            return `• **${name}** (\`${c.macAddress}\`)`;
+          }).join('\n');
+          return {
+            response: `🔍 **Multiple clients found. Please be more specific:**\n\n${clientList}`,
+            actions: matches.slice(0, 5).map(c => ({
+              label: c.hostName || c.macAddress,
+              type: 'client' as const,
+              entityId: c.macAddress,
+              entityName: c.hostName
+            }))
+          };
+        }
+      }
+    }
+
+    if (!targetClient) {
+      // Show list of clients to choose from
+      const connectedClients = stations
+        .filter(s => s.status?.toLowerCase() === 'connected')
+        .slice(0, 8);
+
+      if (connectedClients.length === 0) {
+        return { response: "No connected clients found to analyze.", actions: [] };
+      }
+
+      const clientList = connectedClients.map(c => {
+        const name = c.hostName || 'Unknown';
+        return `• **${name}** - \`${c.macAddress}\``;
+      }).join('\n');
+
+      return {
+        response: `🩺 **Client Health Check**\n\nPlease specify which client to analyze:\n\n${clientList}\n\nExample: "Is client ${connectedClients[0]?.hostName || connectedClients[0]?.macAddress} healthy?"`,
+        actions: connectedClients.map(c => ({
+          label: c.hostName || c.macAddress,
+          type: 'client' as const,
+          entityId: c.macAddress,
+          entityName: c.hostName
+        }))
+      };
+    }
+
+    // We have a target client - perform health analysis
+    const client = targetClient;
+    const clientName = client.hostName || client.macAddress;
+
+    // Add action to view client details
+    actions.push({
+      label: `View ${clientName} Details`,
+      type: 'client',
+      entityId: client.macAddress,
+      entityName: clientName
+    });
+
+    // Fetch roaming events for deeper analysis
+    let events: any[] = [];
+    try {
+      events = await apiService.fetchStationEvents(client.macAddress);
+    } catch (e) {
+      // Continue without events
+    }
+
+    // Analyze client health
+    const healthIndicators: string[] = [];
+    const issues: string[] = [];
+    let overallHealth: 'good' | 'warning' | 'critical' = 'good';
+
+    // Signal strength analysis
+    const rssi = client.rss || client.signalStrength;
+    if (rssi) {
+      const rssiNum = parseInt(rssi);
+      if (rssiNum >= -65) {
+        healthIndicators.push(`✅ **Signal**: ${rssi} dBm (Excellent)`);
+      } else if (rssiNum >= -75) {
+        healthIndicators.push(`✅ **Signal**: ${rssi} dBm (Good)`);
+      } else if (rssiNum >= -85) {
+        healthIndicators.push(`⚠️ **Signal**: ${rssi} dBm (Fair)`);
+        issues.push("Weak signal strength may cause slow speeds");
+        overallHealth = 'warning';
+      } else {
+        healthIndicators.push(`❌ **Signal**: ${rssi} dBm (Poor)`);
+        issues.push("Very weak signal - likely cause of connectivity issues");
+        overallHealth = 'critical';
+      }
+    }
+
+    // Connection status
+    const status = client.status?.toLowerCase();
+    if (status === 'connected' || status === 'associated') {
+      healthIndicators.push(`✅ **Status**: Connected`);
+    } else {
+      healthIndicators.push(`❌ **Status**: ${client.status || 'Unknown'}`);
+      issues.push("Client is not currently connected");
+      overallHealth = 'critical';
+    }
+
+    // Data rates
+    if (client.txRate || client.rxRate) {
+      const txRate = parseInt(client.txRate) || 0;
+      const rxRate = parseInt(client.rxRate) || 0;
+      if (txRate > 100 || rxRate > 100) {
+        healthIndicators.push(`✅ **Data Rate**: TX ${client.txRate || 'N/A'} / RX ${client.rxRate || 'N/A'} Mbps`);
+      } else if (txRate > 50 || rxRate > 50) {
+        healthIndicators.push(`⚠️ **Data Rate**: TX ${client.txRate || 'N/A'} / RX ${client.rxRate || 'N/A'} Mbps`);
+        issues.push("Lower than optimal data rates");
+        if (overallHealth === 'good') overallHealth = 'warning';
+      } else {
+        healthIndicators.push(`❌ **Data Rate**: TX ${client.txRate || 'N/A'} / RX ${client.rxRate || 'N/A'} Mbps`);
+        issues.push("Very low data rates - may indicate interference or distance issues");
+        overallHealth = 'critical';
+      }
+    }
+
+    // Band/frequency
+    if (client.band || client.frequency) {
+      const band = client.band || client.frequency;
+      if (band?.includes('5') || band?.includes('6')) {
+        healthIndicators.push(`✅ **Band**: ${band}`);
+      } else if (band?.includes('2.4')) {
+        healthIndicators.push(`⚠️ **Band**: ${band} (consider 5GHz for better performance)`);
+        issues.push("Client on 2.4GHz - may experience congestion");
+        if (overallHealth === 'good') overallHealth = 'warning';
+      }
+    }
+
+    // Roaming analysis
+    if (events.length > 0) {
+      const roamEvents = events.filter(e => e.eventType === 'Roam');
+      const recentRoams = roamEvents.filter(e => {
+        const eventTime = parseInt(e.timestamp);
+        const hourAgo = Date.now() - (60 * 60 * 1000);
+        return eventTime > hourAgo;
+      });
+
+      if (recentRoams.length > 5) {
+        healthIndicators.push(`⚠️ **Roaming**: ${recentRoams.length} roams in last hour (excessive)`);
+        issues.push("Frequent roaming may indicate coverage gaps or RF issues");
+        if (overallHealth === 'good') overallHealth = 'warning';
+      } else if (recentRoams.length > 0) {
+        healthIndicators.push(`✅ **Roaming**: ${recentRoams.length} roams in last hour (normal)`);
+      } else {
+        healthIndicators.push(`✅ **Roaming**: Stable connection`);
+      }
+    }
+
+    // Build response
+    const healthEmoji = overallHealth === 'good' ? '🟢' : overallHealth === 'warning' ? '🟡' : '🔴';
+    const healthLabel = overallHealth === 'good' ? 'Healthy' : overallHealth === 'warning' ? 'Some Issues' : 'Needs Attention';
+
+    let response = `🩺 **Client Health Check: ${clientName}**\n\n`;
+    response += `**Overall Status**: ${healthEmoji} ${healthLabel}\n\n`;
+    response += `**Health Indicators:**\n${healthIndicators.join('\n')}\n\n`;
+    response += `**Connection Details:**\n`;
+    response += `• **AP**: ${client.apName || client.apSerial || 'Unknown'}\n`;
+    response += `• **Network**: ${client.network || client.ssid || 'Unknown'}\n`;
+    response += `• **IP Address**: ${client.ipAddress || 'Not assigned'}\n`;
+    response += `• **Site**: ${client.siteName || 'Unknown'}\n`;
+
+    if (issues.length > 0) {
+      response += `\n**⚠️ Potential Issues:**\n${issues.map(i => `• ${i}`).join('\n')}\n`;
+    }
+
+    if (client.apName || client.apSerial) {
+      actions.push({
+        label: `View AP: ${client.apName || client.apSerial}`,
+        type: 'access-point',
+        entityId: client.apSerial,
+        entityName: client.apName
+      });
+    }
+
+    response += `\n💡 **Tip**: Click the buttons below to view detailed information.`;
+
+    return { response, actions };
+  }
+
+  private async handleAPHealthQuery(
+    query: string,
+    intent: any,
+    uiContext?: AssistantUIContext
+  ): Promise<{ response: string; actions: ChatAction[] }> {
+    const accessPoints = this.context.accessPoints || [];
+    const stations = this.context.stations || [];
+    const actions: ChatAction[] = [];
+
+    // If we have AP context from UI, use it
+    let targetAP: any = null;
+    if (uiContext?.type === 'access-point' && uiContext.entityId) {
+      targetAP = accessPoints.find(ap =>
+        ap.serialNumber?.toLowerCase() === uiContext.entityId?.toLowerCase() ||
+        ap.apSerial?.toLowerCase() === uiContext.entityId?.toLowerCase()
+      );
+    }
+
+    // If no context, try to extract from query
+    if (!targetAP) {
+      const searchTerm = query
+        .replace(/^(is\s+(this\s+)?|how\s+is\s+(this\s+)?|show\s+)/i, '')
+        .replace(/\s*(ap|access\s+point)?\s*(health|perform|doing|status|check).*$/i, '')
+        .trim();
+
+      if (searchTerm && searchTerm !== 'this' && searchTerm.length > 2) {
+        const matches = accessPoints.filter(ap =>
+          ap.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          ap.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          ap.apName?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        if (matches.length === 1) {
+          targetAP = matches[0];
+        }
+      }
+    }
+
+    if (!targetAP) {
+      // Show list of APs
+      const onlineAPs = accessPoints
+        .filter(ap => ap.status?.toLowerCase() === 'online' || ap.connectionState?.toLowerCase() === 'connected')
+        .slice(0, 8);
+
+      if (onlineAPs.length === 0) {
+        return { response: "No online access points found to analyze.", actions: [] };
+      }
+
+      const apList = onlineAPs.map(ap => {
+        const name = ap.name || ap.apName || ap.serialNumber;
+        return `• **${name}** - \`${ap.serialNumber}\``;
+      }).join('\n');
+
+      return {
+        response: `📡 **AP Health Check**\n\nPlease specify which AP to analyze:\n\n${apList}\n\nExample: "How is AP ${onlineAPs[0]?.name || onlineAPs[0]?.serialNumber} performing?"`,
+        actions: onlineAPs.map(ap => ({
+          label: ap.name || ap.apName || ap.serialNumber,
+          type: 'access-point' as const,
+          entityId: ap.serialNumber,
+          entityName: ap.name || ap.apName
+        }))
+      };
+    }
+
+    // We have a target AP - perform health analysis
+    const ap = targetAP;
+    const apName = ap.name || ap.apName || ap.serialNumber;
+
+    // Add action to view AP details
+    actions.push({
+      label: `View ${apName} Details`,
+      type: 'access-point',
+      entityId: ap.serialNumber,
+      entityName: apName
+    });
+
+    // Get clients connected to this AP
+    const apClients = stations.filter(s =>
+      s.apSerial?.toLowerCase() === ap.serialNumber?.toLowerCase() ||
+      s.apSerialNumber?.toLowerCase() === ap.serialNumber?.toLowerCase()
+    );
+
+    // Analyze AP health
+    const healthIndicators: string[] = [];
+    const issues: string[] = [];
+    let overallHealth: 'good' | 'warning' | 'critical' = 'good';
+
+    // Connection status
+    const status = ap.status?.toLowerCase() || ap.connectionState?.toLowerCase();
+    if (status === 'online' || status === 'connected') {
+      healthIndicators.push(`✅ **Status**: Online`);
+    } else {
+      healthIndicators.push(`❌ **Status**: ${ap.status || 'Unknown'}`);
+      issues.push("AP is not online");
+      overallHealth = 'critical';
+    }
+
+    // Client load
+    const clientCount = apClients.length;
+    if (clientCount < 20) {
+      healthIndicators.push(`✅ **Client Load**: ${clientCount} clients (Light)`);
+    } else if (clientCount < 50) {
+      healthIndicators.push(`⚠️ **Client Load**: ${clientCount} clients (Moderate)`);
+      if (overallHealth === 'good') overallHealth = 'warning';
+    } else {
+      healthIndicators.push(`❌ **Client Load**: ${clientCount} clients (Heavy)`);
+      issues.push("High client density may impact performance");
+      overallHealth = 'critical';
+    }
+
+    // Radio information
+    if (ap.radios && Array.isArray(ap.radios)) {
+      ap.radios.forEach((radio: any, index: number) => {
+        const band = radio.band || radio.frequency || `Radio ${index + 1}`;
+        const channel = radio.channel || 'Auto';
+        const power = radio.txPower || radio.power || 'Auto';
+        const radioStatus = radio.status?.toLowerCase() === 'up' ? '✅' : '⚠️';
+        healthIndicators.push(`${radioStatus} **${band}**: Ch ${channel}, Power ${power}`);
+      });
+    }
+
+    // Uplink status
+    if (ap.uplinkStatus || ap.ethernetStatus) {
+      const uplink = ap.uplinkStatus || ap.ethernetStatus;
+      if (uplink.toLowerCase().includes('up') || uplink.toLowerCase().includes('connected')) {
+        healthIndicators.push(`✅ **Uplink**: Connected`);
+      } else {
+        healthIndicators.push(`❌ **Uplink**: ${uplink}`);
+        issues.push("Uplink connectivity issue");
+        overallHealth = 'critical';
+      }
+    }
+
+    // Analyze client signal quality on this AP
+    if (apClients.length > 0) {
+      const signalValues = apClients
+        .map(c => parseInt(c.rss || c.signalStrength))
+        .filter(v => !isNaN(v));
+
+      if (signalValues.length > 0) {
+        const avgSignal = Math.round(signalValues.reduce((a, b) => a + b, 0) / signalValues.length);
+        const poorSignalClients = signalValues.filter(v => v < -80).length;
+
+        if (avgSignal >= -70) {
+          healthIndicators.push(`✅ **Avg Client Signal**: ${avgSignal} dBm (Good)`);
+        } else if (avgSignal >= -80) {
+          healthIndicators.push(`⚠️ **Avg Client Signal**: ${avgSignal} dBm (Fair)`);
+          if (overallHealth === 'good') overallHealth = 'warning';
+        } else {
+          healthIndicators.push(`❌ **Avg Client Signal**: ${avgSignal} dBm (Poor)`);
+          issues.push("Clients experiencing weak signals");
+          overallHealth = 'critical';
+        }
+
+        if (poorSignalClients > 0) {
+          healthIndicators.push(`⚠️ **Weak Signal Clients**: ${poorSignalClients} clients below -80 dBm`);
+        }
+      }
+    }
+
+    // Build response
+    const healthEmoji = overallHealth === 'good' ? '🟢' : overallHealth === 'warning' ? '🟡' : '🔴';
+    const healthLabel = overallHealth === 'good' ? 'Healthy' : overallHealth === 'warning' ? 'Some Issues' : 'Needs Attention';
+
+    let response = `📡 **AP Health Check: ${apName}**\n\n`;
+    response += `**Overall Status**: ${healthEmoji} ${healthLabel}\n\n`;
+    response += `**Health Indicators:**\n${healthIndicators.join('\n')}\n\n`;
+    response += `**AP Details:**\n`;
+    response += `• **Serial**: ${ap.serialNumber}\n`;
+    response += `• **Model**: ${ap.model || ap.hardwareType || 'Unknown'}\n`;
+    response += `• **IP Address**: ${ap.ipAddress || 'Unknown'}\n`;
+    response += `• **Site**: ${ap.siteName || ap.site || 'Unknown'}\n`;
+
+    if (issues.length > 0) {
+      response += `\n**⚠️ Potential Issues:**\n${issues.map(i => `• ${i}`).join('\n')}\n`;
+    }
+
+    // Add actions for clients with issues
+    const problemClients = apClients.filter(c => {
+      const rssi = parseInt(c.rss || c.signalStrength);
+      return !isNaN(rssi) && rssi < -80;
+    }).slice(0, 3);
+
+    problemClients.forEach(c => {
+      actions.push({
+        label: `View Client: ${c.hostName || c.macAddress}`,
+        type: 'client',
+        entityId: c.macAddress,
+        entityName: c.hostName
+      });
+    });
+
+    response += `\n💡 **Tip**: Click the buttons below to drill into specific entities.`;
+
+    return { response, actions };
   }
 
   private async handleNetworkSettingsQuery(query: string, intent: any): Promise<string> {

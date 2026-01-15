@@ -21,7 +21,7 @@ import {
   Shrink,
   X
 } from 'lucide-react';
-import { chatbotService, ChatMessage } from '../services/chatbot';
+import { chatbotService, ChatMessage, ChatAction, AssistantUIContext } from '../services/chatbot';
 import { toast } from 'sonner';
 
 // Context types for the Network Assistant
@@ -126,7 +126,17 @@ export function NetworkChatbot({
     setIsLoading(true);
 
     try {
-      const botResponse = await chatbotService.processQuery(userMessage.content);
+      // Convert UI context to service context format
+      const serviceContext: AssistantUIContext | undefined = context ? {
+        type: context.type,
+        entityId: context.entityId,
+        entityName: context.entityName,
+        siteId: context.siteId,
+        siteName: context.siteName,
+        timeRange: context.timeRange
+      } : undefined;
+
+      const botResponse = await chatbotService.processQuery(userMessage.content, serviceContext);
       setMessages(prev => [...prev, botResponse]);
     } catch (error) {
       console.error('Failed to process query:', error);
@@ -250,6 +260,20 @@ export function NetworkChatbot({
       "Are there any offline devices?",
       "Show me site health status"
     ];
+  };
+
+  const handleActionClick = (action: ChatAction) => {
+    switch (action.type) {
+      case 'client':
+        onShowClientDetail?.(action.entityId, action.entityName);
+        break;
+      case 'access-point':
+        onShowAccessPointDetail?.(action.entityId, action.entityName);
+        break;
+      case 'site':
+        onShowSiteDetail?.(action.entityId, action.entityName || action.entityId);
+        break;
+    }
   };
 
   const getContextBanner = () => {
@@ -490,6 +514,23 @@ export function NetworkChatbot({
                           }`}>
                             {message.timestamp.toLocaleTimeString()}
                           </div>
+                          {/* Action buttons for deep links */}
+                          {message.actions && message.actions.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/50">
+                              {message.actions.map((action, idx) => (
+                                <Button
+                                  key={idx}
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => handleActionClick(action)}
+                                >
+                                  {action.type === 'client' ? '👤' : action.type === 'access-point' ? '📡' : '🏢'}
+                                  <span className="ml-1">{action.label}</span>
+                                </Button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -711,12 +752,34 @@ export function NetworkChatbot({
                             }`}>
                               {message.timestamp.toLocaleTimeString()}
                             </div>
+                            {/* Action buttons for deep links */}
+                            {message.actions && message.actions.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-border/50">
+                                {message.actions.slice(0, 3).map((action, idx) => (
+                                  <Button
+                                    key={idx}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 text-xs px-2"
+                                    onClick={() => handleActionClick(action)}
+                                  >
+                                    {action.type === 'client' ? '👤' : action.type === 'access-point' ? '📡' : '🏢'}
+                                    <span className="ml-1 truncate max-w-[100px]">{action.label}</span>
+                                  </Button>
+                                ))}
+                                {message.actions.length > 3 && (
+                                  <span className="text-xs text-muted-foreground self-center">
+                                    +{message.actions.length - 3} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
                     </div>
                   ))}
-                  
+
                   {isLoading && (
                     <div className="flex justify-start">
                       <div className="max-w-[85%] surface-1dp border border-border rounded-lg px-3 py-2">
