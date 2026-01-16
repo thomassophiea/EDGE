@@ -350,15 +350,47 @@ export class ChatbotService {
     return entities;
   }
 
+  // Helper function to determine if AP is online (aligned with AccessPoints.tsx logic)
+  private isApOnline(ap: any): boolean {
+    // If AP has clients connected, it's definitely online
+    if ((ap.clientCount && ap.clientCount > 0) || (ap.connectedClients && ap.connectedClients > 0)) {
+      return true;
+    }
+
+    // Check multiple possible status fields
+    const status = (ap.status || ap.connectionState || ap.operationalState || ap.state || '').toLowerCase();
+    const isUp = ap.isUp;
+    const isOnline = ap.online;
+    const connected = ap.connected;
+
+    // Consider an AP online if:
+    // 1. Status is "inservice" (primary status from Campus Controller)
+    // 2. Status is "ONLINE" (case-insensitive)
+    // 3. Status contains 'up', 'online', 'connected'
+    // 4. isUp, online, or connected boolean is true
+    // 5. No status field but AP exists in list (default to online)
+    return (
+      status === 'inservice' ||
+      status === 'online' ||
+      status.includes('up') ||
+      status.includes('online') ||
+      status.includes('connected') ||
+      isUp === true ||
+      isOnline === true ||
+      connected === true ||
+      (!status && isUp !== false && isOnline !== false && connected !== false)
+    );
+  }
+
   private async handleAccessPointsQuery(query: string, intent: any): Promise<string> {
     const aps = this.context.accessPoints || [];
-    
+
     if (aps.length === 0) {
       return "I couldn't retrieve access point information at the moment. Please ensure you have the necessary permissions and try again.";
     }
 
-    const onlineAPs = aps.filter(ap => ap.status?.toLowerCase() === 'online' || ap.operationalStatus?.toLowerCase() === 'up');
-    const offlineAPs = aps.filter(ap => ap.status?.toLowerCase() === 'offline' || ap.operationalStatus?.toLowerCase() === 'down');
+    const onlineAPs = aps.filter(ap => this.isApOnline(ap));
+    const offlineAPs = aps.filter(ap => !this.isApOnline(ap));
     
     if (query.includes('how many') || query.includes('count')) {
       return `You have **${aps.length} total access points**:
