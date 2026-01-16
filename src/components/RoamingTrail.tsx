@@ -59,10 +59,30 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
 
   // Process and filter roaming events
   const roamingEvents = useMemo(() => {
-    const roamingTypes = ['Roam', 'Registration', 'De-registration', 'Associate', 'Disassociate', 'State Change'];
+    // Include all roaming-related event types (case-insensitive matching)
+    const isRoamingEvent = (eventType: string) => {
+      const type = (eventType || '').toLowerCase();
+      return (
+        type.includes('roam') ||
+        type.includes('register') ||
+        type.includes('associate') ||
+        type.includes('state') ||
+        type.includes('connect') ||
+        type.includes('join') ||
+        type.includes('leave') ||
+        type.includes('handoff') ||
+        type.includes('auth') ||
+        type === 'roam' ||
+        type === 'registration' ||
+        type === 'de-registration' ||
+        type === 'associate' ||
+        type === 'disassociate' ||
+        type === 'state change'
+      );
+    };
 
     // Apply time or count filtering first
-    let filteredByScope = events.filter(event => roamingTypes.includes(event.eventType));
+    let filteredByScope = events.filter(event => isRoamingEvent(event.eventType));
 
     if (filterType === 'time' && timeFilter !== 'all') {
       const now = Date.now();
@@ -232,9 +252,17 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
       <div className="text-center py-12">
         <Radio className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
         <p className="text-muted-foreground font-medium mb-2">No roaming events found</p>
-        <p className="text-sm text-muted-foreground">
-          This client hasn't roamed between access points yet
+        <p className="text-sm text-muted-foreground mb-4">
+          {events.length === 0
+            ? 'No station events available for this client'
+            : `Found ${events.length} total events, but none match roaming filters`}
         </p>
+        {events.length > 0 && (
+          <div className="text-xs text-muted-foreground">
+            <p className="mb-2">Event types found: {[...new Set(events.map(e => e.eventType))].join(', ') || 'None'}</p>
+            <p>Try selecting "All Time" filter or check the browser console for details</p>
+          </div>
+        )}
       </div>
     );
   }

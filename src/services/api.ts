@@ -3221,8 +3221,10 @@ class ApiService {
 
   /**
    * Fetch station events (connection, roaming, authentication history)
-   * Primary: GET /platformmanager/v2/logging/stations/events/query
-   * Fallback: Use audit logs filtered by MAC address
+   * Tries multiple endpoints in order:
+   * 1. GET /v1/stations/events/{macaddress} (direct endpoint)
+   * 2. GET /platformmanager/v2/logging/stations/events/query
+   * 3. Fallback: Use audit logs filtered by MAC address
    */
   async fetchStationEvents(macAddress: string, startTime?: number, endTime?: number): Promise<StationEvent[]> {
     try {
@@ -3234,66 +3236,118 @@ class ApiService {
       const end = endTime || now;
       const noCache = Date.now();
 
-      // Try primary endpoint first
-      const primaryEndpoint = `/platformmanager/v2/logging/stations/events/query?query=${encodeURIComponent(macAddress)}&startTime=${start}&endTime=${end}&noCache=${noCache}`;
-
       console.log(`[API] Attempting to fetch station events for MAC: ${macAddress}`);
+
+      // Try the direct v1 endpoint first
+      try {
+        const directEndpoint = `/v1/stations/events/${encodeURIComponent(macAddress)}`;
+        console.log(`[API] Trying direct endpoint: ${directEndpoint}`);
+        const directResponse = await this.makeAuthenticatedRequest(directEndpoint, {}, 10000);
+
+        if (directResponse.ok) {
+          const data = await directResponse.json();
+          const events = Array.isArray(data) ? data : (data.events || data.stationEvents || []);
+          if (events.length > 0) {
+            console.log(`[API] ✓ Loaded ${events.length} station events from direct endpoint`);
+            return this.normalizeStationEvents(events);
+          }
+        }
+      } catch (e) {
+        console.log('[API] Direct endpoint failed, trying platformmanager endpoint...');
+      }
+
+      // Try platformmanager endpoint
+      const primaryEndpoint = `/platformmanager/v2/logging/stations/events/query?query=${encodeURIComponent(macAddress)}&startTime=${start}&endTime=${end}&noCache=${noCache}`;
       const response = await this.makeAuthenticatedRequest(primaryEndpoint, {}, 15000);
 
       if (response.ok) {
         const data = await response.json();
         const events = data.stationEvents || (Array.isArray(data) ? data : []);
-        console.log(`[API] ✓ Loaded ${events.length} station events for ${macAddress}`);
-        return events;
-      }
-
-      // If primary endpoint fails with 404, try audit logs as fallback
-      if (response.status === 404) {
-        console.warn(`[API] Station events endpoint not available (404), trying audit logs fallback...`);
-
-        const auditLogs = await this.getAuditLogs(start, end);
-
-        // Filter audit logs for this specific MAC address
-        const stationLogs = auditLogs.filter(log => {
-          const description = (log.description || log.message || '').toLowerCase();
-          const resource = (log.resource || log.resourceType || '').toLowerCase();
-          const macLower = macAddress.toLowerCase();
-
-          return description.includes(macLower) || resource.includes(macLower);
-        });
-
-        if (stationLogs.length > 0) {
-          console.log(`[API] ✓ Found ${stationLogs.length} station-related events in audit logs`);
-
-          // Convert audit logs to station event format
-          return stationLogs.map(log => ({
-            id: log.id,
-            timestamp: log.timestamp || log.time,
-            eventType: log.action || log.actionType || 'audit',
-            description: log.description || log.message,
-            user: log.user || log.userId || log.username,
-            status: log.status,
-            details: {
-              action: log.action || log.actionType,
-              resource: log.resource || log.resourceType,
-              ipAddress: log.ipAddress
-            }
-          }));
+        if (events.length > 0) {
+          console.log(`[API] ✓ Loaded ${events.length} station events from platformmanager endpoint`);
+          return this.normalizeStationEvents(events);
         }
-
-        console.warn(`[API] No station events found in audit logs for ${macAddress}`);
-        return [];
       }
 
-      // Other errors
-      const errorText = await response.text();
-      console.error(`[API] Station events API returned ${response.status}:`, errorText);
+      // Try audit logs as fallback
+      console.warn(`[API] Station events endpoints returned no data, trying audit logs fallback...`);
+
+      const auditLogs = await this.getAuditLogs(start, end);
+
+      // Filter audit logs for this specific MAC address
+      const stationLogs = auditLogs.filter(log => {
+        const description = (log.description || log.message || '').toLowerCase();
+        const resource = (log.resource || log.resourceType || '').toLowerCase();
+        const macLower = macAddress.toLowerCase();
+
+        return description.includes(macLower) || resource.includes(macLower);
+      });
+
+      if (stationLogs.length > 0) {
+        console.log(`[API] ✓ Found ${stationLogs.length} station-related events in audit logs`);
+
+        // Convert audit logs to station event format
+        return stationLogs.map(log => ({
+          id: log.id,
+          timestamp: String(log.timestamp || log.time || Date.now()),
+          eventType: this.normalizeEventType(log.action || log.actionType || 'audit'),
+          macAddress: macAddress,
+          description: log.description || log.message,
+          details: log.description || log.message || '',
+          apName: log.apName || log.resource || '',
+          ssid: log.ssid || ''
+        } as StationEvent));
+      }
+
+      console.warn(`[API] No station events found for ${macAddress}`);
       return [];
 
     } catch (error) {
       console.error(`[API] Failed to fetch station events for ${macAddress}:`, error);
       return [];
     }
+  }
+
+  /**
+   * Normalize station events to consistent format
+   */
+  private normalizeStationEvents(events: any[]): StationEvent[] {
+    return events.map(event => ({
+      id: event.id || event.eventId || String(Math.random()),
+      timestamp: String(event.timestamp || event.time || event.eventTime || Date.now()),
+      eventType: this.normalizeEventType(event.eventType || event.type || event.action || 'Unknown'),
+      macAddress: event.macAddress || event.mac || event.clientMac || '',
+      ipAddress: event.ipAddress || event.ip || event.clientIp,
+      ipv6Address: event.ipv6Address || event.ipv6,
+      apName: event.apName || event.ap || event.accessPoint || event.apDisplayName || '',
+      apSerial: event.apSerial || event.apSerialNumber || event.serialNumber || '',
+      ssid: event.ssid || event.network || event.wlanName || '',
+      details: event.details || event.description || event.message || '',
+      type: event.type || event.category,
+      level: event.level || event.severity,
+      category: event.category,
+      context: event.context
+    } as StationEvent));
+  }
+
+  /**
+   * Normalize event type to consistent naming
+   */
+  private normalizeEventType(eventType: string): string {
+    const type = (eventType || '').toLowerCase();
+
+    // Map various event type names to standard names
+    if (type.includes('roam') || type.includes('handoff')) return 'Roam';
+    if (type.includes('register') || type.includes('join')) return 'Registration';
+    if (type.includes('deregister') || type.includes('leave') || type.includes('disconnect')) return 'De-registration';
+    if (type.includes('associate') && !type.includes('dis')) return 'Associate';
+    if (type.includes('disassociate') || type.includes('deassociate')) return 'Disassociate';
+    if (type.includes('auth') && !type.includes('deauth')) return 'Authenticate';
+    if (type.includes('deauth')) return 'Deauthenticate';
+    if (type.includes('state') || type.includes('change')) return 'State Change';
+
+    // Return original with first letter capitalized if no match
+    return eventType.charAt(0).toUpperCase() + eventType.slice(1);
   }
 
   // ==================== PHASE 1: STATE & ANALYTICS APIs ====================
