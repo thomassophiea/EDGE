@@ -919,6 +919,7 @@ export function ClientDetail({ macAddress }: ClientDetailProps) {
                                   {/* Signal strength with color indicator */}
                                   {(parsedDetails.Signal || parsedDetails.RSS || parsedDetails.RSSI) && (() => {
                                     const rssi = parseInt(parsedDetails.Signal || parsedDetails.RSS || parsedDetails.RSSI);
+                                    if (isNaN(rssi)) return null;
                                     const color = rssi >= -60 ? 'text-green-600' : rssi >= -70 ? 'text-orange-500' : 'text-red-500';
                                     return (
                                       <div>

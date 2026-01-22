@@ -629,7 +629,7 @@ function DashboardEnhancedComponent() {
         console.log('[Dashboard] ✓ Loaded historical throughput data:', {
           snapshots: trend.length,
           timeRange: trend.length > 0 ? `${trend[0].time} - ${trend[trend.length - 1].time}` : 'N/A',
-          avgTotal: formatBytes(trend.reduce((sum, t) => sum + t.total, 0) / trend.length)
+          avgTotal: trend.length > 0 ? formatBytes(trend.reduce((sum, t) => sum + t.total, 0) / trend.length) : '0 B'
         });
       } else {
         console.log('[Dashboard] ⚠ No historical throughput data available yet. Data will accumulate over time.');
