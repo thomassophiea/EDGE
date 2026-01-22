@@ -3209,6 +3209,53 @@ class ApiService {
   }
 
   /**
+   * Fetch organization-wide application insights
+   * Used by the App Insights dashboard to show top/bottom categories
+   * Endpoint: GET /v1/report/sites (without site ID for org-wide data)
+   *
+   * @param duration - Time range (e.g., '1D', '7D', '14D', '30D')
+   * @returns Promise with app groups data for usage, client count, and throughput
+   */
+  async getAppInsights(duration: string = '14D'): Promise<any> {
+    try {
+      const widgetList = [
+        'topAppGroupsByUsage',
+        'topAppGroupsByClientCountReport',
+        'topAppGroupsByThroughputReport',
+        'worstAppGroupsByUsage',
+        'worstAppGroupsByClientCountReport',
+        'worstAppGroupsByThroughputReport'
+      ].join(',');
+
+      const noCache = Date.now();
+      const endpoint = `/v1/report/sites?noCache=${noCache}&duration=${duration}&resolution=15&widgetList=${encodeURIComponent(widgetList)}`;
+
+      console.log(`[API] Fetching app insights data for duration: ${duration}`);
+
+      const response = await this.makeAuthenticatedRequest(endpoint, {}, 30000);
+
+      if (!response.ok) {
+        throw new Error(`App insights fetch failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`[API] ✓ App insights data fetched successfully`);
+
+      return {
+        topAppGroupsByUsage: data.topAppGroupsByUsage || [],
+        topAppGroupsByClientCountReport: data.topAppGroupsByClientCountReport || [],
+        topAppGroupsByThroughputReport: data.topAppGroupsByThroughputReport || [],
+        worstAppGroupsByUsage: data.worstAppGroupsByUsage || [],
+        worstAppGroupsByClientCountReport: data.worstAppGroupsByClientCountReport || [],
+        worstAppGroupsByThroughputReport: data.worstAppGroupsByThroughputReport || []
+      };
+    } catch (error) {
+      console.error(`[API] Failed to fetch app insights:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Fetch comprehensive site report with all available widgets
    * Useful for dashboard overview
    */

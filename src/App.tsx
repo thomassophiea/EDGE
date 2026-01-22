@@ -36,6 +36,7 @@ const AccessPointDetail = lazy(() => import('./components/AccessPointDetail').th
 const ClientDetail = lazy(() => import('./components/ClientDetail').then(m => ({ default: m.ClientDetail })));
 const SiteDetail = lazy(() => import('./components/SiteDetail').then(m => ({ default: m.SiteDetail })));
 const NetworkChatbot = lazy(() => import('./components/NetworkChatbot').then(m => ({ default: m.NetworkChatbot })));
+const AppInsights = lazy(() => import('./components/AppInsights').then(m => ({ default: m.AppInsights })));
 import { apiService, ApiCallLog } from './services/api';
 import { sleDataCollectionService } from './services/sleDataCollection';
 import { Toaster } from './components/ui/sonner';
@@ -51,6 +52,7 @@ import { applyTheme as applyThemeColors } from './lib/themes';
 
 const pageInfo = {
   'service-levels': { title: 'Contextual Insights', description: 'Context-aware network monitoring and analytics' },
+  'app-insights': { title: 'App Insights', description: 'Application visibility and traffic analytics' },
   'connected-clients': { title: 'Connected Clients', description: 'View and manage connected devices' },
   'access-points': { title: 'Access Points', description: 'Manage and monitor wireless access points' },
   'sites-overview': { title: 'Sites Overview', description: 'View and manage network sites' },
@@ -802,6 +804,8 @@ export default function App() {
     switch (currentPage) {
       case 'service-levels':
         return <DashboardEnhanced />;
+      case 'app-insights':
+        return <AppInsights api={apiService} />;
       case 'access-points':
         return <AccessPoints onShowDetail={handleShowAccessPointDetail} />;
       case 'connected-clients':
