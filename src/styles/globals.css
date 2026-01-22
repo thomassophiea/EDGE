@@ -1732,3 +1732,40 @@ html[data-theme="light"], html.light {
     padding: 0.375rem;
   }
 }
+
+/* ===== Hide Scrollbars Globally ===== */
+/* Hide scrollbars while maintaining scroll functionality */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Utility class to show scrollbars when explicitly needed */
+.show-scrollbar {
+  scrollbar-width: auto;
+  -ms-overflow-style: auto;
+}
+
+.show-scrollbar::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+  height: 8px;
+}
+
+.show-scrollbar::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 4px;
+}
+
+.show-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.show-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}

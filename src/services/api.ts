@@ -3216,7 +3216,7 @@ class ApiService {
    * @param duration - Time range (e.g., '1D', '7D', '14D', '30D')
    * @returns Promise with app groups data for usage, client count, and throughput
    */
-  async getAppInsights(duration: string = '14D'): Promise<any> {
+  async getAppInsights(duration: string = '14D', siteId?: string): Promise<any> {
     try {
       const widgetList = [
         'topAppGroupsByUsage',
@@ -3228,9 +3228,14 @@ class ApiService {
       ].join(',');
 
       const noCache = Date.now();
-      const endpoint = `/v1/report/sites?noCache=${noCache}&duration=${duration}&resolution=15&widgetList=${encodeURIComponent(widgetList)}`;
+      // Use site-specific endpoint if siteId provided, otherwise org-wide
+      const baseEndpoint = siteId
+        ? `/v1/report/sites/${siteId}`
+        : `/v1/report/sites`;
+      const endpoint = `${baseEndpoint}?noCache=${noCache}&duration=${duration}&resolution=15&widgetList=${encodeURIComponent(widgetList)}`;
 
-      console.log(`[API] Fetching app insights data for duration: ${duration}`);
+      console.log(`[API] Fetching app insights data for duration: ${duration}${siteId ? `, site: ${siteId}` : ' (org-wide)'}`);
+
 
       const response = await this.makeAuthenticatedRequest(endpoint, {}, 30000);
 
