@@ -22,21 +22,36 @@ import {
   Gauge,
   HardDrive,
   AlertCircle,
-  BarChart3,
-  PieChart
+  Play,
+  Globe,
+  Cloud,
+  ShoppingCart,
+  Gamepad2,
+  MessageCircle,
+  Search,
+  Building2,
+  FileText,
+  Share2,
+  Shield,
+  Briefcase,
+  GraduationCap,
+  Heart,
+  Plane,
+  DollarSign,
+  Music,
+  Camera,
+  Mail,
+  Database,
+  Layers,
+  Activity,
+  Zap
 } from 'lucide-react';
 import {
   PieChart as RechartsPieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend
 } from 'recharts';
 import { formatBytes } from '../lib/units';
 
@@ -65,19 +80,51 @@ interface AppInsightsData {
   worstAppGroupsByThroughputReport: AppGroupReport[];
 }
 
-// Color palette for charts
+// Color palette for charts - vibrant gradient-friendly colors
 const CHART_COLORS = [
-  '#3b82f6', // blue
+  '#6366f1', // indigo
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#f43f5e', // rose
   '#f97316', // orange
   '#eab308', // yellow
   '#22c55e', // green
-  '#06b6d4', // cyan
-  '#8b5cf6', // violet
-  '#ec4899', // pink
-  '#ef4444', // red
   '#14b8a6', // teal
-  '#f59e0b', // amber
+  '#06b6d4', // cyan
+  '#3b82f6', // blue
 ];
+
+// Category icon mapping
+const getCategoryIcon = (category: string) => {
+  const name = category.toLowerCase();
+  if (name.includes('stream')) return Play;
+  if (name.includes('social')) return MessageCircle;
+  if (name.includes('game')) return Gamepad2;
+  if (name.includes('cloud') && name.includes('storage')) return Cloud;
+  if (name.includes('cloud')) return Cloud;
+  if (name.includes('web') && name.includes('content')) return Globe;
+  if (name.includes('web') && name.includes('app')) return Globe;
+  if (name.includes('search')) return Search;
+  if (name.includes('commerce') || name.includes('shopping')) return ShoppingCart;
+  if (name.includes('corporate')) return Building2;
+  if (name.includes('storage')) return Database;
+  if (name.includes('realtime') || name.includes('communication')) return MessageCircle;
+  if (name.includes('software') || name.includes('update')) return FileText;
+  if (name.includes('share') || name.includes('file')) return Share2;
+  if (name.includes('security') || name.includes('certificate')) return Shield;
+  if (name.includes('business') || name.includes('enterprise')) return Briefcase;
+  if (name.includes('education')) return GraduationCap;
+  if (name.includes('health')) return Heart;
+  if (name.includes('travel')) return Plane;
+  if (name.includes('finance')) return DollarSign;
+  if (name.includes('music') || name.includes('audio')) return Music;
+  if (name.includes('photo') || name.includes('video')) return Camera;
+  if (name.includes('mail') || name.includes('email')) return Mail;
+  if (name.includes('peer')) return Share2;
+  if (name.includes('database')) return Database;
+  if (name.includes('restrict')) return Shield;
+  return Layers;
+};
 
 // Format throughput value
 const formatThroughput = (bps: number): string => {
@@ -96,9 +143,10 @@ const formatNumber = (num: number): string => {
 };
 
 // Custom tooltip for charts
-const CustomTooltip = ({ active, payload, label, unit }: any) => {
+const CustomTooltip = ({ active, payload, unit }: any) => {
   if (active && payload && payload.length) {
     const value = payload[0].value;
+    const name = payload[0].name;
     let formattedValue = value;
 
     if (unit === 'bytes') {
@@ -109,10 +157,15 @@ const CustomTooltip = ({ active, payload, label, unit }: any) => {
       formattedValue = `${value} clients`;
     }
 
+    const Icon = getCategoryIcon(name);
+
     return (
-      <div className="bg-popover border rounded-lg shadow-lg p-3">
-        <p className="font-medium">{payload[0].name || label}</p>
-        <p className="text-sm text-muted-foreground">{formattedValue}</p>
+      <div className="bg-popover/95 backdrop-blur-sm border rounded-lg shadow-xl p-3 min-w-[150px]">
+        <div className="flex items-center gap-2 mb-1">
+          <Icon className="h-4 w-4 text-primary" />
+          <p className="font-medium text-sm">{name}</p>
+        </div>
+        <p className="text-lg font-bold">{formattedValue}</p>
       </div>
     );
   }
@@ -151,88 +204,141 @@ export function AppInsights({ api }: AppInsightsProps) {
     fetchData();
   }, [duration]);
 
-  // Prepare chart data
+  // Prepare chart data - filter out "UnknownApps" as it's not meaningful
   const chartData = useMemo(() => {
     if (!data) return null;
 
+    const filterUnknown = (stats: AppGroupStat[]) =>
+      stats.filter(item => !item.id?.toLowerCase().includes('unknown') && !item.name?.toLowerCase().includes('unknown'));
+
     return {
-      topUsage: data.topAppGroupsByUsage?.[0]?.distributionStats || [],
-      topClientCount: data.topAppGroupsByClientCountReport?.[0]?.distributionStats || [],
-      topThroughput: data.topAppGroupsByThroughputReport?.[0]?.distributionStats || [],
-      bottomUsage: data.worstAppGroupsByUsage?.[0]?.distributionStats || [],
-      bottomClientCount: data.worstAppGroupsByClientCountReport?.[0]?.distributionStats || [],
-      bottomThroughput: data.worstAppGroupsByThroughputReport?.[0]?.distributionStats || [],
+      topUsage: filterUnknown(data.topAppGroupsByUsage?.[0]?.distributionStats || []),
+      topClientCount: filterUnknown(data.topAppGroupsByClientCountReport?.[0]?.distributionStats || []),
+      topThroughput: filterUnknown(data.topAppGroupsByThroughputReport?.[0]?.distributionStats || []),
+      bottomUsage: filterUnknown(data.worstAppGroupsByUsage?.[0]?.distributionStats || []),
+      bottomClientCount: filterUnknown(data.worstAppGroupsByClientCountReport?.[0]?.distributionStats || []),
+      bottomThroughput: filterUnknown(data.worstAppGroupsByThroughputReport?.[0]?.distributionStats || []),
     };
   }, [data]);
 
-  // Calculate totals for donut centers
-  const totals = useMemo(() => {
+  // Calculate totals and summary stats
+  const stats = useMemo(() => {
     if (!chartData) return null;
 
+    const totalUsage = chartData.topUsage.reduce((sum, item) => sum + item.value, 0);
+    const totalThroughput = chartData.topThroughput.reduce((sum, item) => sum + item.value, 0);
+    const totalClients = chartData.topClientCount.reduce((sum, item) => sum + item.value, 0);
+    const totalCategories = new Set([
+      ...chartData.topUsage.map(i => i.id),
+      ...chartData.bottomUsage.map(i => i.id)
+    ]).size;
+
     return {
+      totalUsage,
+      totalThroughput,
+      totalClients,
+      totalCategories,
+      topCategory: chartData.topUsage[0]?.name || 'N/A',
       topClientCount: chartData.topClientCount.reduce((sum, item) => sum + item.value, 0),
-      topThroughput: chartData.topThroughput.reduce((sum, item) => sum + item.value, 0),
       bottomClientCount: chartData.bottomClientCount.reduce((sum, item) => sum + item.value, 0),
       bottomThroughput: chartData.bottomThroughput.reduce((sum, item) => sum + item.value, 0),
     };
   }, [chartData]);
 
-  // Horizontal Bar Chart Component
+  // Summary Card Component
+  const SummaryCard = ({
+    title,
+    value,
+    subtitle,
+    icon: Icon,
+    gradient
+  }: {
+    title: string;
+    value: string;
+    subtitle: string;
+    icon: any;
+    gradient: string;
+  }) => (
+    <Card className="relative overflow-hidden">
+      <div className={`absolute inset-0 opacity-10 ${gradient}`} />
+      <CardContent className="p-4 relative">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
+            <p className="text-2xl font-bold mt-1">{value}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+          </div>
+          <div className={`p-2 rounded-lg ${gradient}`}>
+            <Icon className="h-5 w-5 text-white" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // Horizontal Bar Chart Widget Component
   const HorizontalBarChartWidget = ({
     title,
+    description,
     data,
     unit,
     icon: Icon,
-    variant = 'top'
+    variant = 'top',
+    accentColor
   }: {
     title: string;
+    description: string;
     data: AppGroupStat[];
     unit: string;
     icon: any;
     variant?: 'top' | 'bottom';
+    accentColor: string;
   }) => {
-    const maxValue = Math.max(...data.map(d => d.value));
+    const maxValue = Math.max(...data.map(d => d.value), 1);
 
     return (
-      <Card className="h-full">
-        <CardHeader className="pb-2">
+      <Card className="h-full hover:shadow-lg transition-shadow duration-200">
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Icon className={`h-4 w-4 ${variant === 'top' ? 'text-green-500' : 'text-amber-500'}`} />
-              <CardTitle className="text-sm font-medium">{title}</CardTitle>
+              <div className={`p-1.5 rounded-lg ${accentColor}`}>
+                <Icon className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+                <CardDescription className="text-xs">{description}</CardDescription>
+              </div>
             </div>
-            <Badge variant="outline" className="text-xs">
-              {data.length} categories
+            <Badge variant="secondary" className="text-xs font-medium">
+              {data.length} apps
             </Badge>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {data.slice(0, 10).map((item, index) => {
+        <CardContent className="pt-0">
+          <div className="space-y-2.5">
+            {data.slice(0, 8).map((item, index) => {
               const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
+              const CategoryIcon = getCategoryIcon(item.name);
               let displayValue = item.value.toString();
 
               if (unit === 'bytes') {
                 displayValue = formatBytes(item.value);
               } else if (unit === 'bps') {
                 displayValue = formatThroughput(item.value);
-              } else if (unit === 'users') {
-                displayValue = `${item.value}`;
               }
 
               return (
-                <div key={item.id} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="truncate max-w-[150px]" title={item.name}>
+                <div key={item.id} className="group">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CategoryIcon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <span className="text-xs font-medium truncate flex-1" title={item.name}>
                       {item.name}
                     </span>
-                    <span className="font-medium ml-2">{displayValue}</span>
+                    <span className="text-xs font-semibold tabular-nums">{displayValue}</span>
                   </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${
-                        variant === 'top' ? 'bg-primary' : 'bg-amber-500'
-                      }`}
+                      className="h-full rounded-full transition-all duration-500 ease-out group-hover:opacity-80"
                       style={{
                         width: `${percentage}%`,
                         backgroundColor: CHART_COLORS[index % CHART_COLORS.length]
@@ -251,51 +357,58 @@ export function AppInsights({ api }: AppInsightsProps) {
   // Donut Chart Widget Component
   const DonutChartWidget = ({
     title,
+    description,
     data,
     unit,
     icon: Icon,
     centerValue,
     centerLabel,
-    variant = 'top'
+    accentColor
   }: {
     title: string;
+    description: string;
     data: AppGroupStat[];
     unit: string;
     icon: any;
     centerValue: string;
     centerLabel: string;
-    variant?: 'top' | 'bottom';
+    accentColor: string;
   }) => {
     return (
-      <Card className="h-full">
+      <Card className="h-full hover:shadow-lg transition-shadow duration-200">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Icon className={`h-4 w-4 ${variant === 'top' ? 'text-green-500' : 'text-amber-500'}`} />
-              <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <div className="flex items-center gap-2">
+            <div className={`p-1.5 rounded-lg ${accentColor}`}>
+              <Icon className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+              <CardDescription className="text-xs">{description}</CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
+        <CardContent className="pt-0">
+          <div className="flex items-center gap-3">
             {/* Donut Chart */}
-            <div className="relative w-[180px] h-[180px]">
+            <div className="relative w-[140px] h-[140px] flex-shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <RechartsPieChart>
                   <Pie
-                    data={data.slice(0, 10)}
+                    data={data.slice(0, 8)}
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
+                    innerRadius={40}
+                    outerRadius={65}
                     paddingAngle={2}
                     dataKey="value"
                     nameKey="name"
+                    strokeWidth={0}
                   >
-                    {data.slice(0, 10).map((entry, index) => (
+                    {data.slice(0, 8).map((_, index) => (
                       <Cell
                         key={`cell-${index}`}
                         fill={CHART_COLORS[index % CHART_COLORS.length]}
+                        className="hover:opacity-80 transition-opacity cursor-pointer"
                       />
                     ))}
                   </Pie>
@@ -303,23 +416,34 @@ export function AppInsights({ api }: AppInsightsProps) {
                 </RechartsPieChart>
               </ResponsiveContainer>
               {/* Center text */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-lg font-bold">{centerValue}</span>
-                <span className="text-xs text-muted-foreground">{centerLabel}</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-lg font-bold leading-none">{centerValue}</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{centerLabel}</span>
               </div>
             </div>
 
             {/* Legend */}
-            <div className="flex-1 space-y-1 max-h-[180px] overflow-y-auto">
-              {data.slice(0, 10).map((item, index) => (
-                <div key={item.id} className="flex items-center gap-2 text-xs">
-                  <div
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
-                  />
-                  <span className="truncate" title={item.name}>{item.name}</span>
-                </div>
-              ))}
+            <div className="flex-1 space-y-1.5 min-w-0">
+              {data.slice(0, 6).map((item, index) => {
+                const CategoryIcon = getCategoryIcon(item.name);
+                return (
+                  <div key={item.id} className="flex items-center gap-1.5 text-xs group cursor-default">
+                    <div
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                    />
+                    <CategoryIcon className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                    <span className="truncate group-hover:text-primary transition-colors" title={item.name}>
+                      {item.name}
+                    </span>
+                  </div>
+                );
+              })}
+              {data.length > 6 && (
+                <p className="text-[10px] text-muted-foreground pl-3">
+                  +{data.length - 6} more
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -332,12 +456,17 @@ export function AppInsights({ api }: AppInsightsProps) {
     return (
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-10 w-48" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-[100px]" />
+          ))}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-[300px]" />
+            <Skeleton key={i} className="h-[280px]" />
           ))}
         </div>
       </div>
@@ -348,15 +477,17 @@ export function AppInsights({ api }: AppInsightsProps) {
   if (error) {
     return (
       <div className="p-6">
-        <Card className="border-destructive">
+        <Card className="border-destructive/50 bg-destructive/5">
           <CardContent className="flex items-center gap-4 py-8">
-            <AlertCircle className="h-8 w-8 text-destructive" />
+            <div className="p-3 rounded-full bg-destructive/10">
+              <AlertCircle className="h-8 w-8 text-destructive" />
+            </div>
             <div>
-              <h3 className="font-semibold">Error Loading Data</h3>
-              <p className="text-sm text-muted-foreground">{error}</p>
-              <Button variant="outline" size="sm" className="mt-2" onClick={fetchData}>
+              <h3 className="font-semibold text-lg">Unable to Load Data</h3>
+              <p className="text-sm text-muted-foreground mt-1">{error}</p>
+              <Button variant="outline" size="sm" className="mt-3" onClick={fetchData}>
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Retry
+                Try Again
               </Button>
             </div>
           </CardContent>
@@ -368,9 +499,11 @@ export function AppInsights({ api }: AppInsightsProps) {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <AppWindow className="h-6 w-6 text-primary" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg">
+            <AppWindow className="h-6 w-6 text-white" />
+          </div>
           <div>
             <h1 className="text-2xl font-bold">App Insights</h1>
             <p className="text-sm text-muted-foreground">
@@ -380,9 +513,8 @@ export function AppInsights({ api }: AppInsightsProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Duration selector */}
           <Select value={duration} onValueChange={setDuration}>
-            <SelectTrigger className="w-[120px]">
+            <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Duration" />
             </SelectTrigger>
             <SelectContent>
@@ -393,7 +525,6 @@ export function AppInsights({ api }: AppInsightsProps) {
             </SelectContent>
           </Select>
 
-          {/* Refresh button */}
           <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -401,53 +532,94 @@ export function AppInsights({ api }: AppInsightsProps) {
         </div>
       </div>
 
-      {/* Last refresh timestamp */}
-      <div className="text-xs text-muted-foreground">
+      {/* Summary Cards */}
+      {stats && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <SummaryCard
+            title="Total Data Usage"
+            value={formatBytes(stats.totalUsage)}
+            subtitle={`Across ${stats.totalCategories} categories`}
+            icon={HardDrive}
+            gradient="bg-gradient-to-br from-blue-500 to-blue-600"
+          />
+          <SummaryCard
+            title="Avg Throughput"
+            value={formatThroughput(stats.totalThroughput)}
+            subtitle="Combined bandwidth"
+            icon={Gauge}
+            gradient="bg-gradient-to-br from-emerald-500 to-emerald-600"
+          />
+          <SummaryCard
+            title="Active Clients"
+            value={formatNumber(stats.totalClients)}
+            subtitle="Using applications"
+            icon={Users}
+            gradient="bg-gradient-to-br from-violet-500 to-violet-600"
+          />
+          <SummaryCard
+            title="Top Category"
+            value={stats.topCategory}
+            subtitle="Highest usage"
+            icon={Zap}
+            gradient="bg-gradient-to-br from-amber-500 to-orange-500"
+          />
+        </div>
+      )}
+
+      {/* Last updated */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Activity className="h-3 w-3" />
         Last updated: {lastRefresh.toLocaleString()}
       </div>
 
       {/* Top Categories Section */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-green-500" />
-          <h2 className="text-lg font-semibold">Top Categories</h2>
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-emerald-500/10">
+            <TrendingUp className="h-5 w-5 text-emerald-500" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">Top Categories</h2>
+            <p className="text-xs text-muted-foreground">Highest traffic application categories</p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Top by Usage */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {chartData && (
             <HorizontalBarChartWidget
-              title="Top Categories by Usage"
+              title="By Data Usage"
+              description="Total bytes transferred"
               data={chartData.topUsage}
               unit="bytes"
               icon={HardDrive}
               variant="top"
+              accentColor="bg-gradient-to-br from-blue-500 to-blue-600"
             />
           )}
 
-          {/* Top by Client Count */}
-          {chartData && totals && (
+          {chartData && stats && (
             <DonutChartWidget
-              title="Top Categories by Client Count"
+              title="By Client Count"
+              description="Number of active clients"
               data={chartData.topClientCount}
               unit="users"
               icon={Users}
-              centerValue={formatNumber(totals.topClientCount)}
-              centerLabel="CLIENTS"
-              variant="top"
+              centerValue={formatNumber(stats.topClientCount)}
+              centerLabel="clients"
+              accentColor="bg-gradient-to-br from-violet-500 to-violet-600"
             />
           )}
 
-          {/* Top by Throughput */}
-          {chartData && totals && (
+          {chartData && stats && (
             <DonutChartWidget
-              title="Top Categories by Throughput"
+              title="By Throughput"
+              description="Average bandwidth consumption"
               data={chartData.topThroughput}
               unit="bps"
               icon={Gauge}
-              centerValue={formatThroughput(totals.topThroughput)}
-              centerLabel="THROUGHPUT"
-              variant="top"
+              centerValue={formatThroughput(stats.totalThroughput)}
+              centerLabel="throughput"
+              accentColor="bg-gradient-to-br from-emerald-500 to-emerald-600"
             />
           )}
         </div>
@@ -455,46 +627,52 @@ export function AppInsights({ api }: AppInsightsProps) {
 
       {/* Bottom Categories Section */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <TrendingDown className="h-5 w-5 text-amber-500" />
-          <h2 className="text-lg font-semibold">Bottom Categories</h2>
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-amber-500/10">
+            <TrendingDown className="h-5 w-5 text-amber-500" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">Bottom Categories</h2>
+            <p className="text-xs text-muted-foreground">Lowest traffic application categories</p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Bottom by Usage */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {chartData && (
             <HorizontalBarChartWidget
-              title="Bottom Categories by Usage"
+              title="By Data Usage"
+              description="Total bytes transferred"
               data={chartData.bottomUsage}
               unit="bytes"
               icon={HardDrive}
               variant="bottom"
+              accentColor="bg-gradient-to-br from-amber-500 to-orange-500"
             />
           )}
 
-          {/* Bottom by Client Count */}
-          {chartData && totals && (
+          {chartData && stats && (
             <DonutChartWidget
-              title="Bottom Categories by Client Count"
+              title="By Client Count"
+              description="Number of active clients"
               data={chartData.bottomClientCount}
               unit="users"
               icon={Users}
-              centerValue={formatNumber(totals.bottomClientCount)}
-              centerLabel="CLIENTS"
-              variant="bottom"
+              centerValue={formatNumber(stats.bottomClientCount)}
+              centerLabel="clients"
+              accentColor="bg-gradient-to-br from-rose-500 to-pink-500"
             />
           )}
 
-          {/* Bottom by Throughput */}
-          {chartData && totals && (
+          {chartData && stats && (
             <DonutChartWidget
-              title="Bottom Categories by Throughput"
+              title="By Throughput"
+              description="Average bandwidth consumption"
               data={chartData.bottomThroughput}
               unit="bps"
               icon={Gauge}
-              centerValue={formatThroughput(totals.bottomThroughput)}
-              centerLabel="THROUGHPUT"
-              variant="bottom"
+              centerValue={formatThroughput(stats.bottomThroughput)}
+              centerLabel="throughput"
+              accentColor="bg-gradient-to-br from-slate-500 to-slate-600"
             />
           )}
         </div>
