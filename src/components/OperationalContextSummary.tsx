@@ -33,7 +33,6 @@ interface ContextMetrics {
     status: 'excellent' | 'good' | 'degraded' | 'critical';
     details: {
       apUptime: number;
-      clientSuccessRate: number;
       throughputEfficiency: number;
     };
   };
@@ -153,13 +152,6 @@ function OperationalContextSummaryComponent() {
     }).length;
     const apUptime = aps.length > 0 ? (upAPs / aps.length) * 100 : 100;
 
-    // Client Success Rate: percentage of clients with good status
-    const connectedStations = stations.filter(s =>
-      s.status?.toLowerCase() === 'associated' ||
-      s.status?.toLowerCase() === 'connected'
-    ).length;
-    const clientSuccessRate = stations.length > 0 ? (connectedStations / stations.length) * 100 : 100;
-
     // Throughput Efficiency: based on signal strength distribution
     const goodSignalStations = stations.filter(s =>
       (s.signalStrength && s.signalStrength > -70) ||
@@ -167,8 +159,9 @@ function OperationalContextSummaryComponent() {
     ).length;
     const throughputEfficiency = stations.length > 0 ? (goodSignalStations / stations.length) * 100 : 100;
 
-    // Weighted score: 30% AP uptime, 30% client success, 40% throughput
-    const score = (apUptime * 0.3) + (clientSuccessRate * 0.3) + (throughputEfficiency * 0.4);
+    // Weighted score: 40% AP uptime, 60% throughput efficiency
+    // Note: Association/client success rate removed per John Burke's request
+    const score = (apUptime * 0.4) + (throughputEfficiency * 0.6);
 
     let status: 'excellent' | 'good' | 'degraded' | 'critical';
     if (score >= 95) status = 'excellent';
@@ -181,7 +174,6 @@ function OperationalContextSummaryComponent() {
       status,
       details: {
         apUptime: Math.round(apUptime * 10) / 10,
-        clientSuccessRate: Math.round(clientSuccessRate * 10) / 10,
         throughputEfficiency: Math.round(throughputEfficiency * 10) / 10
       }
     };
@@ -503,14 +495,10 @@ function OperationalContextSummaryComponent() {
             {/* Organization Context Details */}
             <div>
               <h4 className="font-semibold mb-2">Organization Context Breakdown</h4>
-              <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">AP Uptime:</span>
                   <span className="ml-2 font-medium">{metrics.organizationContext.details.apUptime}%</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Client Success:</span>
-                  <span className="ml-2 font-medium">{metrics.organizationContext.details.clientSuccessRate}%</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Throughput:</span>
@@ -618,18 +606,6 @@ function OperationalContextSummaryComponent() {
                     </div>
                     <div className="p-3 rounded-lg border">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Client Success Rate</span>
-                        <span className="font-bold">{metrics.organizationContext.details.clientSuccessRate}%</span>
-                      </div>
-                      <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-green-500 transition-all"
-                          style={{ width: `${metrics.organizationContext.details.clientSuccessRate}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-lg border">
-                      <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">Throughput Efficiency</span>
                         <span className="font-bold">{metrics.organizationContext.details.throughputEfficiency}%</span>
                       </div>
@@ -645,9 +621,9 @@ function OperationalContextSummaryComponent() {
 
                 <div className="p-4 bg-muted/20 rounded-lg">
                   <p className="text-sm text-muted-foreground">
-                    The Organization Context score is a weighted composite of AP uptime (30%),
-                    client success rate (30%), and throughput efficiency (40%). This provides
-                    a single metric to assess overall network performance.
+                    The Organization Context score is a weighted composite of AP uptime (40%)
+                    and throughput efficiency (60%). This provides a single metric to assess
+                    overall network performance.
                   </p>
                 </div>
               </>
