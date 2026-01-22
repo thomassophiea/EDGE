@@ -1098,7 +1098,16 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
                     <span className="font-medium">IP Address</span>
                   </div>
                   {selectedEvent.ipAddress && (
-                    <div className="ml-6 text-muted-foreground font-mono text-xs">{selectedEvent.ipAddress}</div>
+                    <div className="ml-6 flex items-center gap-2">
+                      <span className={`font-mono text-xs ${selectedEvent.ipAddress.startsWith('169.') ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                        {selectedEvent.ipAddress}
+                      </span>
+                      {selectedEvent.ipAddress.startsWith('169.') && (
+                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded font-medium">
+                          Self-Assigned (DHCP Issue)
+                        </span>
+                      )}
+                    </div>
                   )}
                   {selectedEvent.ipv6Address && (
                     <div className="ml-6 text-muted-foreground font-mono text-xs truncate">{selectedEvent.ipv6Address}</div>
@@ -1145,7 +1154,7 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
                       <div className="p-2 bg-blue-500/10 border border-blue-500/30 rounded text-xs">
                         <div className="font-medium text-blue-700 dark:text-blue-400">Band Steering Event</div>
                         <div className="text-blue-600/80 dark:text-blue-400/80 mt-1">
-                          Client moved from {selectedEvent.bandSteeringFrom} to {selectedEvent.bandSteeringTo}. Frequent band changes may indicate coverage or interference issues.
+                          Client moved from {selectedEvent.bandSteeringFrom || selectedEvent.previousFrequency || 'unknown band'} to {selectedEvent.bandSteeringTo || selectedEvent.frequency || 'unknown band'} on <strong>{selectedEvent.apName}</strong>. Frequent band changes may indicate coverage or interference issues.
                         </div>
                       </div>
                     )}

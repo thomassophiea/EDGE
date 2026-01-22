@@ -153,6 +153,7 @@ function formatValue(value: number, unit?: string): string {
     return `${value.toFixed(0)} dB`;
   }
 
-  // Default: append unit
+  // Default: append unit (if provided)
+  if (!unit) return value.toFixed(2);
   return `${value.toFixed(2)} ${unit}`;
 }
