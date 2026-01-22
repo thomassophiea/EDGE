@@ -705,7 +705,7 @@ export function RoamingTrail({ events, macAddress }: RoamingTrailProps) {
                 }`}
               >
                 <ArrowLeftRight className="h-3 w-3" />
-                <span>{pair.ap1.split('-').pop()} ↔ {pair.ap2.split('-').pop()}: {pair.count}x</span>
+                <span>{pair.ap1?.split('-').pop() || pair.ap1} ↔ {pair.ap2?.split('-').pop() || pair.ap2}: {pair.count}x</span>
               </button>
             );
           })}

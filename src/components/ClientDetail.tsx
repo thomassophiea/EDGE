@@ -833,13 +833,18 @@ export function ClientDetail({ macAddress }: ClientDetailProps) {
                           </Badge>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
-                            {event.timestamp ? new Date(parseInt(event.timestamp)).toLocaleString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit'
-                            }) : 'N/A'}
+                            {(() => {
+                              if (!event.timestamp) return 'N/A';
+                              const ts = parseInt(event.timestamp);
+                              if (isNaN(ts)) return 'N/A';
+                              return new Date(ts).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                              });
+                            })()}
                           </div>
                         </div>
 
