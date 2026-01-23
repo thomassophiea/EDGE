@@ -538,9 +538,9 @@ export function ClientDetail({ macAddress }: ClientDetailProps) {
               <span className="text-muted-foreground">IP Address:</span>
               <span className="font-mono text-xs">{clientDetails.ipAddress || 'N/A'}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">IPv6 Address:</span>
-              <span className="font-mono text-xs">{clientDetails.ipv6Address || 'N/A'}</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground shrink-0">IPv6 Address:</span>
+              <span className="font-mono text-xs truncate" title={clientDetails.ipv6Address || 'N/A'}>{clientDetails.ipv6Address || 'N/A'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Device Type:</span>

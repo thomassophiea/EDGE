@@ -146,40 +146,59 @@ export function ClientInsights({ macAddress, clientName, onOpenFullScreen }: Cli
     loadInsights();
   }, [macAddress, duration]);
 
-  // Calculate summary stats
+  // Calculate summary stats - only return valid data
   const stats = useMemo(() => {
     if (!insights) return null;
 
     const throughput = insights.throughputReport?.[0];
     const rfQuality = insights.rfQuality?.[0];
 
-    const avgThroughput = throughput?.statistics?.find(s => s.statName === 'Total')?.values;
-    const avgRfQuality = rfQuality?.statistics?.find(s => s.statName === 'rfQuality')?.values;
+    const avgThroughputValues = throughput?.statistics?.find(s => s.statName === 'Total')?.values;
+    const avgRfQualityValues = rfQuality?.statistics?.find(s => s.statName === 'rfQuality')?.values;
 
     // Get top app group
     const topAppGroups = insights.topAppGroupsByThroughputReport?.[0]?.statistics || [];
     const topAppGroup = topAppGroups.length > 0 ? topAppGroups[0] : null;
 
+    const avgThroughput = avgThroughputValues && avgThroughputValues.length > 0
+      ? avgThroughputValues.reduce((sum, v) => sum + (parseFloat(v.value) || 0), 0) / avgThroughputValues.length
+      : null;
+
+    const avgRfQuality = avgRfQualityValues && avgRfQualityValues.length > 0
+      ? avgRfQualityValues.reduce((sum, v) => sum + (parseFloat(v.value) || 0), 0) / avgRfQualityValues.length
+      : null;
+
+    const topAppGroupName = topAppGroup?.name || null;
+
+    // Check if we have any valid data
+    const hasValidData = (avgThroughput !== null && !isNaN(avgThroughput) && avgThroughput > 0) ||
+                         (avgRfQuality !== null && !isNaN(avgRfQuality) && avgRfQuality > 0) ||
+                         (topAppGroupName !== null);
+
+    if (!hasValidData) return null;
+
     return {
-      avgThroughput: avgThroughput && avgThroughput.length > 0
-        ? avgThroughput.reduce((sum, v) => sum + parseFloat(v.value), 0) / avgThroughput.length
-        : 0,
-      avgRfQuality: avgRfQuality && avgRfQuality.length > 0
-        ? avgRfQuality.reduce((sum, v) => sum + parseFloat(v.value), 0) / avgRfQuality.length
-        : 0,
-      topAppGroup: topAppGroup?.name || 'N/A'
+      avgThroughput,
+      avgRfQuality,
+      topAppGroup: topAppGroupName
     };
   }, [insights]);
 
   return (
-    <Card>
+    <Card
+      className={onOpenFullScreen ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}
+      onClick={onOpenFullScreen}
+    >
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
             <span>Client Insights</span>
+            {onOpenFullScreen && (
+              <Maximize2 className="h-3 w-3 text-muted-foreground" />
+            )}
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
             <Select value={duration} onValueChange={setDuration}>
               <SelectTrigger className="w-[130px] h-8 text-xs">
                 <Clock className="h-3 w-3 mr-1" />
@@ -191,21 +210,13 @@ export function ClientInsights({ macAddress, clientName, onOpenFullScreen }: Cli
                 ))}
               </SelectContent>
             </Select>
-            {onOpenFullScreen && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={onOpenFullScreen}
-                className="h-8 w-8"
-                title="Open Full Insights View"
-              >
-                <Maximize2 className="h-4 w-4" />
-              </Button>
-            )}
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setExpanded(!expanded)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(!expanded);
+              }}
               className="h-8 px-2"
             >
               {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -224,21 +235,29 @@ export function ClientInsights({ macAddress, clientName, onOpenFullScreen }: Cli
             </div>
           ) : stats ? (
             <div className="grid grid-cols-3 gap-3">
-              <div className="text-center">
-                <p className="text-xl font-semibold">{formatValue(stats.avgThroughput, 'bps')}</p>
-                <p className="text-[10px] text-muted-foreground">Avg Throughput</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-semibold">{stats.avgRfQuality.toFixed(0)}%</p>
-                <p className="text-[10px] text-muted-foreground">RF Quality</p>
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-semibold truncate" title={stats.topAppGroup}>{stats.topAppGroup}</p>
-                <p className="text-[10px] text-muted-foreground">Top App Group</p>
-              </div>
+              {stats.avgThroughput !== null && !isNaN(stats.avgThroughput) && stats.avgThroughput > 0 && (
+                <div className="text-center">
+                  <p className="text-xl font-semibold">{formatValue(stats.avgThroughput, 'bps')}</p>
+                  <p className="text-[10px] text-muted-foreground">Avg Throughput</p>
+                </div>
+              )}
+              {stats.avgRfQuality !== null && !isNaN(stats.avgRfQuality) && stats.avgRfQuality > 0 && (
+                <div className="text-center">
+                  <p className="text-xl font-semibold">{stats.avgRfQuality.toFixed(0)}%</p>
+                  <p className="text-[10px] text-muted-foreground">RF Quality</p>
+                </div>
+              )}
+              {stats.topAppGroup && (
+                <div className="text-center">
+                  <p className="text-lg font-semibold truncate" title={stats.topAppGroup}>{stats.topAppGroup}</p>
+                  <p className="text-[10px] text-muted-foreground">Top App Group</p>
+                </div>
+              )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-2">No data available</p>
+            <div className="text-center py-3">
+              <p className="text-sm text-muted-foreground">Click to view detailed insights</p>
+            </div>
           )}
         </CardContent>
       )}
@@ -369,19 +388,9 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
 
   // Render individual chart based on id
   const renderChart = (config: { id: string; title: string; data: any[]; hasData: boolean }) => {
+    // Don't render charts without data
     if (!config.hasData) {
-      return (
-        <Card key={config.id} className="opacity-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{config.title}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 flex items-center justify-center">
-              <p className="text-sm text-muted-foreground">No data available</p>
-            </div>
-          </CardContent>
-        </Card>
-      );
+      return null;
     }
 
     switch (config.id) {

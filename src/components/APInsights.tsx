@@ -135,7 +135,7 @@ export function APInsights({ serialNumber, apName, onOpenFullScreen }: APInsight
     loadInsights();
   }, [serialNumber, duration]);
 
-  // Calculate summary stats
+  // Calculate summary stats - only return valid data
   const stats = useMemo(() => {
     if (!insights) return null;
 
@@ -143,35 +143,51 @@ export function APInsights({ serialNumber, apName, onOpenFullScreen }: APInsight
     const power = insights.apPowerConsumptionTimeseries?.[0];
     const clients = insights.countOfUniqueUsersReport?.[0];
 
-    const avgThroughput = throughput?.statistics?.find(s => s.statName === 'Total')?.values;
-    const avgPower = power?.statistics?.find(s => s.statName === 'Power Consumption')?.values;
-    const avgClients = clients?.statistics?.find(s => s.statName === 'tntUniqueUsers')?.values;
+    const avgThroughputValues = throughput?.statistics?.find(s => s.statName === 'Total')?.values;
+    const avgPowerValues = power?.statistics?.find(s => s.statName === 'Power Consumption')?.values;
+    const avgClientsValues = clients?.statistics?.find(s => s.statName === 'tntUniqueUsers')?.values;
+
+    const avgThroughput = avgThroughputValues && avgThroughputValues.length > 0
+      ? avgThroughputValues.reduce((sum, v) => sum + (parseFloat(v.value) || 0), 0) / avgThroughputValues.length
+      : null;
+
+    const avgPower = avgPowerValues && avgPowerValues.length > 0
+      ? avgPowerValues.reduce((sum, v) => sum + (parseFloat(v.value) || 0), 0) / avgPowerValues.length
+      : null;
+
+    const peakClients = avgClientsValues && avgClientsValues.length > 0
+      ? Math.max(...avgClientsValues.map(v => parseFloat(v.value) || 0))
+      : null;
+
+    // Check if we have any valid data
+    const hasValidData = (avgThroughput !== null && !isNaN(avgThroughput) && avgThroughput > 0) ||
+                         (avgPower !== null && !isNaN(avgPower) && avgPower > 0) ||
+                         (peakClients !== null && !isNaN(peakClients) && peakClients > 0);
+
+    if (!hasValidData) return null;
 
     return {
-      avgThroughput: avgThroughput && avgThroughput.length > 0
-        ? avgThroughput.reduce((sum, v) => sum + parseFloat(v.value), 0) / avgThroughput.length
-        : 0,
-      avgPower: avgPower && avgPower.length > 0
-        ? avgPower.reduce((sum, v) => sum + parseFloat(v.value), 0) / avgPower.length
-        : 0,
-      avgClients: avgClients && avgClients.length > 0
-        ? Math.round(avgClients.reduce((sum, v) => sum + parseFloat(v.value), 0) / avgClients.length)
-        : 0,
-      peakClients: avgClients && avgClients.length > 0
-        ? Math.max(...avgClients.map(v => parseFloat(v.value)))
-        : 0
+      avgThroughput,
+      avgPower,
+      peakClients
     };
   }, [insights]);
 
   return (
-    <Card>
+    <Card
+      className={onOpenFullScreen ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}
+      onClick={onOpenFullScreen}
+    >
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
             <span>AP Insights</span>
+            {onOpenFullScreen && (
+              <Maximize2 className="h-3 w-3 text-muted-foreground" />
+            )}
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
             <Select value={duration} onValueChange={setDuration}>
               <SelectTrigger className="w-[130px] h-8 text-xs">
                 <Clock className="h-3 w-3 mr-1" />
@@ -183,21 +199,13 @@ export function APInsights({ serialNumber, apName, onOpenFullScreen }: APInsight
                 ))}
               </SelectContent>
             </Select>
-            {onOpenFullScreen && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={onOpenFullScreen}
-                className="h-8 w-8"
-                title="Open Full Insights View"
-              >
-                <Maximize2 className="h-4 w-4" />
-              </Button>
-            )}
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setExpanded(!expanded)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(!expanded);
+              }}
               className="h-8 px-2"
             >
               {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -216,21 +224,29 @@ export function APInsights({ serialNumber, apName, onOpenFullScreen }: APInsight
             </div>
           ) : stats ? (
             <div className="grid grid-cols-3 gap-3">
-              <div className="text-center">
-                <p className="text-xl font-semibold">{formatValue(stats.avgThroughput, 'bps')}</p>
-                <p className="text-[10px] text-muted-foreground">Avg Throughput</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-semibold">{stats.peakClients}</p>
-                <p className="text-[10px] text-muted-foreground">Peak Clients</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-semibold">{stats.avgPower.toFixed(1)}W</p>
-                <p className="text-[10px] text-muted-foreground">Avg Power</p>
-              </div>
+              {stats.avgThroughput !== null && !isNaN(stats.avgThroughput) && stats.avgThroughput > 0 && (
+                <div className="text-center">
+                  <p className="text-xl font-semibold">{formatValue(stats.avgThroughput, 'bps')}</p>
+                  <p className="text-[10px] text-muted-foreground">Avg Throughput</p>
+                </div>
+              )}
+              {stats.peakClients !== null && !isNaN(stats.peakClients) && stats.peakClients > 0 && (
+                <div className="text-center">
+                  <p className="text-xl font-semibold">{stats.peakClients}</p>
+                  <p className="text-[10px] text-muted-foreground">Peak Clients</p>
+                </div>
+              )}
+              {stats.avgPower !== null && !isNaN(stats.avgPower) && stats.avgPower > 0 && (
+                <div className="text-center">
+                  <p className="text-xl font-semibold">{stats.avgPower.toFixed(1)}W</p>
+                  <p className="text-[10px] text-muted-foreground">Avg Power</p>
+                </div>
+              )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-2">No data available</p>
+            <div className="text-center py-3">
+              <p className="text-sm text-muted-foreground">Click to view detailed insights</p>
+            </div>
           )}
         </CardContent>
       )}
@@ -326,19 +342,9 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
 
   // Render individual chart based on id
   const renderChart = (config: { id: string; title: string; data: any[]; hasData: boolean }) => {
+    // Don't render charts without data
     if (!config.hasData) {
-      return (
-        <Card key={config.id} className="opacity-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{config.title}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 flex items-center justify-center">
-              <p className="text-sm text-muted-foreground">No data available</p>
-            </div>
-          </CardContent>
-        </Card>
-      );
+      return null;
     }
 
     switch (config.id) {
