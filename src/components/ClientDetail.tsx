@@ -773,11 +773,11 @@ export function ClientDetail({ macAddress }: ClientDetailProps) {
                   variant="default"
                   size="sm"
                   onClick={() => setShowRoamingTrail(true)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1.5"
                   title="Karl Mode"
                 >
-                  <Route className="h-4 w-4" />
-                  View PRO Timeline
+                  <Route className="h-3.5 w-3.5" />
+                  PRO
                 </Button>
               )}
             </div>

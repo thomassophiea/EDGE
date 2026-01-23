@@ -453,7 +453,7 @@ export function AccessPointDetail({ serialNumber }: AccessPointDetailProps) {
       {/* Events Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center space-x-2">
               <AlertCircle className="h-4 w-4" />
               <span>Events</span>
@@ -461,12 +461,12 @@ export function AccessPointDetail({ serialNumber }: AccessPointDetailProps) {
                 <Badge variant="secondary" className="ml-2">{events.length}</Badge>
               )}
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <Select
                 value={String(eventDuration)}
                 onValueChange={(val) => setEventDuration(parseInt(val))}
               >
-                <SelectTrigger className="w-[130px] h-8 text-xs">
+                <SelectTrigger className="w-[120px] h-8 text-xs">
                   <Clock className="h-3 w-3 mr-1" />
                   <SelectValue />
                 </SelectTrigger>
@@ -482,11 +482,11 @@ export function AccessPointDetail({ serialNumber }: AccessPointDetailProps) {
                   variant="default"
                   size="sm"
                   onClick={() => setShowEventsTimeline(true)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1.5"
                   title="Karl Mode"
                 >
-                  <Maximize2 className="h-4 w-4" />
-                  View PRO Timeline
+                  <Maximize2 className="h-3.5 w-3.5" />
+                  PRO
                 </Button>
               )}
               <Button
