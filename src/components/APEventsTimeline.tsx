@@ -308,7 +308,7 @@ export function APEventsTimeline({
                     return (
                       <div
                         key={`${event.ts}-${event.Id}-${index}`}
-                        className={`relative pl-12 cursor-pointer transition-all ${
+                        className={`relative pl-14 cursor-pointer transition-all ${
                           isSelected ? 'scale-[1.01]' : 'hover:translate-x-1'
                         }`}
                         onClick={() => setSelectedEvent(isSelected ? null : event)}

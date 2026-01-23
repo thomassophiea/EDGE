@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { apiService, AccessPoint, APDetails, APStation, APRadio, APAlarm, APAlarmCategory } from '../services/api';
 import { APEventsTimeline } from './APEventsTimeline';
+import { APInsights, APInsightsFullScreen } from './APInsights';
 import { toast } from 'sonner';
 
 interface AccessPointDetailProps {
@@ -53,6 +54,7 @@ export function AccessPointDetail({ serialNumber }: AccessPointDetailProps) {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [showEvents, setShowEvents] = useState(true);
   const [showEventsTimeline, setShowEventsTimeline] = useState(false);
+  const [showInsightsFullScreen, setShowInsightsFullScreen] = useState(false);
 
   const loadApDetails = async () => {
     try {
@@ -441,6 +443,13 @@ export function AccessPointDetail({ serialNumber }: AccessPointDetailProps) {
         </Card>
       )}
 
+      {/* AP Insights */}
+      <APInsights
+        serialNumber={serialNumber}
+        apName={apDetails.apName || 'Unknown AP'}
+        onOpenFullScreen={() => setShowInsightsFullScreen(true)}
+      />
+
       {/* Events Section */}
       <Card>
         <CardHeader>
@@ -471,12 +480,12 @@ export function AccessPointDetail({ serialNumber }: AccessPointDetailProps) {
               {events.length > 0 && (
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
                   onClick={() => setShowEventsTimeline(true)}
-                  className="h-8 px-2"
+                  className="h-8 w-8"
+                  title="Open Full Timeline View"
                 >
-                  <Maximize2 className="h-4 w-4 mr-1" />
-                  Full View
+                  <Maximize2 className="h-4 w-4" />
                 </Button>
               )}
               <Button
@@ -805,6 +814,15 @@ export function AccessPointDetail({ serialNumber }: AccessPointDetailProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Full-Screen AP Insights */}
+      {showInsightsFullScreen && (
+        <APInsightsFullScreen
+          serialNumber={serialNumber}
+          apName={apDetails.apName || 'Unknown AP'}
+          onClose={() => setShowInsightsFullScreen(false)}
+        />
       )}
     </div>
   );

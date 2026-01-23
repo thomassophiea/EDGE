@@ -253,6 +253,53 @@ export interface APAlarmCategory {
   alarmTypes: APAlarmType[];  // List of alarm types
 }
 
+// AP Insights - Timeseries data point
+export interface APInsightsDataPoint {
+  timestamp: number;
+  value: string;
+  numPoints?: string;
+}
+
+// AP Insights - Statistic within a report
+export interface APInsightsStatistic {
+  statName: string;
+  type: string;
+  unit: string;
+  values: APInsightsDataPoint[];
+  count?: number;
+}
+
+// AP Insights - Report data
+export interface APInsightsReport {
+  reportName: string;
+  reportType: string;
+  band?: string;
+  legacy?: boolean;
+  fromTimeInMillis: number;
+  toTimeInMillis: number;
+  statistics: APInsightsStatistic[];
+}
+
+// AP Insights - Full response
+export interface APInsightsResponse {
+  deviceSerialNo: string;
+  timeStamp: number;
+  macAddress: string;
+  hwType: string;
+  location: string;
+  ipAddress: string;
+  swVersion: string;
+  sysUptime: number;
+  throughputReport?: APInsightsReport[];
+  countOfUniqueUsersReport?: APInsightsReport[];
+  baseliningAPRss?: APInsightsReport[];
+  apPowerConsumptionTimeseries?: APInsightsReport[];
+  channelUtilization5?: APInsightsReport[];
+  channelUtilization2_4?: APInsightsReport[];
+  noisePerRadio?: APInsightsReport[];
+  apQoE?: any[];
+}
+
 export interface APRadio {
   radioName: string;
   radioIndex: number;
@@ -1748,6 +1795,51 @@ class ApiService {
 
     // Sort by timestamp descending (most recent first)
     return events.sort((a, b) => b.ts - a.ts);
+  }
+
+  /**
+   * Get AP Insights data including throughput, power, clients, channel utilization, etc.
+   * Endpoint: GET /v1/report/aps/{serialNumber}
+   * @param serialNumber AP serial number
+   * @param duration Duration string (3H, 24H, 7D, 30D)
+   * @param resolution Data resolution in minutes (15 for 3H, 60 for 24H, etc.)
+   */
+  async getAccessPointInsights(
+    serialNumber: string,
+    duration: string = '3H',
+    resolution: number = 15
+  ): Promise<APInsightsResponse> {
+    const noCache = Date.now();
+
+    // Widget list for default view
+    const widgets = [
+      'throughputReport|all',
+      'apPowerConsumptionTimeseries',
+      'countOfUniqueUsersReport|all',
+      'baseliningAPRss',
+      'channelUtilization5',
+      'channelUtilization2_4',
+      'noisePerRadio|all',
+      'apQoE'
+    ];
+
+    const widgetList = encodeURIComponent(widgets.join(','));
+    const endpoint = `/v1/report/aps/${encodeURIComponent(serialNumber)}?noCache=${noCache}&duration=${duration}&resolution=${resolution}&widgetList=${widgetList}`;
+
+    console.log('[API] Fetching AP insights:', { serialNumber, duration, resolution });
+
+    try {
+      const response = await this.makeAuthenticatedRequest(endpoint);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch AP insights: ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      console.log('[API] AP insights data received');
+      return data;
+    } catch (error) {
+      console.error('[API] Error fetching AP insights:', error);
+      throw error;
+    }
   }
 
   async updateAccessPoint(serialNumber: string, config: Partial<APDetails>): Promise<APDetails> {
