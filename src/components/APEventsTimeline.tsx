@@ -295,30 +295,19 @@ export function APEventsTimeline({
                 </p>
               </div>
             ) : (
-              <div className="relative">
-                {/* Timeline line */}
-                <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-border" />
+              <div className="space-y-4">
+                {filteredEvents.map((event, index) => {
+                  const isSelected = selectedEvent?.ts === event.ts && selectedEvent?.Id === event.Id;
 
-                {/* Events */}
-                <div className="space-y-4">
-                  {filteredEvents.map((event, index) => {
-                    const EventIcon = getEventIcon(event.Category, event.Context);
-                    const isSelected = selectedEvent?.ts === event.ts && selectedEvent?.Id === event.Id;
-
-                    return (
-                      <div
-                        key={`${event.ts}-${event.Id}-${index}`}
-                        className={`relative pl-14 cursor-pointer transition-all ${
-                          isSelected ? 'scale-[1.01]' : 'hover:translate-x-1'
-                        }`}
-                        onClick={() => setSelectedEvent(isSelected ? null : event)}
-                      >
-                        {/* Timeline dot */}
-                        <div className={`absolute left-0 top-2 w-10 h-10 rounded-full flex items-center justify-center border-2 ${getSeverityBg(event.Level)}`}>
-                          <EventIcon className={`h-5 w-5 ${getSeverityColor(event.Level)}`} />
-                        </div>
-
-                        {/* Event card */}
+                  return (
+                    <div
+                      key={`${event.ts}-${event.Id}-${index}`}
+                      className={`cursor-pointer transition-all ${
+                        isSelected ? 'scale-[1.01]' : 'hover:translate-x-1'
+                      }`}
+                      onClick={() => setSelectedEvent(isSelected ? null : event)}
+                    >
+                      {/* Event card */}
                         <Card className={`transition-all ${isSelected ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md'}`}>
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between mb-2">
@@ -367,7 +356,6 @@ export function APEventsTimeline({
                       </div>
                     );
                   })}
-                </div>
               </div>
             )}
           </div>

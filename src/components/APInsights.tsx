@@ -11,7 +11,6 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ScrollArea } from './ui/scroll-area';
 import {
   AreaChart,
   Area,
@@ -136,32 +135,6 @@ export function APInsights({ serialNumber, apName, onOpenFullScreen }: APInsight
     loadInsights();
   }, [serialNumber, duration]);
 
-  // Transform data for each chart
-  const throughputData = useMemo(() => {
-    const report = insights?.throughputReport?.[0];
-    return transformReportData(report, duration);
-  }, [insights, duration]);
-
-  const powerData = useMemo(() => {
-    const report = insights?.apPowerConsumptionTimeseries?.[0];
-    return transformReportData(report, duration);
-  }, [insights, duration]);
-
-  const clientData = useMemo(() => {
-    const report = insights?.countOfUniqueUsersReport?.[0];
-    return transformReportData(report, duration);
-  }, [insights, duration]);
-
-  const channelUtil5Data = useMemo(() => {
-    const report = insights?.channelUtilization5?.[0];
-    return transformReportData(report, duration);
-  }, [insights, duration]);
-
-  const channelUtil24Data = useMemo(() => {
-    const report = insights?.channelUtilization2_4?.[0];
-    return transformReportData(report, duration);
-  }, [insights, duration]);
-
   // Calculate summary stats
   const stats = useMemo(() => {
     if (!insights) return null;
@@ -234,154 +207,30 @@ export function APInsights({ serialNumber, apName, onOpenFullScreen }: APInsight
       </CardHeader>
 
       {expanded && (
-        <CardContent>
+        <CardContent className="pt-2">
           {isLoading ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-4 gap-2">
-                <Skeleton className="h-16" />
-                <Skeleton className="h-16" />
-                <Skeleton className="h-16" />
-                <Skeleton className="h-16" />
+            <div className="grid grid-cols-3 gap-3">
+              <Skeleton className="h-14" />
+              <Skeleton className="h-14" />
+              <Skeleton className="h-14" />
+            </div>
+          ) : stats ? (
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center">
+                <p className="text-xl font-semibold">{formatValue(stats.avgThroughput, 'bps')}</p>
+                <p className="text-[10px] text-muted-foreground">Avg Throughput</p>
               </div>
-              <Skeleton className="h-32" />
-              <Skeleton className="h-32" />
+              <div className="text-center">
+                <p className="text-xl font-semibold">{stats.peakClients}</p>
+                <p className="text-[10px] text-muted-foreground">Peak Clients</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xl font-semibold">{stats.avgPower.toFixed(1)}W</p>
+                <p className="text-[10px] text-muted-foreground">Avg Power</p>
+              </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {/* Summary Stats */}
-              {stats && (
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="p-2 bg-muted/30 rounded-lg text-center">
-                    <p className="text-lg font-semibold">{formatValue(stats.avgThroughput, 'bps')}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase">Avg Throughput</p>
-                  </div>
-                  <div className="p-2 bg-muted/30 rounded-lg text-center">
-                    <p className="text-lg font-semibold">{stats.avgPower.toFixed(1)} W</p>
-                    <p className="text-[10px] text-muted-foreground uppercase">Avg Power</p>
-                  </div>
-                  <div className="p-2 bg-muted/30 rounded-lg text-center">
-                    <p className="text-lg font-semibold">{stats.avgClients}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase">Avg Clients</p>
-                  </div>
-                  <div className="p-2 bg-muted/30 rounded-lg text-center">
-                    <p className="text-lg font-semibold">{stats.peakClients}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase">Peak Clients</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Throughput Chart */}
-              {throughputData.length > 0 && (
-                <div className="space-y-1">
-                  <h4 className="text-xs font-medium text-muted-foreground">Throughput</h4>
-                  <div className="h-32">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={throughputData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
-                        <defs>
-                          <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                        <XAxis dataKey="time" tick={{ fontSize: 10 }} />
-                        <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatValue(v, 'bps')} width={60} />
-                        <Tooltip
-                          contentStyle={{ fontSize: 11 }}
-                          formatter={(value: number) => [formatValue(value, 'bps'), '']}
-                        />
-                        <Area type="monotone" dataKey="Total" stroke={CHART_COLORS.blue} fill="url(#colorTotal)" name="Total" />
-                        <Area type="monotone" dataKey="Upload" stroke={CHART_COLORS.cyan} fill="transparent" name="Upload" />
-                        <Area type="monotone" dataKey="Download" stroke={CHART_COLORS.pink} fill="transparent" name="Download" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
-
-              {/* Power & Clients Row */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Power Consumption */}
-                {powerData.length > 0 && (
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-muted-foreground">Power Consumption</h4>
-                    <div className="h-24">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={powerData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                          <XAxis dataKey="time" tick={{ fontSize: 9 }} />
-                          <YAxis tick={{ fontSize: 9 }} tickFormatter={(v) => `${v}W`} width={35} />
-                          <Tooltip contentStyle={{ fontSize: 10 }} />
-                          <Line type="monotone" dataKey="Power Consumption" stroke={CHART_COLORS.warning} dot={false} name="Power" />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
-
-                {/* Unique Clients */}
-                {clientData.length > 0 && (
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-muted-foreground">Unique Clients</h4>
-                    <div className="h-24">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={clientData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                          <XAxis dataKey="time" tick={{ fontSize: 9 }} />
-                          <YAxis tick={{ fontSize: 9 }} width={25} />
-                          <Tooltip contentStyle={{ fontSize: 10 }} />
-                          <Line type="stepAfter" dataKey="tntUniqueUsers" stroke={CHART_COLORS.purple} dot={false} name="Clients" />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Channel Utilization */}
-              {(channelUtil5Data.length > 0 || channelUtil24Data.length > 0) && (
-                <div className="grid grid-cols-2 gap-4">
-                  {channelUtil5Data.length > 0 && (
-                    <div className="space-y-1">
-                      <h4 className="text-xs font-medium text-muted-foreground">Channel Utilization 5GHz</h4>
-                      <div className="h-24">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={channelUtil5Data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }} stackOffset="expand">
-                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                            <XAxis dataKey="time" tick={{ fontSize: 9 }} />
-                            <YAxis tick={{ fontSize: 9 }} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} width={30} />
-                            <Tooltip contentStyle={{ fontSize: 10 }} formatter={(v: number) => `${v.toFixed(1)}%`} />
-                            <Area type="monotone" dataKey="Available" stackId="1" stroke={CHART_COLORS.warning} fill={CHART_COLORS.warning} fillOpacity={0.3} />
-                            <Area type="monotone" dataKey="ClientData" stackId="1" stroke={CHART_COLORS.purple} fill={CHART_COLORS.purple} fillOpacity={0.3} />
-                            <Area type="monotone" dataKey="CoChannel" stackId="1" stroke={CHART_COLORS.cyan} fill={CHART_COLORS.cyan} fillOpacity={0.3} />
-                            <Area type="monotone" dataKey="Interference" stackId="1" stroke={CHART_COLORS.blue} fill={CHART_COLORS.blue} fillOpacity={0.3} />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  )}
-                  {channelUtil24Data.length > 0 && (
-                    <div className="space-y-1">
-                      <h4 className="text-xs font-medium text-muted-foreground">Channel Utilization 2.4GHz</h4>
-                      <div className="h-24">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={channelUtil24Data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }} stackOffset="expand">
-                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                            <XAxis dataKey="time" tick={{ fontSize: 9 }} />
-                            <YAxis tick={{ fontSize: 9 }} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} width={30} />
-                            <Tooltip contentStyle={{ fontSize: 10 }} formatter={(v: number) => `${v.toFixed(1)}%`} />
-                            <Area type="monotone" dataKey="Available" stackId="1" stroke={CHART_COLORS.warning} fill={CHART_COLORS.warning} fillOpacity={0.3} />
-                            <Area type="monotone" dataKey="ClientData" stackId="1" stroke={CHART_COLORS.purple} fill={CHART_COLORS.purple} fillOpacity={0.3} />
-                            <Area type="monotone" dataKey="CoChannel" stackId="1" stroke={CHART_COLORS.cyan} fill={CHART_COLORS.cyan} fillOpacity={0.3} />
-                            <Area type="monotone" dataKey="Interference" stackId="1" stroke={CHART_COLORS.blue} fill={CHART_COLORS.blue} fillOpacity={0.3} />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <p className="text-sm text-muted-foreground text-center py-2">No data available</p>
           )}
         </CardContent>
       )}
@@ -490,8 +339,8 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
         </div>
 
         {/* Content */}
-        <ScrollArea className="flex-1">
-          <div className="p-6 space-y-6">
+        <div className="flex-1 scrollbar-auto-hide">
+          <div className="p-6 space-y-6 pb-12">
             {isLoading ? (
               <div className="grid grid-cols-2 gap-6">
                 <Skeleton className="h-64" />
@@ -688,7 +537,7 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
       </div>
     </div>
   );
