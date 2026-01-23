@@ -208,9 +208,6 @@ export function ClientInsights({ macAddress, clientName, onOpenFullScreen }: Cli
           <div className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4 text-primary" />
             <span>Client Insights</span>
-            {onOpenFullScreen && (
-              <Maximize2 className="h-3 w-3 text-primary" />
-            )}
           </div>
           <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
             <Select value={duration} onValueChange={setDuration}>
@@ -228,6 +225,21 @@ export function ClientInsights({ macAddress, clientName, onOpenFullScreen }: Cli
                 ))}
               </SelectContent>
             </Select>
+            {onOpenFullScreen && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenFullScreen();
+                }}
+                className="flex items-center gap-1.5"
+                title="Karl Mode"
+              >
+                <Maximize2 className="h-3.5 w-3.5" />
+                PRO
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
