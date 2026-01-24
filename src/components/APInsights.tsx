@@ -57,6 +57,16 @@ const DURATION_OPTIONS = [
   { value: '30D', label: 'Last 30 Days', resolution: 1440 }
 ];
 
+// Compact tooltip styling for consistency
+const COMPACT_TOOLTIP_STYLE = {
+  backgroundColor: 'hsl(var(--background) / 0.9)',
+  border: '1px solid hsl(var(--border) / 0.3)',
+  borderRadius: '4px',
+  padding: '4px 6px',
+  fontSize: '9px',
+  backdropFilter: 'blur(8px)'
+};
+
 // Format timestamp for chart
 function formatTime(timestamp: number, duration: string): string {
   const date = new Date(timestamp);
@@ -469,7 +479,7 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatValue(v, 'bps')} width={70} />
-                    <Tooltip formatter={(value: number) => [formatValue(value, 'bps'), '']} />
+                    <Tooltip formatter={(value: number) => [formatValue(value, 'bps'), '']} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -537,7 +547,7 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v} W`} width={50} />
-                    <Tooltip />
+                    <Tooltip contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -603,7 +613,7 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} width={40} />
-                    <Tooltip />
+                    <Tooltip contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -675,7 +685,7 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v} dBm`} width={60} domain={['auto', 'auto']} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(0)} dBm`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(0)} dBm`, '']} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -743,7 +753,7 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} width={40} domain={[0, 100]} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, '']} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -812,7 +822,7 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} width={40} domain={[0, 100]} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, '']} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -881,7 +891,7 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v} dBm`} width={60} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(0)} dBm`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(0)} dBm`, '']} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -933,7 +943,7 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
           </div>
           <div className="flex items-center gap-2">
             <Select value={duration} onValueChange={setDuration}>
-              <SelectTrigger className="w-[150px] h-8">
+              <SelectTrigger className="w-[150px] h-8 text-xs">
                 <Clock className="h-4 w-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
