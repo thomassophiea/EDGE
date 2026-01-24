@@ -52,7 +52,6 @@ const navigationItems = [
   { id: 'connected-clients', label: 'Connected Clients', icon: Users },
   { id: 'access-points', label: 'Access Points', icon: Wifi },
   { id: 'report-widgets', label: 'Report Widgets', icon: BarChart3 },
-  { id: 'pci-report', label: 'PCI DSS Report', icon: FileCheck },
 ];
 
 // Configure items
@@ -72,6 +71,7 @@ const systemItems = [
   { id: 'network-diagnostics', label: 'Network Diagnostics', icon: Activity },
   { id: 'event-alarm-dashboard', label: 'Events & Alarms', icon: Bell },
   { id: 'security-dashboard', label: 'Security', icon: Shield },
+  { id: 'pci-report', label: 'PCI DSS Report', icon: FileCheck },
   { id: 'guest-management', label: 'Guest Access', icon: UserPlus },
 ];
 
