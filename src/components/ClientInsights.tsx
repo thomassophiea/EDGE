@@ -224,17 +224,19 @@ export function ClientInsights({ macAddress, clientName, onOpenFullScreen }: Cli
             <BarChart3 className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium">Client Insights</span>
           </div>
-          <div className="flex items-center gap-1.5 ml-auto mr-1" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1.5 ml-auto mr-1">
             <Select value={duration} onValueChange={setDuration}>
               <SelectTrigger
                 className="w-[110px] h-7 text-xs"
-                onClick={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
               >
                 <Clock className="h-3 w-3 mr-1" />
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent onPointerDownOutside={(e) => e.stopPropagation()}>
+              <SelectContent>
                 {DURATION_OPTIONS.map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))}
