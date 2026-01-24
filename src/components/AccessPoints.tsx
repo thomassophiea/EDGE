@@ -14,6 +14,7 @@ import { Checkbox } from './ui/checkbox';
 import { Alert, AlertDescription } from './ui/alert';
 import { Skeleton } from './ui/skeleton';
 import { apiService, AccessPoint, APDetails, APStation, APQueryColumn, Site } from '../services/api';
+import { toast } from 'sonner';
 
 // Define available columns with friendly labels
 interface ColumnConfig {
@@ -951,25 +952,33 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
       </DetailSlideOut>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="surface-1dp">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Access Points</CardTitle>
-            <Wifi className="h-4 w-4 text-muted-foreground" />
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 opacity-[0.08] group-hover:opacity-[0.12] transition-opacity" />
+          <div className="absolute -right-8 -top-8 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+            <CardTitle className="text-sm font-semibold">Total Access Points</CardTitle>
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 shadow-md group-hover:scale-110 transition-transform">
+              <Wifi className="h-3.5 w-3.5 text-white" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{accessPoints.length}</div>
+          <CardContent className="relative">
+            <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">{accessPoints.length}</div>
             <p className="text-xs text-muted-foreground">
               Managed devices
             </p>
           </CardContent>
         </Card>
 
-        <Card className="surface-1dp">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">AP Status</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-green-500 opacity-[0.08] group-hover:opacity-[0.12] transition-opacity" />
+          <div className="absolute -right-8 -top-8 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+            <CardTitle className="text-sm font-semibold">AP Status</CardTitle>
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 shadow-md group-hover:scale-110 transition-transform">
+              <Activity className="h-3.5 w-3.5 text-white animate-pulse" />
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -977,7 +986,7 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
                   <span className="text-sm font-medium">Online</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold text-green-600">
+                  <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
                     {accessPoints.filter(ap => isAPOnline(ap)).length}
                   </span>
                   <span className="text-xs text-muted-foreground">
@@ -1007,14 +1016,18 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
           </CardContent>
         </Card>
 
-        <Card className="surface-1dp">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-purple-500 opacity-[0.08] group-hover:opacity-[0.12] transition-opacity" />
+          <div className="absolute -right-8 -top-8 w-24 h-24 bg-violet-500/10 rounded-full blur-2xl group-hover:bg-violet-500/20 transition-all" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+            <CardTitle className="text-sm font-semibold">Total Clients</CardTitle>
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 shadow-md group-hover:scale-110 transition-transform">
+              <Users className="h-3.5 w-3.5 text-white" />
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative">
             <div className="flex items-center space-x-2">
-              <div className="text-2xl font-bold">{getTotalClientCount()}</div>
+              <div className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">{getTotalClientCount()}</div>
               {isLoadingClients && (
                 <div className="animate-pulse">
                   <Activity className="h-4 w-4 text-muted-foreground" />
@@ -1027,13 +1040,17 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
           </CardContent>
         </Card>
 
-        <Card className="surface-1dp">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Hardware Types</CardTitle>
-            <Wifi className="h-4 w-4 text-muted-foreground" />
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 opacity-[0.08] group-hover:opacity-[0.12] transition-opacity" />
+          <div className="absolute -right-8 -top-8 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+            <CardTitle className="text-sm font-semibold">Hardware Types</CardTitle>
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 shadow-md group-hover:scale-110 transition-transform">
+              <Wifi className="h-3.5 w-3.5 text-white" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{getUniqueHardwareTypes().length}</div>
+          <CardContent className="relative">
+            <div className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">{getUniqueHardwareTypes().length}</div>
             <p className="text-xs text-muted-foreground">
               Different models
             </p>
@@ -1191,58 +1208,127 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
                                 Manage Certificate
                               </DropdownMenuSubTrigger>
                               <DropdownMenuSubContent>
-                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenuItem onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    const result = await apiService.generateCSR(ap.serialNumber);
+                                    toast.success('CSR generated successfully');
+                                    console.log('[AccessPoints] Generated CSR:', result);
+                                  } catch (err) {
+                                    toast.error(err instanceof Error ? err.message : 'Failed to generate CSR');
+                                  }
+                                }}>
                                   <Key className="mr-2 h-4 w-4" />
                                   Generate CSR
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  toast.info('Certificate upload feature coming soon');
+                                }}>
                                   <Shield className="mr-2 h-4 w-4" />
                                   Apply Signed Certificates
                                 </DropdownMenuItem>
                               </DropdownMenuSubContent>
                             </DropdownMenuSub>
-                            
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              toast.info('Site assignment dialog coming soon');
+                            }}>
                               <MapPin className="mr-2 h-4 w-4" />
                               Assign to Site
                             </DropdownMenuItem>
-                            
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              toast.info('Adoption preference dialog coming soon');
+                            }}>
                               <Settings className="mr-2 h-4 w-4" />
                               Adoption Preference
                             </DropdownMenuItem>
-                            
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              toast.info('Event level dialog coming soon');
+                            }}>
                               <AlertTriangle className="mr-2 h-4 w-4" />
                               Event Level
                             </DropdownMenuItem>
-                            
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+
+                            <DropdownMenuItem onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                await apiService.upgradeAPImage(ap.serialNumber);
+                                toast.success('Firmware upgrade initiated');
+                              } catch (err) {
+                                toast.error(err instanceof Error ? err.message : 'Failed to upgrade firmware');
+                              }
+                            }}>
                               <Download className="mr-2 h-4 w-4" />
                               Image Upgrade
                             </DropdownMenuItem>
-                            
+
                             <DropdownMenuSeparator />
-                            
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+
+                            <DropdownMenuItem onClick={async (e) => {
+                              e.stopPropagation();
+                              if (confirm(`Reset ${getAPName(ap)} to factory defaults? This cannot be undone.`)) {
+                                try {
+                                  await apiService.resetAPToDefault(ap.serialNumber);
+                                  toast.success('Factory reset initiated');
+                                } catch (err) {
+                                  toast.error(err instanceof Error ? err.message : 'Failed to reset AP');
+                                }
+                              }
+                            }}>
                               <RotateCcw className="mr-2 h-4 w-4" />
                               Reset to Default
                             </DropdownMenuItem>
-                            
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+
+                            <DropdownMenuItem onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                await apiService.rebootAP(ap.serialNumber);
+                                toast.success('AP reboot initiated');
+                              } catch (err) {
+                                toast.error(err instanceof Error ? err.message : 'Failed to reboot AP');
+                              }
+                            }}>
                               <Power className="mr-2 h-4 w-4" />
                               Reboot
                             </DropdownMenuItem>
-                            
+
                             <DropdownMenuSeparator />
-                            
-                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+
+                            <DropdownMenuItem onClick={async (e) => {
+                              e.stopPropagation();
+                              if (confirm(`Release ${getAPName(ap)} to cloud management?`)) {
+                                try {
+                                  await apiService.releaseToCloud(ap.serialNumber);
+                                  toast.success('AP released to cloud');
+                                } catch (err) {
+                                  toast.error(err instanceof Error ? err.message : 'Failed to release to cloud');
+                                }
+                              }
+                            }}>
                               <Cloud className="mr-2 h-4 w-4" />
                               Release to Cloud
                             </DropdownMenuItem>
-                            
-                            <DropdownMenuItem 
-                              onClick={(e) => e.stopPropagation()}
+
+                            <DropdownMenuItem
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (confirm(`Delete ${getAPName(ap)}? This will remove the AP from the controller.`)) {
+                                  try {
+                                    await apiService.deleteAP(ap.serialNumber);
+                                    toast.success('AP deleted successfully');
+                                    // Refresh AP list
+                                    loadAccessPoints();
+                                  } catch (err) {
+                                    toast.error(err instanceof Error ? err.message : 'Failed to delete AP');
+                                  }
+                                }
+                              }}
                               className="text-destructive focus:text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />

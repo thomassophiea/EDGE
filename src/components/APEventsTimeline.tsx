@@ -107,7 +107,7 @@ export function APEventsTimeline({
   const [selectedEvent, setSelectedEvent] = useState<APAlarm | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
-  const [showStats, setShowStats] = useState(true);
+  const [showStats, setShowStats] = useState(false);
 
   // Get unique categories and severity levels
   const uniqueCategories = useMemo(() => {

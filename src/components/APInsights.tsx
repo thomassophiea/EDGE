@@ -57,6 +57,16 @@ const DURATION_OPTIONS = [
   { value: '30D', label: 'Last 30 Days', resolution: 1440 }
 ];
 
+// Compact tooltip styling for consistency
+const COMPACT_TOOLTIP_STYLE = {
+  backgroundColor: 'hsl(var(--background) / 0.9)',
+  border: '1px solid hsl(var(--border) / 0.3)',
+  borderRadius: '4px',
+  padding: '4px 6px',
+  fontSize: '9px',
+  backdropFilter: 'blur(8px)'
+};
+
 // Format timestamp for chart
 function formatTime(timestamp: number, duration: string): string {
   const date = new Date(timestamp);
@@ -78,6 +88,31 @@ function formatValue(value: number, unit: string): string {
   if (unit === '%') return `${value.toFixed(0)}%`;
   if (unit === 'W' || unit === 'mW') return `${value.toFixed(1)} W`;
   return value.toFixed(1);
+}
+
+// Find value at a specific timestamp (for locked display)
+function getValueAtTimestamp(data: any[], timestamp: number, fields: string[]): Record<string, number | null> {
+  if (!data || data.length === 0 || timestamp === null) {
+    return fields.reduce((acc, field) => ({ ...acc, [field]: null }), {});
+  }
+
+  // Find the data point closest to the timestamp
+  let closest = data[0];
+  let minDiff = Math.abs(data[0].timestamp - timestamp);
+
+  for (const point of data) {
+    const diff = Math.abs(point.timestamp - timestamp);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = point;
+    }
+  }
+
+  // Return values for all requested fields
+  return fields.reduce((acc, field) => ({
+    ...acc,
+    [field]: closest[field] !== undefined ? closest[field] : null
+  }), {});
 }
 
 // Transform report data for charts
@@ -133,7 +168,7 @@ export function APInsights({ serialNumber, apName, onOpenFullScreen }: APInsight
   const [insights, setInsights] = useState<APInsightsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [duration, setDuration] = useState('3H');
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const durationOption = DURATION_OPTIONS.find(d => d.value === duration) || DURATION_OPTIONS[0];
 
@@ -213,17 +248,19 @@ export function APInsights({ serialNumber, apName, onOpenFullScreen }: APInsight
             <BarChart3 className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium">AP Insights</span>
           </div>
-          <div className="flex items-center gap-1.5 ml-auto mr-1" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1.5 ml-auto mr-1">
             <Select value={duration} onValueChange={setDuration}>
               <SelectTrigger
                 className="w-[110px] h-7 text-xs"
-                onClick={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
               >
                 <Clock className="h-3 w-3 mr-1" />
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent onPointerDownOutside={(e) => e.stopPropagation()}>
+              <SelectContent>
                 {DURATION_OPTIONS.map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))}
@@ -231,17 +268,16 @@ export function APInsights({ serialNumber, apName, onOpenFullScreen }: APInsight
             </Select>
             {onOpenFullScreen && (
               <Button
-                variant="default"
+                variant="ghost"
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpenFullScreen();
                 }}
-                className="h-7 px-2.5 text-xs flex items-center gap-1"
-                title="Karl Mode"
+                className="h-7 w-7 p-0"
+                title="Expand Full Screen"
               >
-                <Maximize2 className="h-3 w-3" />
-                PRO
+                <Maximize2 className="h-4 w-4" />
               </Button>
             )}
             <Button
@@ -355,10 +391,10 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
     };
   }, [serialNumber, duration, refreshKey]);
 
-  // Reset timeline when duration changes
+  // Soft reset timeline when duration changes (preserve lock state and current time)
   useEffect(() => {
-    timeline.resetTimeline();
-  }, [duration]);
+    timeline.softReset();
+  }, [duration, timeline.softReset]);
 
   // Transform data for each chart
   const throughputData = useMemo(() => {
@@ -425,30 +461,64 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
 
     switch (config.id) {
       case 'throughput':
+        const lockedThroughputValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(throughputData, timeline.currentTime, ['total', 'upload', 'download'])
+          : null;
         return (
           <Card key={config.id} className="col-span-2">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedThroughputValues && (
+                  <div className="flex gap-3 text-xs">
+                    {lockedThroughputValues.total !== null && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-blue-500 font-semibold mr-1">Total:</span> {formatValue(lockedThroughputValues.total, 'bps')}
+                      </Badge>
+                    )}
+                    {lockedThroughputValues.upload !== null && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-cyan-500 font-semibold mr-1">Up:</span> {formatValue(lockedThroughputValues.upload, 'bps')}
+                      </Badge>
+                    )}
+                    {lockedThroughputValues.download !== null && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-pink-500 font-semibold mr-1">Down:</span> {formatValue(lockedThroughputValues.download, 'bps')}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={throughputData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="ap-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={throughputData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="ap-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <defs>
                       <linearGradient id="colorTotalFull" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.3}/>
@@ -458,7 +528,7 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatValue(v, 'bps')} width={70} />
-                    <Tooltip formatter={(value: number) => [formatValue(value, 'bps'), '']} />
+                    <Tooltip formatter={(value: number) => [formatValue(value, 'bps'), '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -489,34 +559,54 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
         );
 
       case 'power':
+        const lockedPowerValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(powerData, timeline.currentTime, ['Power Consumption'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedPowerValues && lockedPowerValues['Power Consumption'] !== null && (
+                  <Badge variant="secondary" className="font-mono">
+                    <span className="text-yellow-500 font-semibold mr-1">Power:</span> {lockedPowerValues['Power Consumption'].toFixed(1)} W
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <LineChart data={powerData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="ap-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={powerData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="ap-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v} W`} width={50} />
-                    <Tooltip />
+                    <Tooltip labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -545,34 +635,54 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
         );
 
       case 'clients':
+        const lockedClientsValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(clientData, timeline.currentTime, ['tntUniqueUsers'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedClientsValues && lockedClientsValues.tntUniqueUsers !== null && (
+                  <Badge variant="secondary" className="font-mono">
+                    <span className="text-violet-500 font-semibold mr-1">Clients:</span> {lockedClientsValues.tntUniqueUsers.toFixed(0)}
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <LineChart data={clientData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="ap-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={clientData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="ap-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} width={40} />
-                    <Tooltip />
+                    <Tooltip labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -601,30 +711,64 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
         );
 
       case 'rss':
+        const lockedRssValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(rssData, timeline.currentTime, ['Rss', 'Rss Upper', 'Rss Lower'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedRssValues && (
+                  <div className="flex gap-2 text-xs">
+                    {lockedRssValues['Rss Upper'] !== null && lockedRssValues['Rss Upper'] !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-gray-400 font-semibold mr-1">Upper:</span> {lockedRssValues['Rss Upper'].toFixed(0)} dBm
+                      </Badge>
+                    )}
+                    {lockedRssValues.Rss !== null && lockedRssValues.Rss !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-blue-500 font-semibold mr-1">RSS:</span> {lockedRssValues.Rss.toFixed(0)} dBm
+                      </Badge>
+                    )}
+                    {lockedRssValues['Rss Lower'] !== null && lockedRssValues['Rss Lower'] !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-gray-400 font-semibold mr-1">Lower:</span> {lockedRssValues['Rss Lower'].toFixed(0)} dBm
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={rssData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="ap-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={rssData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="ap-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <defs>
                       <linearGradient id="colorRss" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={CHART_COLORS.cyan} stopOpacity={0.2}/>
@@ -634,7 +778,7 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v} dBm`} width={60} domain={['auto', 'auto']} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(0)} dBm`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(0)} dBm`, '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -665,34 +809,73 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
         );
 
       case 'channelUtil5':
+        const lockedChannelUtil5Values = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(channelUtil5Data, timeline.currentTime, ['Available', 'ClientData', 'CoChannel', 'Interference'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedChannelUtil5Values && (
+                  <div className="flex gap-2 text-xs flex-wrap">
+                    {lockedChannelUtil5Values.Available !== null && lockedChannelUtil5Values.Available !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-yellow-500 font-semibold mr-1">Avail:</span> {lockedChannelUtil5Values.Available.toFixed(1)}%
+                      </Badge>
+                    )}
+                    {lockedChannelUtil5Values.ClientData !== null && lockedChannelUtil5Values.ClientData !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-purple-500 font-semibold mr-1">Client:</span> {lockedChannelUtil5Values.ClientData.toFixed(1)}%
+                      </Badge>
+                    )}
+                    {lockedChannelUtil5Values.CoChannel !== null && lockedChannelUtil5Values.CoChannel !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-cyan-500 font-semibold mr-1">Co-Ch:</span> {lockedChannelUtil5Values.CoChannel.toFixed(1)}%
+                      </Badge>
+                    )}
+                    {lockedChannelUtil5Values.Interference !== null && lockedChannelUtil5Values.Interference !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-blue-500 font-semibold mr-1">Intrf:</span> {lockedChannelUtil5Values.Interference.toFixed(1)}%
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={channelUtil5Data} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="ap-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={channelUtil5Data}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="ap-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} width={40} domain={[0, 100]} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -724,34 +907,73 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
         );
 
       case 'channelUtil24':
+        const lockedChannelUtil24Values = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(channelUtil24Data, timeline.currentTime, ['Available', 'ClientData', 'CoChannel', 'Interference'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedChannelUtil24Values && (
+                  <div className="flex gap-2 text-xs flex-wrap">
+                    {lockedChannelUtil24Values.Available !== null && lockedChannelUtil24Values.Available !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-yellow-500 font-semibold mr-1">Avail:</span> {lockedChannelUtil24Values.Available.toFixed(1)}%
+                      </Badge>
+                    )}
+                    {lockedChannelUtil24Values.ClientData !== null && lockedChannelUtil24Values.ClientData !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-purple-500 font-semibold mr-1">Client:</span> {lockedChannelUtil24Values.ClientData.toFixed(1)}%
+                      </Badge>
+                    )}
+                    {lockedChannelUtil24Values.CoChannel !== null && lockedChannelUtil24Values.CoChannel !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-cyan-500 font-semibold mr-1">Co-Ch:</span> {lockedChannelUtil24Values.CoChannel.toFixed(1)}%
+                      </Badge>
+                    )}
+                    {lockedChannelUtil24Values.Interference !== null && lockedChannelUtil24Values.Interference !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-blue-500 font-semibold mr-1">Intrf:</span> {lockedChannelUtil24Values.Interference.toFixed(1)}%
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={channelUtil24Data} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="ap-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={channelUtil24Data}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="ap-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} width={40} domain={[0, 100]} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -783,34 +1005,68 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
         );
 
       case 'noise':
+        const lockedNoiseValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(noiseData, timeline.currentTime, ['R1', 'R2', 'R3'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedNoiseValues && (
+                  <div className="flex gap-2 text-xs">
+                    {lockedNoiseValues.R1 !== null && lockedNoiseValues.R1 !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-blue-500 font-semibold mr-1">R1:</span> {lockedNoiseValues.R1.toFixed(0)} dBm
+                      </Badge>
+                    )}
+                    {lockedNoiseValues.R2 !== null && lockedNoiseValues.R2 !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-cyan-500 font-semibold mr-1">R2:</span> {lockedNoiseValues.R2.toFixed(0)} dBm
+                      </Badge>
+                    )}
+                    {lockedNoiseValues.R3 !== null && lockedNoiseValues.R3 !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-pink-500 font-semibold mr-1">R3:</span> {lockedNoiseValues.R3.toFixed(0)} dBm
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <LineChart data={noiseData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="ap-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={noiseData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="ap-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v} dBm`} width={60} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(0)} dBm`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(0)} dBm`, '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -862,7 +1118,7 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
           </div>
           <div className="flex items-center gap-2">
             <Select value={duration} onValueChange={setDuration}>
-              <SelectTrigger className="w-[150px] h-8">
+              <SelectTrigger className="w-[150px] h-8 text-xs">
                 <Clock className="h-4 w-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
@@ -886,6 +1142,11 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
           hasTimeWindow={timeline.timeWindow.start !== null && timeline.timeWindow.end !== null}
           onToggleLock={timeline.toggleLock}
           onClearTimeWindow={timeline.clearTimeWindow}
+          onCopyTimeline={() => {
+            // Copy timeline FROM client-insights TO ap-insights
+            timeline.syncFromScope('client-insights');
+          }}
+          sourceLabel="Client Insights"
         />
 
         {/* Content */}

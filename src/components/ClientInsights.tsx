@@ -61,6 +61,16 @@ const DURATION_OPTIONS = [
   { value: '30D', label: 'Last 30 Days', resolution: 1440 }
 ];
 
+// Compact tooltip styling for consistency
+const COMPACT_TOOLTIP_STYLE = {
+  backgroundColor: 'hsl(var(--background) / 0.9)',
+  border: '1px solid hsl(var(--border) / 0.3)',
+  borderRadius: '4px',
+  padding: '4px 6px',
+  fontSize: '9px',
+  backdropFilter: 'blur(8px)'
+};
+
 // Format timestamp for chart
 function formatTime(timestamp: number, duration: string): string {
   const date = new Date(timestamp);
@@ -83,6 +93,31 @@ function formatValue(value: number, unit: string): string {
   if (unit === 'ms') return `${value.toFixed(1)} ms`;
   if (unit === 'Mbps') return `${value.toFixed(1)} Mbps`;
   return value.toFixed(1);
+}
+
+// Find value at a specific timestamp (for locked display)
+function getValueAtTimestamp(data: any[], timestamp: number, fields: string[]): Record<string, number | null> {
+  if (!data || data.length === 0 || timestamp === null) {
+    return fields.reduce((acc, field) => ({ ...acc, [field]: null }), {});
+  }
+
+  // Find the data point closest to the timestamp
+  let closest = data[0];
+  let minDiff = Math.abs(data[0].timestamp - timestamp);
+
+  for (const point of data) {
+    const diff = Math.abs(point.timestamp - timestamp);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = point;
+    }
+  }
+
+  // Return values for all requested fields
+  return fields.reduce((acc, field) => ({
+    ...acc,
+    [field]: closest[field] !== undefined ? closest[field] : null
+  }), {});
 }
 
 // Transform report data for charts
@@ -144,7 +179,7 @@ export function ClientInsights({ macAddress, clientName, onOpenFullScreen }: Cli
   const [insights, setInsights] = useState<ClientInsightsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [duration, setDuration] = useState('3H');
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const durationOption = DURATION_OPTIONS.find(d => d.value === duration) || DURATION_OPTIONS[0];
 
@@ -224,17 +259,19 @@ export function ClientInsights({ macAddress, clientName, onOpenFullScreen }: Cli
             <BarChart3 className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium">Client Insights</span>
           </div>
-          <div className="flex items-center gap-1.5 ml-auto mr-1" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1.5 ml-auto mr-1">
             <Select value={duration} onValueChange={setDuration}>
               <SelectTrigger
                 className="w-[110px] h-7 text-xs"
-                onClick={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
               >
                 <Clock className="h-3 w-3 mr-1" />
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent onPointerDownOutside={(e) => e.stopPropagation()}>
+              <SelectContent>
                 {DURATION_OPTIONS.map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))}
@@ -242,17 +279,16 @@ export function ClientInsights({ macAddress, clientName, onOpenFullScreen }: Cli
             </Select>
             {onOpenFullScreen && (
               <Button
-                variant="default"
+                variant="ghost"
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpenFullScreen();
                 }}
-                className="h-7 px-2.5 text-xs flex items-center gap-1"
-                title="Karl Mode"
+                className="h-7 w-7 p-0"
+                title="Expand Full Screen"
               >
-                <Maximize2 className="h-3 w-3" />
-                PRO
+                <Maximize2 className="h-4 w-4" />
               </Button>
             )}
             <Button
@@ -366,10 +402,10 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
     };
   }, [macAddress, duration, refreshKey]);
 
-  // Reset timeline when duration changes
+  // Soft reset timeline when duration changes (preserve lock state and current time)
   useEffect(() => {
-    timeline.resetTimeline();
-  }, [duration]);
+    timeline.softReset();
+  }, [duration, timeline.softReset]);
 
   // Transform data for all charts
   const throughputData = useMemo(() => {
@@ -484,30 +520,64 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
 
     switch (config.id) {
       case 'throughput':
+        const lockedThroughputValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(throughputData, timeline.currentTime, ['total', 'upload', 'download'])
+          : null;
         return (
           <Card key={config.id} className="col-span-2">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedThroughputValues && (
+                  <div className="flex gap-3 text-xs">
+                    {lockedThroughputValues.total !== null && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-blue-500 font-semibold mr-1">Total:</span> {formatValue(lockedThroughputValues.total, 'bps')}
+                      </Badge>
+                    )}
+                    {lockedThroughputValues.upload !== null && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-cyan-500 font-semibold mr-1">Up:</span> {formatValue(lockedThroughputValues.upload, 'bps')}
+                      </Badge>
+                    )}
+                    {lockedThroughputValues.download !== null && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-pink-500 font-semibold mr-1">Down:</span> {formatValue(lockedThroughputValues.download, 'bps')}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={throughputData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="client-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={throughputData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="client-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <defs>
                       <linearGradient id="colorTotalClient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.3}/>
@@ -517,7 +587,7 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatValue(v, 'bps')} width={70} />
-                    <Tooltip formatter={(value: number) => [formatValue(value, 'bps'), '']} />
+                    <Tooltip formatter={(value: number) => [formatValue(value, 'bps'), '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -548,30 +618,50 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
         );
 
       case 'rfQuality':
+        const lockedRfQualityValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(rfQualityData, timeline.currentTime, ['rfQuality'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedRfQualityValues && lockedRfQualityValues.rfQuality !== null && (
+                  <Badge variant="secondary" className="font-mono">
+                    <span className="text-emerald-500 font-semibold mr-1">Quality:</span> {lockedRfQualityValues.rfQuality.toFixed(0)}%
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={rfQualityData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="client-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={rfQualityData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="client-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <defs>
                       <linearGradient id="colorRfQuality" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={CHART_COLORS.success} stopOpacity={0.3}/>
@@ -581,7 +671,7 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} width={40} domain={[0, 100]} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(0)}%`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(0)}%`, '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -632,7 +722,7 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number) => [formatValue(value, 'bps'), '']} />
+                    <Tooltip formatter={(value: number) => [formatValue(value, 'bps'), '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="flex-1 space-y-1 max-h-56 overflow-auto">
@@ -650,34 +740,69 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
         );
 
       case 'appGroupsDetail':
+        // Get all app group keys from the data (excluding timestamp/time)
+        const appGroupKeys = appGroupsDetailData.length > 0
+          ? Object.keys(appGroupsDetailData[0]).filter(k => k !== 'timestamp' && k !== 'time').slice(0, 5)
+          : [];
+        const lockedAppGroupsDetailValues = timeline.isLocked && timeline.currentTime !== null && appGroupKeys.length > 0
+          ? getValueAtTimestamp(appGroupsDetailData, timeline.currentTime, appGroupKeys)
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedAppGroupsDetailValues && (
+                  <div className="flex gap-2 text-xs flex-wrap">
+                    {appGroupKeys.map((key, i) => {
+                      const value = lockedAppGroupsDetailValues[key];
+                      if (value !== null && value !== undefined) {
+                        return (
+                          <Badge key={key} variant="secondary" className="font-mono">
+                            <span className="font-semibold mr-1" style={{ color: DONUT_COLORS[i % DONUT_COLORS.length] }}>{key}:</span>
+                            {formatValue(value, 'bps')}
+                          </Badge>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={appGroupsDetailData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="client-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={appGroupsDetailData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="client-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatValue(v, 'bps')} width={70} />
-                    <Tooltip formatter={(value: number) => [formatValue(value, 'bps'), '']} />
+                    <Tooltip formatter={(value: number) => [formatValue(value, 'bps'), '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -719,30 +844,50 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
         );
 
       case 'rfqi':
+        const lockedRfqiValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(rfqiData, timeline.currentTime, ['rfqi'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedRfqiValues && lockedRfqiValues.rfqi !== null && (
+                  <Badge variant="secondary" className="font-mono">
+                    <span className="text-purple-500 font-semibold mr-1">RFQI:</span> {lockedRfqiValues.rfqi.toFixed(1)}
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={rfqiData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="client-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={rfqiData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="client-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <defs>
                       <linearGradient id="colorRfqi" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={CHART_COLORS.purple} stopOpacity={0.2}/>
@@ -752,7 +897,7 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} width={40} />
-                    <Tooltip />
+                    <Tooltip labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -783,30 +928,50 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
         );
 
       case 'wirelessRtt':
+        const lockedWirelessRttValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(wirelessRttData, timeline.currentTime, ['wirelessRtt'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedWirelessRttValues && lockedWirelessRttValues.wirelessRtt !== null && (
+                  <Badge variant="secondary" className="font-mono">
+                    <span className="text-amber-500 font-semibold mr-1">RTT:</span> {lockedWirelessRttValues.wirelessRtt.toFixed(1)} ms
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={wirelessRttData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="client-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={wirelessRttData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="client-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <defs>
                       <linearGradient id="colorWirelessRtt" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={CHART_COLORS.cyan} stopOpacity={0.2}/>
@@ -816,7 +981,7 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v} ms`} width={50} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)} ms`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)} ms`, '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -847,30 +1012,50 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
         );
 
       case 'networkRtt':
+        const lockedNetworkRttValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(networkRttData, timeline.currentTime, ['networkRtt'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedNetworkRttValues && lockedNetworkRttValues.networkRtt !== null && (
+                  <Badge variant="secondary" className="font-mono">
+                    <span className="text-orange-500 font-semibold mr-1">RTT:</span> {lockedNetworkRttValues.networkRtt.toFixed(1)} ms
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={networkRttData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="client-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={networkRttData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="client-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <defs>
                       <linearGradient id="colorNetworkRtt" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={CHART_COLORS.orange} stopOpacity={0.2}/>
@@ -880,7 +1065,7 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v} ms`} width={50} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)} ms`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)} ms`, '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -911,30 +1096,50 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
         );
 
       case 'rss':
+        const lockedRssValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(rssData, timeline.currentTime, ['rss'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedRssValues && lockedRssValues.rss !== null && (
+                  <Badge variant="secondary" className="font-mono">
+                    <span className="text-red-500 font-semibold mr-1">RSS:</span> {lockedRssValues.rss.toFixed(0)} dBm
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={rssData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="client-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={rssData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="client-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <defs>
                       <linearGradient id="colorRssClient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.2}/>
@@ -944,7 +1149,7 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v} dBm`} width={60} domain={['auto', 'auto']} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(0)} dBm`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(0)} dBm`, '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -975,30 +1180,50 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
         );
 
       case 'rxRate':
+        const lockedRxRateValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(rxRateData, timeline.currentTime, ['rxRate'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedRxRateValues && lockedRxRateValues.rxRate !== null && (
+                  <Badge variant="secondary" className="font-mono">
+                    <span className="text-green-500 font-semibold mr-1">RxRate:</span> {lockedRxRateValues.rxRate.toFixed(1)} Mbps
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={rxRateData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="client-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={rxRateData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="client-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <defs>
                       <linearGradient id="colorRxRate" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={CHART_COLORS.success} stopOpacity={0.2}/>
@@ -1008,7 +1233,7 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v} Mbps`} width={60} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)} Mbps`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)} Mbps`, '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -1039,30 +1264,50 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
         );
 
       case 'txRate':
+        const lockedTxRateValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(txRateData, timeline.currentTime, ['txRate'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedTxRateValues && lockedTxRateValues.txRate !== null && (
+                  <Badge variant="secondary" className="font-mono">
+                    <span className="text-blue-500 font-semibold mr-1">TxRate:</span> {lockedTxRateValues.txRate.toFixed(1)} Mbps
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={txRateData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="client-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={txRateData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="client-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <defs>
                       <linearGradient id="colorTxRate" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={CHART_COLORS.pink} stopOpacity={0.2}/>
@@ -1072,7 +1317,7 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v} Mbps`} width={60} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)} Mbps`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)} Mbps`, '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -1103,34 +1348,54 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
         );
 
       case 'events':
+        const lockedEventsValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(eventsData, timeline.currentTime, ['events'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedEventsValues && lockedEventsValues.events !== null && (
+                  <Badge variant="secondary" className="font-mono">
+                    <span className="text-yellow-500 font-semibold mr-1">Events:</span> {lockedEventsValues.events.toFixed(0)}
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <BarChart data={eventsData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="client-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={eventsData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="client-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} width={40} />
-                    <Tooltip />
+                    <Tooltip labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -1169,30 +1434,50 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
         );
 
       case 'dlRetries':
+        const lockedDlRetriesValues = timeline.isLocked && timeline.currentTime !== null
+          ? getValueAtTimestamp(dlRetriesData, timeline.currentTime, ['dlRetries'])
+          : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
+                {lockedDlRetriesValues && lockedDlRetriesValues.dlRetries !== null && (
+                  <Badge variant="secondary" className="font-mono">
+                    <span className="text-rose-500 font-semibold mr-1">Retries:</span> {lockedDlRetriesValues.dlRetries.toFixed(1)}%
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  onMouseMove={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.setCurrentTime(e.activeLabel);
-                    }
-                  }}
-                  onMouseLeave={() => timeline.setCurrentTime(null)}
-                  onMouseDown={(e: any) => {
-                    if (e && e.activeLabel) {
-                      timeline.startTimeWindow(e.activeLabel);
-                    }
-                  }}
-                  onMouseUp={() => timeline.endTimeWindow()}
-                >
-                  <AreaChart data={dlRetriesData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }} syncId="client-insights-charts">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={dlRetriesData}
+                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    syncId="client-insights-charts"
+                    onClick={(e: any) => {
+                      // Click to toggle lock at current position
+                      if (e && e.activePayload && e.activePayload[0]) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.toggleLock();
+                      }
+                    }}
+                    onMouseDown={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && e.shiftKey) {
+                        timeline.startTimeWindow(e.activePayload[0].payload.timestamp);
+                      }
+                    }}
+                    onMouseMove={(e: any) => {
+                      if (e && e.activePayload && e.activePayload[0] && !timeline.isLocked) {
+                        const timestamp = e.activePayload[0].payload.timestamp;
+                        timeline.setCurrentTime(timestamp);
+                        timeline.updateTimeWindow(timestamp);
+                      }
+                    }}
+                    onMouseUp={() => timeline.endTimeWindow()}
+                  >
                     <defs>
                       <linearGradient id="colorDlRetries" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={CHART_COLORS.warning} stopOpacity={0.2}/>
@@ -1202,7 +1487,7 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} tickFormatter={(ts) => formatXAxisTick(ts, duration)} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} width={40} />
-                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, '']} />
+                    <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, '']} labelFormatter={() => ''} contentStyle={COMPACT_TOOLTIP_STYLE} />
                     <Legend />
                     {timeline.currentTime !== null && (
                       <ReferenceLine
@@ -1263,7 +1548,7 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
           </div>
           <div className="flex items-center gap-2">
             <Select value={duration} onValueChange={setDuration}>
-              <SelectTrigger className="w-[150px] h-8">
+              <SelectTrigger className="w-[150px] h-8 text-xs">
                 <Clock className="h-4 w-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
@@ -1287,6 +1572,11 @@ export function ClientInsightsFullScreen({ macAddress, clientName, onClose }: Cl
           hasTimeWindow={timeline.timeWindow.start !== null && timeline.timeWindow.end !== null}
           onToggleLock={timeline.toggleLock}
           onClearTimeWindow={timeline.clearTimeWindow}
+          onCopyTimeline={() => {
+            // Copy timeline FROM ap-insights TO client-insights
+            timeline.syncFromScope('ap-insights');
+          }}
+          sourceLabel="AP Insights"
         />
 
         {/* Content - All charts on one page */}
