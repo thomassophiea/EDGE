@@ -168,7 +168,7 @@ export function APInsights({ serialNumber, apName, onOpenFullScreen }: APInsight
   const [insights, setInsights] = useState<APInsightsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [duration, setDuration] = useState('3H');
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const durationOption = DURATION_OPTIONS.find(d => d.value === duration) || DURATION_OPTIONS[0];
 
@@ -560,16 +560,16 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
 
       case 'power':
         const lockedPowerValues = timeline.isLocked && timeline.currentTime !== null
-          ? getValueAtTimestamp(powerData, timeline.currentTime, ['power'])
+          ? getValueAtTimestamp(powerData, timeline.currentTime, ['Power Consumption'])
           : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
-                {lockedPowerValues && lockedPowerValues.power !== null && (
+                {lockedPowerValues && lockedPowerValues['Power Consumption'] !== null && (
                   <Badge variant="secondary" className="font-mono">
-                    <span className="text-yellow-500 font-semibold mr-1">Power:</span> {lockedPowerValues.power.toFixed(1)} W
+                    <span className="text-yellow-500 font-semibold mr-1">Power:</span> {lockedPowerValues['Power Consumption'].toFixed(1)} W
                   </Badge>
                 )}
               </div>
@@ -636,16 +636,16 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
 
       case 'clients':
         const lockedClientsValues = timeline.isLocked && timeline.currentTime !== null
-          ? getValueAtTimestamp(clientsData, timeline.currentTime, ['clients'])
+          ? getValueAtTimestamp(clientData, timeline.currentTime, ['tntUniqueUsers'])
           : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
-                {lockedClientsValues && lockedClientsValues.clients !== null && (
+                {lockedClientsValues && lockedClientsValues.tntUniqueUsers !== null && (
                   <Badge variant="secondary" className="font-mono">
-                    <span className="text-violet-500 font-semibold mr-1">Clients:</span> {lockedClientsValues.clients.toFixed(0)}
+                    <span className="text-violet-500 font-semibold mr-1">Clients:</span> {lockedClientsValues.tntUniqueUsers.toFixed(0)}
                   </Badge>
                 )}
               </div>
@@ -712,17 +712,31 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
 
       case 'rss':
         const lockedRssValues = timeline.isLocked && timeline.currentTime !== null
-          ? getValueAtTimestamp(rssData, timeline.currentTime, ['rss'])
+          ? getValueAtTimestamp(rssData, timeline.currentTime, ['Rss', 'Rss Upper', 'Rss Lower'])
           : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
-                {lockedRssValues && lockedRssValues.rss !== null && (
-                  <Badge variant="secondary" className="font-mono">
-                    <span className="text-red-500 font-semibold mr-1">RSS:</span> {lockedRssValues.rss.toFixed(0)} dBm
-                  </Badge>
+                {lockedRssValues && (
+                  <div className="flex gap-2 text-xs">
+                    {lockedRssValues['Rss Upper'] !== null && lockedRssValues['Rss Upper'] !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-gray-400 font-semibold mr-1">Upper:</span> {lockedRssValues['Rss Upper'].toFixed(0)} dBm
+                      </Badge>
+                    )}
+                    {lockedRssValues.Rss !== null && lockedRssValues.Rss !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-blue-500 font-semibold mr-1">RSS:</span> {lockedRssValues.Rss.toFixed(0)} dBm
+                      </Badge>
+                    )}
+                    {lockedRssValues['Rss Lower'] !== null && lockedRssValues['Rss Lower'] !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-gray-400 font-semibold mr-1">Lower:</span> {lockedRssValues['Rss Lower'].toFixed(0)} dBm
+                      </Badge>
+                    )}
+                  </div>
                 )}
               </div>
             </CardHeader>
@@ -796,17 +810,36 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
 
       case 'channelUtil5':
         const lockedChannelUtil5Values = timeline.isLocked && timeline.currentTime !== null
-          ? getValueAtTimestamp(channelUtil5Data, timeline.currentTime, ['channelUtil'])
+          ? getValueAtTimestamp(channelUtil5Data, timeline.currentTime, ['Available', 'ClientData', 'CoChannel', 'Interference'])
           : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
-                {lockedChannelUtil5Values && lockedChannelUtil5Values.channelUtil !== null && (
-                  <Badge variant="secondary" className="font-mono">
-                    <span className="text-orange-500 font-semibold mr-1">Util:</span> {lockedChannelUtil5Values.channelUtil.toFixed(1)}%
-                  </Badge>
+                {lockedChannelUtil5Values && (
+                  <div className="flex gap-2 text-xs flex-wrap">
+                    {lockedChannelUtil5Values.Available !== null && lockedChannelUtil5Values.Available !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-yellow-500 font-semibold mr-1">Avail:</span> {lockedChannelUtil5Values.Available.toFixed(1)}%
+                      </Badge>
+                    )}
+                    {lockedChannelUtil5Values.ClientData !== null && lockedChannelUtil5Values.ClientData !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-purple-500 font-semibold mr-1">Client:</span> {lockedChannelUtil5Values.ClientData.toFixed(1)}%
+                      </Badge>
+                    )}
+                    {lockedChannelUtil5Values.CoChannel !== null && lockedChannelUtil5Values.CoChannel !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-cyan-500 font-semibold mr-1">Co-Ch:</span> {lockedChannelUtil5Values.CoChannel.toFixed(1)}%
+                      </Badge>
+                    )}
+                    {lockedChannelUtil5Values.Interference !== null && lockedChannelUtil5Values.Interference !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-blue-500 font-semibold mr-1">Intrf:</span> {lockedChannelUtil5Values.Interference.toFixed(1)}%
+                      </Badge>
+                    )}
+                  </div>
                 )}
               </div>
             </CardHeader>
@@ -875,17 +908,36 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
 
       case 'channelUtil24':
         const lockedChannelUtil24Values = timeline.isLocked && timeline.currentTime !== null
-          ? getValueAtTimestamp(channelUtil24Data, timeline.currentTime, ['channelUtil'])
+          ? getValueAtTimestamp(channelUtil24Data, timeline.currentTime, ['Available', 'ClientData', 'CoChannel', 'Interference'])
           : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
-                {lockedChannelUtil24Values && lockedChannelUtil24Values.channelUtil !== null && (
-                  <Badge variant="secondary" className="font-mono">
-                    <span className="text-amber-500 font-semibold mr-1">Util:</span> {lockedChannelUtil24Values.channelUtil.toFixed(1)}%
-                  </Badge>
+                {lockedChannelUtil24Values && (
+                  <div className="flex gap-2 text-xs flex-wrap">
+                    {lockedChannelUtil24Values.Available !== null && lockedChannelUtil24Values.Available !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-yellow-500 font-semibold mr-1">Avail:</span> {lockedChannelUtil24Values.Available.toFixed(1)}%
+                      </Badge>
+                    )}
+                    {lockedChannelUtil24Values.ClientData !== null && lockedChannelUtil24Values.ClientData !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-purple-500 font-semibold mr-1">Client:</span> {lockedChannelUtil24Values.ClientData.toFixed(1)}%
+                      </Badge>
+                    )}
+                    {lockedChannelUtil24Values.CoChannel !== null && lockedChannelUtil24Values.CoChannel !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-cyan-500 font-semibold mr-1">Co-Ch:</span> {lockedChannelUtil24Values.CoChannel.toFixed(1)}%
+                      </Badge>
+                    )}
+                    {lockedChannelUtil24Values.Interference !== null && lockedChannelUtil24Values.Interference !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-blue-500 font-semibold mr-1">Intrf:</span> {lockedChannelUtil24Values.Interference.toFixed(1)}%
+                      </Badge>
+                    )}
+                  </div>
                 )}
               </div>
             </CardHeader>
@@ -954,17 +1006,31 @@ export function APInsightsFullScreen({ serialNumber, apName, onClose }: APInsigh
 
       case 'noise':
         const lockedNoiseValues = timeline.isLocked && timeline.currentTime !== null
-          ? getValueAtTimestamp(noiseData, timeline.currentTime, ['noise'])
+          ? getValueAtTimestamp(noiseData, timeline.currentTime, ['R1', 'R2', 'R3'])
           : null;
         return (
           <Card key={config.id}>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium">{config.title}</CardTitle>
-                {lockedNoiseValues && lockedNoiseValues.noise !== null && (
-                  <Badge variant="secondary" className="font-mono">
-                    <span className="text-gray-500 font-semibold mr-1">Noise:</span> {lockedNoiseValues.noise.toFixed(0)} dBm
-                  </Badge>
+                {lockedNoiseValues && (
+                  <div className="flex gap-2 text-xs">
+                    {lockedNoiseValues.R1 !== null && lockedNoiseValues.R1 !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-blue-500 font-semibold mr-1">R1:</span> {lockedNoiseValues.R1.toFixed(0)} dBm
+                      </Badge>
+                    )}
+                    {lockedNoiseValues.R2 !== null && lockedNoiseValues.R2 !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-cyan-500 font-semibold mr-1">R2:</span> {lockedNoiseValues.R2.toFixed(0)} dBm
+                      </Badge>
+                    )}
+                    {lockedNoiseValues.R3 !== null && lockedNoiseValues.R3 !== undefined && (
+                      <Badge variant="secondary" className="font-mono">
+                        <span className="text-pink-500 font-semibold mr-1">R3:</span> {lockedNoiseValues.R3.toFixed(0)} dBm
+                      </Badge>
+                    )}
+                  </div>
                 )}
               </div>
             </CardHeader>

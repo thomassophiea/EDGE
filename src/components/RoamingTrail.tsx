@@ -125,10 +125,10 @@ export function RoamingTrail({ events, apEvents = [], rrmEvents = [], macAddress
   const [filterType, setFilterType] = useState<FilterType>('time');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('24h');
   const [countFilter, setCountFilter] = useState<CountFilter>(50);
-  const [showStats, setShowStats] = useState(true);
-  const [showAlerts, setShowAlerts] = useState(true);
-  const [showLegend, setShowLegend] = useState(true);
-  const [showDetails, setShowDetails] = useState(true);
+  const [showStats, setShowStats] = useState(false);
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [showLegend, setShowLegend] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [alertFilter, setAlertFilter] = useState<AlertFilter>({ type: 'none' });
   // Event correlation toggles
   const [showAPEvents, setShowAPEvents] = useState(true);

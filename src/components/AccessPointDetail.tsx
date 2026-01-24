@@ -52,7 +52,7 @@ export function AccessPointDetail({ serialNumber }: AccessPointDetailProps) {
   const [, setTimeUpdateCounter] = useState(0);
   const [eventDuration, setEventDuration] = useState<number>(14);
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
-  const [showEvents, setShowEvents] = useState(true);
+  const [showEvents, setShowEvents] = useState(false);
   const [showEventsTimeline, setShowEventsTimeline] = useState(false);
   const [showInsightsFullScreen, setShowInsightsFullScreen] = useState(false);
 
