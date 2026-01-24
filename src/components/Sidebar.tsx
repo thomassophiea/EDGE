@@ -249,94 +249,99 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
           )}
         </div>
 
-        {/* System Section */}
-        <div className="space-y-1">
-          <Button
-            variant={isSystemActive ? "default" : "ghost"}
-            className={cn(
-              "w-full justify-start h-10",
-              isCollapsed ? "px-2" : "px-3",
-              isSystemActive
-                ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            )}
-            onClick={() => {
-              if (!isCollapsed) {
-                setIsSystemExpanded(!isSystemExpanded);
-              }
-            }}
-          >
-            <HardDrive className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
-            {!isCollapsed && (
-              <>
-                <span className="flex-1 text-left">System</span>
-                {isSystemExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </>
-            )}
-          </Button>
+        {/* System Section - Desktop only */}
+        {!device.isMobile && (
+          <div className="space-y-1">
+            <Button
+              variant={isSystemActive ? "default" : "ghost"}
+              className={cn(
+                "w-full justify-start h-10",
+                isCollapsed ? "px-2" : "px-3",
+                isSystemActive
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+              onClick={() => {
+                if (!isCollapsed) {
+                  setIsSystemExpanded(!isSystemExpanded);
+                }
+              }}
+            >
+              <HardDrive className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1 text-left">System</span>
+                  {isSystemExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </>
+              )}
+            </Button>
 
-          {/* System Sub-items */}
-          {!isCollapsed && isSystemExpanded && (
-            <div className="ml-6 space-y-1">
-              {systemItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Button
-                    key={item.id}
-                    variant={currentPage === item.id ? "default" : "ghost"}
-                    className={cn(
-                      "w-full justify-start h-9 text-sm",
-                      "px-3",
-                      currentPage === item.id
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    )}
-                    onClick={() => handlePageChange(item.id)}
-                  >
-                    <Icon className="h-3 w-3 mr-2" />
-                    <span>{item.label}</span>
-                  </Button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+            {/* System Sub-items */}
+            {!isCollapsed && isSystemExpanded && (
+              <div className="ml-6 space-y-1">
+                {systemItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Button
+                      key={item.id}
+                      variant={currentPage === item.id ? "default" : "ghost"}
+                      className={cn(
+                        "w-full justify-start h-9 text-sm",
+                        "px-3",
+                        currentPage === item.id
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      )}
+                      onClick={() => handlePageChange(item.id)}
+                    >
+                      <Icon className="h-3 w-3 mr-2" />
+                      <span>{item.label}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Administration - Bottom Navigation Item */}
-        
-        {/* Tools - Navigation Item */}
-        <Button
-          variant={currentPage === 'tools' ? "default" : "ghost"}
-          className={cn(
-            "w-full justify-start h-10",
-            isCollapsed ? "px-2" : "px-3",
-            currentPage === 'tools'
-              ? "bg-sidebar-primary text-sidebar-primary-foreground"
-              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          )}
-          onClick={() => handlePageChange('tools')}
-        >
-          <Wrench className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
-          {!isCollapsed && <span>Tools</span>}
-        </Button>
-        <Button
-          variant={currentPage === 'administration' ? "default" : "ghost"}
-          className={cn(
-            "w-full justify-start h-10",
-            isCollapsed ? "px-2" : "px-3",
-            currentPage === 'administration'
-              ? "bg-sidebar-primary text-sidebar-primary-foreground"
-              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          )}
-          onClick={() => handlePageChange('administration')}
-        >
-          <Settings className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
-          {!isCollapsed && <span>Administration</span>}
-        </Button>
+        {/* Desktop-only: Tools and Administration */}
+        {!device.isMobile && (
+          <>
+            {/* Tools - Navigation Item */}
+            <Button
+              variant={currentPage === 'tools' ? "default" : "ghost"}
+              className={cn(
+                "w-full justify-start h-10",
+                isCollapsed ? "px-2" : "px-3",
+                currentPage === 'tools'
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+              onClick={() => handlePageChange('tools')}
+            >
+              <Wrench className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
+              {!isCollapsed && <span>Tools</span>}
+            </Button>
+            <Button
+              variant={currentPage === 'administration' ? "default" : "ghost"}
+              className={cn(
+                "w-full justify-start h-10",
+                isCollapsed ? "px-2" : "px-3",
+                currentPage === 'administration'
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+              onClick={() => handlePageChange('administration')}
+            >
+              <Settings className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
+              {!isCollapsed && <span>Administration</span>}
+            </Button>
+          </>
+        )}
       </nav>
 
       <Separator className="bg-sidebar-border" />
@@ -352,8 +357,8 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
           </div>
         )}
         
-        {/* Theme Toggle */}
-        {onThemeToggle && (
+        {/* Theme Toggle - Desktop only (mobile has it in user menu) */}
+        {onThemeToggle && !device.isMobile && (
           <Button
             variant="ghost"
             onClick={onThemeToggle}
