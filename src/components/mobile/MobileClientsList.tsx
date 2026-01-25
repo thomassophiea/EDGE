@@ -110,7 +110,7 @@ export function MobileClientsList({ currentSite }: MobileClientsListProps) {
               placeholder="Search clients..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-11"
+              className="pl-10 h-11"
             />
           </div>
           <Button
