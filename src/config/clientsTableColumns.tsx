@@ -61,8 +61,11 @@ export const CLIENTS_TABLE_COLUMNS: ColumnConfig<Station>[] = [
     defaultVisible: true,
     sortable: true,
     renderCell: (station) => {
-      const isOnline = station.status?.toLowerCase() === 'online' ||
-                      station.status?.toLowerCase() === 'connected';
+      const isOnline =
+        station.status?.toLowerCase() === 'online' ||
+        station.status?.toLowerCase() === 'connected' ||
+        station.status?.toLowerCase() === 'associated' ||
+        station.status?.toLowerCase() === 'active';
       return (
         <div className="flex items-center gap-2">
           {isOnline ? (
