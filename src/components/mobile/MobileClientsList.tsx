@@ -62,7 +62,11 @@ export function MobileClientsList({ currentSite }: MobileClientsListProps) {
 
       // Status filter
       if (filterStatus !== 'all') {
-        const isOnline = client.connectionState?.toLowerCase() === 'connected' || client.status?.toLowerCase() === 'connected';
+        const isOnline =
+          client.connectionState?.toLowerCase() === 'connected' ||
+          client.status?.toLowerCase() === 'connected' ||
+          client.status?.toLowerCase() === 'associated' ||
+          client.status?.toLowerCase() === 'active';
         if (filterStatus === 'online' && !isOnline) return false;
         if (filterStatus === 'offline' && isOnline) return false;
       }
@@ -106,7 +110,7 @@ export function MobileClientsList({ currentSite }: MobileClientsListProps) {
               placeholder="Search clients..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-11"
+              className="pl-10 h-11"
             />
           </div>
           <Button
@@ -176,7 +180,11 @@ export function MobileClientsList({ currentSite }: MobileClientsListProps) {
       <div className="flex-1 overflow-y-auto p-4">
         <MobileStatusList loading={loading} emptyMessage="No clients found">
           {filteredClients.map((client: any) => {
-            const isOnline = client.connectionState?.toLowerCase() === 'connected' || client.status?.toLowerCase() === 'connected';
+            const isOnline =
+              client.connectionState?.toLowerCase() === 'connected' ||
+              client.status?.toLowerCase() === 'connected' ||
+              client.status?.toLowerCase() === 'associated' ||
+              client.status?.toLowerCase() === 'active';
             const signalBucket = getSignalBucket(client.rssi);
             const signalLabels = { good: 'Good', fair: 'Fair', poor: 'Poor', unknown: 'Unknown' };
 

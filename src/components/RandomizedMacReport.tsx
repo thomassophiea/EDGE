@@ -250,7 +250,12 @@ export function RandomizedMacReport() {
                         </TableCell>
                         <TableCell>{station.manufacturer || 'Unknown'}</TableCell>
                         <TableCell>
-                          <Badge variant={station.status?.toLowerCase() === 'connected' ? 'default' : 'secondary'}>
+                          <Badge variant={
+                            station.status?.toLowerCase() === 'connected' ||
+                            station.status?.toLowerCase() === 'associated' ||
+                            station.status?.toLowerCase() === 'active'
+                              ? 'default' : 'secondary'
+                          }>
                             {station.status || 'Unknown'}
                           </Badge>
                         </TableCell>
