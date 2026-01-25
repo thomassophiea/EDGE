@@ -4,10 +4,11 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import { Search, RefreshCw } from 'lucide-react';
 import { MobileStatusList } from './MobileStatusList';
 import { MobileStatusRow } from './MobileStatusRow';
 import { Input } from '../ui/input';
+import { Button } from '../ui/button';
 import { apiService } from '@/services/api';
 import { useHaptic } from '@/hooks/useHaptic';
 import { useOfflineCache } from '@/hooks/useOfflineCache';
@@ -20,7 +21,7 @@ export function MobileAppsList({ currentSite }: MobileAppsListProps) {
   const haptic = useHaptic();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: apps, loading } = useOfflineCache(
+  const { data: apps, loading, error, refresh } = useOfflineCache(
     `apps_${currentSite}`,
     async () => {
       const data = await apiService.getApplications();
@@ -84,7 +85,29 @@ export function MobileAppsList({ currentSite }: MobileAppsListProps) {
 
       {/* List */}
       <div className="flex-1 overflow-y-auto p-4">
-        <MobileStatusList loading={loading} emptyMessage="No applications found">
+        {!loading && filteredApps.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+            <p className="text-muted-foreground mb-4">
+              {error
+                ? 'Unable to load applications. The application manager may not be configured or available.'
+                : apps?.length === 0
+                ? 'No applications are currently installed or available.'
+                : 'No applications match your search.'}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                haptic.light();
+                refresh();
+              }}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </div>
+        )}
+        <MobileStatusList loading={loading} emptyMessage="">
           {filteredApps.map((app: any, index: number) => {
             const usage = formatBytes(app.bytes || app.totalBytes);
             const clients = app.clientCount || app.clients || 0;
