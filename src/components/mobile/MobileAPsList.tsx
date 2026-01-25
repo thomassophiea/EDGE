@@ -25,6 +25,7 @@ export function MobileAPsList({ currentSite }: MobileAPsListProps) {
   const [filterStatus, setFilterStatus] = useState<'all' | 'online' | 'offline'>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedAP, setSelectedAP] = useState<any | null>(null);
+  const [clientCounts, setClientCounts] = useState<Record<string, number>>({});
 
   const { data: aps, loading, refresh } = useOfflineCache(
     `aps_${currentSite}`,
@@ -34,6 +35,48 @@ export function MobileAPsList({ currentSite }: MobileAPsListProps) {
     },
     30000
   );
+
+  const { data: clients } = useOfflineCache(
+    `clients_${currentSite}`,
+    async () => {
+      const data = await apiService.getStations();
+      return currentSite === 'all' ? data : data.filter((c: any) => c.siteId === currentSite);
+    },
+    30000
+  );
+
+  // Calculate client counts per AP
+  useEffect(() => {
+    if (!clients || !aps) return;
+
+    const counts: Record<string, number> = {};
+
+    // Initialize all APs with 0 clients
+    aps.forEach((ap: any) => {
+      const key = ap.serialNumber || ap.name || ap.displayName;
+      if (key) counts[key] = 0;
+    });
+
+    // Count clients per AP
+    clients.forEach((client: any) => {
+      const apKey = client.apSerialNumber || client.apName || client.apSerial;
+      if (apKey && counts[apKey] !== undefined) {
+        counts[apKey]++;
+      }
+      // Also try matching by name if serial doesn't match
+      if (client.apName) {
+        const matchingAP = aps.find((ap: any) =>
+          ap.name === client.apName || ap.displayName === client.apName
+        );
+        if (matchingAP) {
+          const key = matchingAP.serialNumber || matchingAP.name || matchingAP.displayName;
+          if (key) counts[key] = (counts[key] || 0) + 1;
+        }
+      }
+    });
+
+    setClientCounts(counts);
+  }, [clients, aps]);
 
   // Check if AP is online
   const isAPOnline = (ap: any): boolean => {
@@ -51,7 +94,8 @@ export function MobileAPsList({ currentSite }: MobileAPsListProps) {
 
   // Get client count
   const getClientCount = (ap: any): number => {
-    return ap.clientCount || ap.clients || ap.numClients || 0;
+    const key = ap.serialNumber || ap.name || ap.displayName;
+    return key ? (clientCounts[key] || ap.clientCount || ap.clients || ap.numClients || 0) : 0;
   };
 
   // Filter and search
@@ -182,13 +226,24 @@ export function MobileAPsList({ currentSite }: MobileAPsListProps) {
           {filteredAPs.map((ap: any) => {
             const online = isAPOnline(ap);
             const clientCount = getClientCount(ap);
-            const band = ap.band || ap.radioType || 'Unknown';
+
+            // Get band information from various sources
+            let band = ap.band || ap.radioType;
+            if (!band && ap.radios && ap.radios.length > 0) {
+              // Get unique bands from radios
+              const bands = ap.radios
+                .map((r: any) => r.band || r.frequency)
+                .filter((b: any) => b)
+                .filter((v: any, i: number, a: any[]) => a.indexOf(v) === i);
+              band = bands.length > 0 ? bands.join('/') : null;
+            }
+            const bandText = band || (ap.model || ap.hardwareType ? 'Dual' : 'Unknown');
 
             return (
               <MobileStatusRow
                 key={ap.serialNumber || ap.macAddress}
                 primaryText={ap.displayName || ap.name || ap.serialNumber || 'Unknown AP'}
-                secondaryText={`${clientCount} client${clientCount !== 1 ? 's' : ''} • ${band}`}
+                secondaryText={`${clientCount} client${clientCount !== 1 ? 's' : ''} • ${bandText}`}
                 status={{
                   label: online ? 'Online' : 'Offline',
                   variant: online ? 'success' : 'destructive',
