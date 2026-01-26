@@ -685,14 +685,14 @@ export function AppInsights({ api }: AppInsightsProps) {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.3} />
                     <XAxis
                       dataKey="name"
-                      tick={{ fontSize: 10 }}
+                      tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
                       angle={-45}
                       textAnchor="end"
                       height={60}
                       interval={0}
                     />
                     <YAxis
-                      tick={{ fontSize: 10 }}
+                      tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
                       tickFormatter={(v) => formatThroughputCompact(v)}
                       width={40}
                     />

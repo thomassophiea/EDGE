@@ -731,7 +731,23 @@ export function PerformanceAnalytics() {
                         labelLine={false}
                         outerRadius={80}
                         dataKey="value"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label={({ cx, cy, midAngle, outerRadius, name, percent }) => {
+                          const RADIAN = Math.PI / 180;
+                          const radius = outerRadius * 1.2;
+                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                          return (
+                            <text
+                              x={x}
+                              y={y}
+                              className="fill-foreground text-xs"
+                              textAnchor={x > cx ? 'start' : 'end'}
+                              dominantBaseline="central"
+                            >
+                              {name}: {(percent * 100).toFixed(0)}%
+                            </text>
+                          );
+                        }}
                       >
                       </Pie>
                       <Tooltip
@@ -760,9 +776,9 @@ export function PerformanceAnalytics() {
                 ) : (
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={apReports.slice(0, 10)}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="name" tick={{ fill: 'hsl(var(--foreground))' }} />
+                      <YAxis tick={{ fill: 'hsl(var(--foreground))' }} />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: 'hsl(var(--background))',
