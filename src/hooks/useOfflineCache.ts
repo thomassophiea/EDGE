@@ -3,7 +3,7 @@
  * Stores last successful fetch in localStorage
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface CacheMetadata {
   timestamp: number;
@@ -16,6 +16,10 @@ export function useOfflineCache<T>(key: string, fetchFn: () => Promise<T>, refre
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  // Use ref to always have access to the latest fetchFn without triggering re-renders
+  const fetchFnRef = useRef(fetchFn);
+  fetchFnRef.current = fetchFn;
 
   // Load from cache on mount
   useEffect(() => {
@@ -45,8 +49,8 @@ export function useOfflineCache<T>(key: string, fetchFn: () => Promise<T>, refre
     };
   }, []);
 
-  // Fetch data
-  const fetchData = async () => {
+  // Fetch data - uses ref to always call the latest fetchFn
+  const fetchData = useCallback(async () => {
     if (!navigator.onLine) {
       setError('Offline - showing cached data');
       setLoading(false);
@@ -56,7 +60,7 @@ export function useOfflineCache<T>(key: string, fetchFn: () => Promise<T>, refre
     try {
       setLoading(true);
       setError(null);
-      const result = await fetchFn();
+      const result = await fetchFnRef.current();
       setData(result);
       setLastUpdated(new Date());
 
@@ -86,7 +90,7 @@ export function useOfflineCache<T>(key: string, fetchFn: () => Promise<T>, refre
     } finally {
       setLoading(false);
     }
-  };
+  }, [key]);
 
   // Auto-refresh
   useEffect(() => {
@@ -96,7 +100,7 @@ export function useOfflineCache<T>(key: string, fetchFn: () => Promise<T>, refre
       const interval = setInterval(fetchData, refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [key, refreshInterval]);
+  }, [key, refreshInterval, fetchData]);
 
   return {
     data,
