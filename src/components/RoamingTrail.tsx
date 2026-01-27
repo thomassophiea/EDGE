@@ -1261,6 +1261,161 @@ export function RoamingTrail({ events, apEvents = [], rrmEvents = [], macAddress
                 <div className="ml-6 text-muted-foreground">{selectedEvent.ssid}</div>
               </div>
 
+              {/* Roam Insight - Why did the client roam? */}
+              {(() => {
+                // Generate roaming insight based on event data
+                const insights: { type: 'success' | 'warning' | 'error' | 'info'; title: string; description: string }[] = [];
+
+                // Check if this is actually a roam (AP changed)
+                const isActualRoam = selectedEvent.previousApName && selectedEvent.previousApName !== selectedEvent.apName;
+                const isBandChange = selectedEvent.isBandSteering;
+
+                if (isActualRoam) {
+                  // Analyze the roam reason
+                  if (selectedEvent.previousRssi !== undefined) {
+                    if (selectedEvent.previousRssi < -75) {
+                      insights.push({
+                        type: 'warning',
+                        title: 'Signal-Triggered Roam (Late)',
+                        description: `Client roamed from ${selectedEvent.previousApName} at ${selectedEvent.previousRssi} dBm. This is below the optimal roaming threshold (-70 dBm). The client waited too long to roam, which may indicate sticky client behavior or aggressive roaming settings on the AP.`
+                      });
+                    } else if (selectedEvent.previousRssi < -70) {
+                      insights.push({
+                        type: 'info',
+                        title: 'Normal Signal-Triggered Roam',
+                        description: `Client roamed from ${selectedEvent.previousApName} at ${selectedEvent.previousRssi} dBm. This is within the expected roaming threshold range. The client properly detected a better AP and transitioned.`
+                      });
+                    } else {
+                      insights.push({
+                        type: 'info',
+                        title: 'Proactive Roam (Good Signal)',
+                        description: `Client roamed from ${selectedEvent.previousApName} while signal was still good (${selectedEvent.previousRssi} dBm). This could be due to 802.11k/v assistance, load balancing, or the client finding a significantly better AP.`
+                      });
+                    }
+                  } else {
+                    insights.push({
+                      type: 'info',
+                      title: 'AP Transition',
+                      description: `Client moved from ${selectedEvent.previousApName} to ${selectedEvent.apName}. Signal strength data not available for detailed analysis.`
+                    });
+                  }
+
+                  // Dwell time analysis
+                  if (selectedEvent.dwell) {
+                    if (selectedEvent.dwell < 30000) { // Less than 30 seconds
+                      insights.push({
+                        type: 'warning',
+                        title: 'Rapid Roaming',
+                        description: `Client only stayed at previous AP for ${formatDuration(selectedEvent.dwell)}. Frequent roaming may indicate coverage gaps, interference, or misconfigured roaming thresholds.`
+                      });
+                    } else if (selectedEvent.dwell > 3600000) { // More than 1 hour
+                      insights.push({
+                        type: 'success',
+                        title: 'Stable Connection',
+                        description: `Client maintained connection to previous AP for ${formatDuration(selectedEvent.dwell)} before roaming. This indicates good network stability.`
+                      });
+                    }
+                  }
+
+                  // Current signal quality
+                  if (selectedEvent.rssi !== undefined) {
+                    if (selectedEvent.rssi >= -60) {
+                      insights.push({
+                        type: 'success',
+                        title: 'Excellent New Connection',
+                        description: `New AP signal is excellent at ${selectedEvent.rssi} dBm. Client should experience optimal performance.`
+                      });
+                    } else if (selectedEvent.rssi >= -70) {
+                      insights.push({
+                        type: 'info',
+                        title: 'Good New Connection',
+                        description: `New AP signal is acceptable at ${selectedEvent.rssi} dBm. Performance should be adequate for most applications.`
+                      });
+                    } else {
+                      insights.push({
+                        type: 'warning',
+                        title: 'Weak New Connection',
+                        description: `New AP signal is weak at ${selectedEvent.rssi} dBm. Client may experience reduced throughput or need to roam again soon.`
+                      });
+                    }
+                  }
+                } else if (isBandChange) {
+                  // Interband roam on same AP
+                  insights.push({
+                    type: 'error',
+                    title: 'Interband Roam (Same AP)',
+                    description: `Client switched from ${selectedEvent.bandSteeringFrom || 'unknown band'} to ${selectedEvent.bandSteeringTo || 'unknown band'} on the same AP. This typically indicates interference, signal degradation, or suboptimal band steering configuration.`
+                  });
+
+                  if (selectedEvent.bandSteeringTo?.includes('2.4') || selectedEvent.bandSteeringTo?.includes('2G')) {
+                    insights.push({
+                      type: 'warning',
+                      title: 'Fallback to 2.4GHz',
+                      description: 'Client fell back to 2.4GHz band. This usually indicates 5GHz signal issues (interference, distance, or obstacles). Consider checking 5GHz radio power and channel utilization.'
+                    });
+                  }
+                } else if (selectedEvent.eventType.toLowerCase().includes('register') || selectedEvent.eventType.toLowerCase().includes('associate')) {
+                  // Initial association
+                  insights.push({
+                    type: 'info',
+                    title: 'Initial Association',
+                    description: `Client associated to ${selectedEvent.apName}. This appears to be a new connection rather than a roam from another AP.`
+                  });
+
+                  if (selectedEvent.rssi !== undefined) {
+                    if (selectedEvent.rssi < -70) {
+                      insights.push({
+                        type: 'warning',
+                        title: 'Weak Initial Signal',
+                        description: `Client associated with ${selectedEvent.rssi} dBm signal. Consider why the client chose this AP over potentially closer ones. May indicate coverage issues or client roaming aggressiveness settings.`
+                      });
+                    }
+                  }
+                } else if (selectedEvent.eventType.toLowerCase().includes('de-reg') || selectedEvent.eventType.toLowerCase().includes('disassoc')) {
+                  // Disconnection
+                  if (selectedEvent.isFailedRoam) {
+                    insights.push({
+                      type: 'error',
+                      title: 'Failed Connection',
+                      description: 'Client disconnection due to authentication or association failure. Check RADIUS logs and verify client credentials.'
+                    });
+                  } else {
+                    insights.push({
+                      type: 'info',
+                      title: 'Client Disconnection',
+                      description: `Client disconnected from ${selectedEvent.apName}. This may be intentional (client left coverage) or due to network issues.`
+                    });
+                  }
+                }
+
+                if (insights.length === 0) return null;
+
+                return (
+                  <div className="p-3 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="h-4 w-4 text-primary" />
+                      <span className="font-semibold text-sm">Roam Insight</span>
+                    </div>
+                    <div className="space-y-2">
+                      {insights.map((insight, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-2 rounded text-xs border-l-2 ${
+                            insight.type === 'success' ? 'bg-green-500/10 border-green-500 text-green-800 dark:text-green-300' :
+                            insight.type === 'warning' ? 'bg-amber-500/10 border-amber-500 text-amber-800 dark:text-amber-300' :
+                            insight.type === 'error' ? 'bg-red-500/10 border-red-500 text-red-800 dark:text-red-300' :
+                            'bg-blue-500/10 border-blue-500 text-blue-800 dark:text-blue-300'
+                          }`}
+                        >
+                          <div className="font-medium mb-0.5">{insight.title}</div>
+                          <div className="opacity-90">{insight.description}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Interband Roaming Info */}
               {selectedEvent.isBandSteering && (
                 <div className="p-3 bg-red-50 dark:bg-red-950 border-l-4 border-red-500 rounded">
