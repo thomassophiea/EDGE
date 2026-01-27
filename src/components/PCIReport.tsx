@@ -116,13 +116,23 @@ export function PCIReport() {
 
   const loadWlans = async (siteId: string) => {
     setLoadingWlans(true);
-    try {
-      // Fetch all services (WLANs) from the controller
-      console.log(`[PCIReport] Fetching services for site ${siteId}`);
-      const services = await apiService.getServices();
-      console.log(`[PCIReport] Raw services response:`, services);
+    console.log(`[PCIReport] Loading WLANs for site: ${siteId}`);
 
-      if (!services || services.length === 0) {
+    try {
+      // Call /v1/services directly - this is what Dashboard uses and it works
+      const response = await apiService.makeAuthenticatedRequest('/v1/services', {}, 10000);
+
+      if (!response.ok) {
+        console.error(`[PCIReport] Services API returned ${response.status}`);
+        toast.error(`Failed to load WLANs: API returned ${response.status}`);
+        setWlans([]);
+        return;
+      }
+
+      const services = await response.json();
+      console.log(`[PCIReport] Raw services from API:`, services);
+
+      if (!services || !Array.isArray(services) || services.length === 0) {
         console.log('[PCIReport] No services returned from API');
         setWlans([]);
         toast.info('No WLANs/Services configured on the controller');
@@ -132,7 +142,7 @@ export function PCIReport() {
       // Transform services to WLAN format
       const wlanList: WLAN[] = services.map((service: any) => {
         const ssid = service.ssid || service.serviceName || service.name || '';
-        console.log(`[PCIReport] Processing service:`, { id: service.id, ssid, name: service.name, serviceName: service.serviceName });
+        console.log(`[PCIReport] Service:`, { id: service.id, ssid, serviceName: service.serviceName, name: service.name });
         return {
           id: service.id,
           ssid: ssid,
@@ -147,7 +157,7 @@ export function PCIReport() {
       setWlans(wlanList);
 
       if (wlanList.length === 0) {
-        toast.info('No WLANs found. Check browser console for API response.');
+        toast.info('No WLANs found with valid SSID.');
       }
     } catch (error) {
       console.error('[PCIReport] Failed to load WLANs:', error);
