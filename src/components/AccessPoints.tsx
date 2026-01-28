@@ -9,7 +9,7 @@ import { DetailSlideOut } from './DetailSlideOut';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
-import { AlertCircle, Wifi, Search, RefreshCw, Filter, Eye, Users, Activity, Signal, Cpu, HardDrive, MoreVertical, Shield, Key, RotateCcw, MapPin, Settings, AlertTriangle, Download, Trash2, Cloud, Power, WifiOff, CheckCircle2, XCircle, Building, Info, Columns, Anchor } from 'lucide-react';
+import { AlertCircle, Wifi, Search, RefreshCw, Filter, Eye, Users, Activity, Signal, Cpu, HardDrive, MoreVertical, Shield, Key, RotateCcw, MapPin, Settings, AlertTriangle, Download, Trash2, Cloud, Power, WifiOff, CheckCircle2, XCircle, Building, Info, Columns, Anchor, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { Checkbox } from './ui/checkbox';
 import { Alert, AlertDescription } from './ui/alert';
@@ -106,6 +106,8 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
     return AVAILABLE_COLUMNS.filter(col => col.defaultVisible).map(col => col.key);
   });
   const [isColumnDialogOpen, setIsColumnDialogOpen] = useState(false);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
     loadData();
@@ -380,17 +382,115 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
   };
 
   const filteredAccessPoints = accessPoints.filter((ap) => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       ap.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       getAPName(ap)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ap.model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ap.ipAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       getAPSite(ap)?.toLowerCase().includes(searchTerm.toLowerCase()); // Include site in search
-    
+
     const matchesStatus = statusFilter === 'all' || ap.status?.toLowerCase() === statusFilter.toLowerCase();
     const matchesHardware = hardwareFilter === 'all' || ap.hardwareType === hardwareFilter;
-    
+
     return matchesSearch && matchesStatus && matchesHardware;
+  });
+
+  // Helper function to get sortable value for a column
+  const getSortValue = (ap: AccessPoint, columnKey: string): string | number | boolean => {
+    const apAny = ap as any;
+    switch (columnKey) {
+      case 'connection':
+        return isAPOnline(ap) ? 1 : 0;
+      case 'apName':
+        return (getAPName(ap) || '').toLowerCase();
+      case 'serialNumber':
+        return (ap.serialNumber || '').toLowerCase();
+      case 'hostSite':
+        return (getAPSite(ap) || '').toLowerCase();
+      case 'model':
+        return (ap.model || ap.hardwareType || '').toLowerCase();
+      case 'ipAddress':
+        return ap.ipAddress || '';
+      case 'clients':
+        return clientCounts[ap.serialNumber] ?? apAny.stationCount ?? apAny.clientCount ?? 0;
+      case 'status':
+        return (ap.status || '').toLowerCase();
+      case 'hardwareType':
+        return (ap.hardwareType || '').toLowerCase();
+      case 'firmwareVersion':
+        return (apAny.firmwareVersion || apAny.fwVersion || '').toLowerCase();
+      case 'macAddress':
+        return (apAny.macAddress || apAny.mac || '').toLowerCase();
+      case 'lastSeen':
+        return apAny.lastSeen || apAny.lastSeenTime || '';
+      case 'uptime':
+        return apAny.uptime || apAny.uptimeSeconds || 0;
+      case 'channel24':
+        return apAny.channel24 || apAny.radio24Channel || 0;
+      case 'channel5':
+        return apAny.channel5 || apAny.radio5Channel || 0;
+      case 'txPower24':
+        return apAny.txPower24 || 0;
+      case 'txPower5':
+        return apAny.txPower5 || 0;
+      case 'noiseFloor':
+        return apAny.noiseFloor || 0;
+      case 'cpuUsage':
+        return apAny.cpuUsage || apAny.cpuUtilization || 0;
+      case 'memoryUsage':
+        return apAny.memoryUsage || apAny.memUtilization || 0;
+      case 'switchPorts':
+        return (apAny.switchPorts || '').toLowerCase();
+      case 'source':
+        return (apAny.source || '').toLowerCase();
+      case 'floorName':
+        return (apAny.floorName || '').toLowerCase();
+      case 'description':
+        return (apAny.description || '').toLowerCase();
+      case 'afcAnchor':
+        return isAfcAnchor(ap) ? 1 : 0;
+      default:
+        return '';
+    }
+  };
+
+  // Handle column header click for sorting
+  const handleSort = (columnKey: string) => {
+    if (sortColumn === columnKey) {
+      // Toggle direction if same column
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, start with ascending
+      setSortColumn(columnKey);
+      setSortDirection('asc');
+    }
+  };
+
+  // Get sort icon for column header
+  const getSortIcon = (columnKey: string) => {
+    if (sortColumn !== columnKey) {
+      return <ArrowUpDown className="h-4 w-4 ml-1 opacity-50" />;
+    }
+    return sortDirection === 'asc'
+      ? <ArrowUp className="h-4 w-4 ml-1" />
+      : <ArrowDown className="h-4 w-4 ml-1" />;
+  };
+
+  // Sort the filtered access points
+  const sortedAccessPoints = [...filteredAccessPoints].sort((a, b) => {
+    if (!sortColumn) return 0;
+
+    const aValue = getSortValue(a, sortColumn);
+    const bValue = getSortValue(b, sortColumn);
+
+    let comparison = 0;
+    if (typeof aValue === 'number' && typeof bValue === 'number') {
+      comparison = aValue - bValue;
+    } else {
+      comparison = String(aValue).localeCompare(String(bValue));
+    }
+
+    return sortDirection === 'asc' ? comparison : -comparison;
   });
 
   const getUniqueStatuses = () => {
@@ -1219,13 +1319,13 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
           </div>
         </CardHeader>
         <CardContent>
-          {filteredAccessPoints.length === 0 ? (
+          {sortedAccessPoints.length === 0 ? (
             <div className="text-center py-8">
               <Wifi className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No Access Points Found</h3>
               <p className="text-muted-foreground">
-                {searchTerm || statusFilter !== 'all' || hardwareFilter !== 'all' 
-                  ? 'No access points match your current filters.' 
+                {searchTerm || statusFilter !== 'all' || hardwareFilter !== 'all'
+                  ? 'No access points match your current filters.'
                   : 'No access points are currently configured.'}
               </p>
             </div>
@@ -1236,13 +1336,24 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
                   <TableRow>
                     {visibleColumns.map(columnKey => {
                       const column = AVAILABLE_COLUMNS.find(c => c.key === columnKey);
-                      return <TableHead key={columnKey}>{column?.label || columnKey}</TableHead>;
+                      return (
+                        <TableHead
+                          key={columnKey}
+                          className="cursor-pointer select-none hover:bg-muted/50 transition-colors"
+                          onClick={() => handleSort(columnKey)}
+                        >
+                          <div className="flex items-center">
+                            {column?.label || columnKey}
+                            {getSortIcon(columnKey)}
+                          </div>
+                        </TableHead>
+                      );
                     })}
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAccessPoints.map((ap) => (
+                  {sortedAccessPoints.map((ap) => (
                     <TableRow
                       key={ap.serialNumber}
                       className="cursor-pointer hover:bg-muted/50"
