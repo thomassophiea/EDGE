@@ -1535,48 +1535,40 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
         </Card>
       </div>
 
-      {/* E911 BSSID Export Panel */}
-      <Card className="border-2 border-red-500 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30">
-        <CardContent className="py-4">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500 rounded-lg">
-                <Phone className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">E911 BSSID Export</h3>
-                <p className="text-sm text-muted-foreground">
-                  {filteredAccessPoints.length > 0
-                    ? `${filteredAccessPoints.length} access point${filteredAccessPoints.length > 1 ? 's' : ''} available for export`
-                    : 'No access points available'}
-                </p>
-              </div>
+      {/* E911 BSSID Export Panel - Compact */}
+      <Card className="border border-red-500/50 bg-gradient-to-r from-red-50/50 to-orange-50/50 dark:from-red-950/20 dark:to-orange-950/20">
+        <CardContent className="py-2 px-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-red-500" />
+              <span className="font-medium text-sm">E911 BSSID Export</span>
+              <span className="text-xs text-muted-foreground">
+                ({filteredAccessPoints.length} APs)
+              </span>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
               <Button
                 onClick={handleDownloadBSSIDs}
+                size="sm"
                 variant="outline"
-                className="border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
+                className="h-7 text-xs border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
                 disabled={filteredAccessPoints.length === 0}
               >
-                <FileDown className="mr-2 h-4 w-4" />
-                Download CSV
+                <FileDown className="mr-1 h-3 w-3" />
+                CSV
               </Button>
               <Button
                 onClick={handleDownloadBSSIDsJSON}
+                size="sm"
                 variant="outline"
-                className="border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
+                className="h-7 text-xs border-red-500/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
                 disabled={filteredAccessPoints.length === 0}
               >
-                <Download className="mr-2 h-4 w-4" />
-                Download JSON
+                <Download className="mr-1 h-3 w-3" />
+                JSON
               </Button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-3 border-t pt-3">
-            <strong>E911 Compliance:</strong> Export BSSID location data for integration with Emergency 911 location services.
-            The CSV format is compatible with most E911 location database systems. JSON format provides structured data for API integrations.
-          </p>
         </CardContent>
       </Card>
 

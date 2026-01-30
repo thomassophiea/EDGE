@@ -1,13 +1,13 @@
 {
-  "version": "v545.d5fd65b",
-  "commit": "d5fd65b",
-  "commitFull": "d5fd65b",
-  "commitCount": "545",
-  "cacheVersion": 1045,
+  "version": "v546.7781cc7",
+  "commit": "7781cc7",
+  "commitFull": "7781cc7",
+  "commitCount": "546",
+  "cacheVersion": 1046,
   "branch": "main",
-  "buildDate": "2026-01-30T02:45:00.000Z",
+  "buildDate": "2026-01-30T03:15:00.000Z",
   "commitDate": "2026-01-29",
-  "message": "Add E911 BSSID export feature for emergency location services",
+  "message": "Update API Documentation with complete 244+ endpoints from real swagger.json",
   "features": [
     "Data Normalization Layer (P0-002)",
     "Universal FilterBar Component (P0-003)",
@@ -19,6 +19,7 @@
     "RF Quality Index (RFQI) Widget",
     "Application Analytics Widget",
     "Extreme Platform ONE Widget API Integration",
-    "E911 BSSID Export (CSV/JSON)"
+    "E911 BSSID Export (CSV/JSON)",
+    "Complete API Documentation (244+ endpoints)"
   ]
 }
