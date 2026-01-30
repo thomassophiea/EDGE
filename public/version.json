@@ -1,13 +1,13 @@
 {
-  "version": "v544.d8e2a46",
-  "commit": "d8e2a46",
-  "commitFull": "d8e2a46",
-  "commitCount": "544",
-  "cacheVersion": 1044,
+  "version": "v545.d5fd65b",
+  "commit": "d5fd65b",
+  "commitFull": "d5fd65b",
+  "commitCount": "545",
+  "cacheVersion": 1045,
   "branch": "main",
-  "buildDate": "2026-01-30T02:30:00.000Z",
+  "buildDate": "2026-01-30T02:45:00.000Z",
   "commitDate": "2026-01-29",
-  "message": "Replace Campus Controller with Extreme Platform ONE branding",
+  "message": "Add E911 BSSID export feature for emergency location services",
   "features": [
     "Data Normalization Layer (P0-002)",
     "Universal FilterBar Component (P0-003)",
@@ -18,6 +18,7 @@
     "Anomaly Detector Widget (P1-005)",
     "RF Quality Index (RFQI) Widget",
     "Application Analytics Widget",
-    "Extreme Platform ONE Widget API Integration"
+    "Extreme Platform ONE Widget API Integration",
+    "E911 BSSID Export (CSV/JSON)"
   ]
 }

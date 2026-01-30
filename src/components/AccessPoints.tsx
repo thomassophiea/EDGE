@@ -9,7 +9,7 @@ import { DetailSlideOut } from './DetailSlideOut';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
-import { AlertCircle, Wifi, Search, RefreshCw, Filter, Eye, Users, Activity, Signal, Cpu, HardDrive, MoreVertical, Shield, Key, RotateCcw, MapPin, Settings, AlertTriangle, Download, Trash2, Cloud, Power, WifiOff, CheckCircle2, XCircle, Building, Info, Columns, Anchor } from 'lucide-react';
+import { AlertCircle, Wifi, Search, RefreshCw, Filter, Eye, Users, Activity, Signal, Cpu, HardDrive, MoreVertical, Shield, Key, RotateCcw, MapPin, Settings, AlertTriangle, Download, Trash2, Cloud, Power, WifiOff, CheckCircle2, XCircle, Building, Info, Columns, Anchor, Phone, FileDown } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { Checkbox } from './ui/checkbox';
 import { Alert, AlertDescription } from './ui/alert';
@@ -734,6 +734,135 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
     );
   };
 
+  // E911: Download BSSIDs for emergency location services
+  const handleDownloadBSSIDs = () => {
+    try {
+      // Filter to only online APs in the current view
+      const apsToExport = filteredAccessPoints;
+
+      if (apsToExport.length === 0) {
+        toast.error('No access points to export');
+        return;
+      }
+
+      // Build CSV content with BSSIDs for E911 location services
+      const csvHeaders = [
+        'BSSID',
+        'AP Name',
+        'Serial Number',
+        'MAC Address',
+        'Site Name',
+        'Building',
+        'Floor',
+        'IP Address',
+        'Model',
+        'Status',
+        'Latitude',
+        'Longitude'
+      ];
+
+      const csvRows = apsToExport.map(ap => {
+        // BSSIDs are typically the MAC address or derived from it
+        // Some APs have multiple BSSIDs (one per radio/SSID combination)
+        const bssid = ap.macAddress || (ap as any).bssid || ap.serialNumber || '';
+        return [
+          bssid,
+          getAPName(ap),
+          ap.serialNumber || '',
+          ap.macAddress || '',
+          ap.hostSite || (ap as any).siteName || '',
+          (ap as any).buildingName || (ap as any).building || '',
+          (ap as any).floorName || (ap as any).floor || '',
+          ap.ipAddress || '',
+          ap.model || ap.hardwareType || '',
+          ap.status || (isAPOnline(ap) ? 'Online' : 'Offline'),
+          (ap as any).latitude || (ap as any).lat || '',
+          (ap as any).longitude || (ap as any).lng || (ap as any).lon || ''
+        ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(',');
+      });
+
+      const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
+
+      // Create and download CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const siteName = selectedSite !== 'all'
+        ? sites.find(s => s.id === selectedSite || s.name === selectedSite)?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'selected-site'
+        : 'all-sites';
+      link.download = `e911-bssids-${siteName}-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${apsToExport.length} BSSID${apsToExport.length > 1 ? 's' : ''} for E911`);
+    } catch (error) {
+      console.error('[AccessPoints] Error exporting BSSIDs:', error);
+      toast.error('Failed to export BSSIDs');
+    }
+  };
+
+  // E911: Download BSSIDs as JSON for integration with location services
+  const handleDownloadBSSIDsJSON = () => {
+    try {
+      const apsToExport = filteredAccessPoints;
+
+      if (apsToExport.length === 0) {
+        toast.error('No access points to export');
+        return;
+      }
+
+      const exportData = {
+        exportDate: new Date().toISOString(),
+        exportType: 'E911_BSSID_LOCATION_DATA',
+        totalAccessPoints: apsToExport.length,
+        siteName: selectedSite !== 'all'
+          ? sites.find(s => s.id === selectedSite || s.name === selectedSite)?.name || 'All Sites'
+          : 'All Sites',
+        accessPoints: apsToExport.map(ap => ({
+          bssid: ap.macAddress || (ap as any).bssid || '',
+          apName: getAPName(ap),
+          serialNumber: ap.serialNumber,
+          macAddress: ap.macAddress,
+          location: {
+            siteName: ap.hostSite || (ap as any).siteName || '',
+            buildingName: (ap as any).buildingName || (ap as any).building || '',
+            floorName: (ap as any).floorName || (ap as any).floor || '',
+            coordinates: {
+              latitude: (ap as any).latitude || (ap as any).lat || null,
+              longitude: (ap as any).longitude || (ap as any).lng || (ap as any).lon || null
+            }
+          },
+          networkInfo: {
+            ipAddress: ap.ipAddress,
+            model: ap.model || ap.hardwareType,
+            status: ap.status || (isAPOnline(ap) ? 'Online' : 'Offline')
+          }
+        }))
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const siteName = selectedSite !== 'all'
+        ? sites.find(s => s.id === selectedSite || s.name === selectedSite)?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'selected-site'
+        : 'all-sites';
+      link.download = `e911-bssids-${siteName}-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${apsToExport.length} BSSID${apsToExport.length > 1 ? 's' : ''} for E911 (JSON)`);
+    } catch (error) {
+      console.error('[AccessPoints] Error exporting BSSIDs JSON:', error);
+      toast.error('Failed to export BSSIDs');
+    }
+  };
+
   // Helper function to get connection status icon and color
   const getConnectionStatusIcon = (ap: AccessPoint) => {
     if (isAPOnline(ap)) {
@@ -1405,6 +1534,51 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* E911 BSSID Export Panel */}
+      <Card className="border-2 border-red-500 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30">
+        <CardContent className="py-4">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-500 rounded-lg">
+                <Phone className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">E911 BSSID Export</h3>
+                <p className="text-sm text-muted-foreground">
+                  {filteredAccessPoints.length > 0
+                    ? `${filteredAccessPoints.length} access point${filteredAccessPoints.length > 1 ? 's' : ''} available for export`
+                    : 'No access points available'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                onClick={handleDownloadBSSIDs}
+                variant="outline"
+                className="border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
+                disabled={filteredAccessPoints.length === 0}
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                Download CSV
+              </Button>
+              <Button
+                onClick={handleDownloadBSSIDsJSON}
+                variant="outline"
+                className="border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
+                disabled={filteredAccessPoints.length === 0}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download JSON
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3 border-t pt-3">
+            <strong>E911 Compliance:</strong> Export BSSID location data for integration with Emergency 911 location services.
+            The CSV format is compatible with most E911 location database systems. JSON format provides structured data for API integrations.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card className="surface-2dp">
         <CardHeader>
