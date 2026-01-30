@@ -41,12 +41,17 @@ VITE_APP_COMMIT_DATE=${commitDate}
   const rootDir = join(__dirname, '..');
   writeFileSync(join(rootDir, '.env.production'), envContent);
 
+  // Calculate cache version from commit count (used by service worker)
+  // Adding base offset to ensure cache version is always higher than previous hard-coded values
+  const cacheVersion = parseInt(commitCount, 10) + 500;
+
   // Also write version.json for deployment verification
   const versionJson = {
     version: version,
     commit: commitHash,
     commitFull: execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim(),
     commitCount: commitCount,
+    cacheVersion: cacheVersion,
     branch: branch,
     buildDate: new Date().toISOString(),
     commitDate: commitDate,
@@ -114,10 +119,11 @@ VITE_APP_COMMIT_DATE=unknown
     commit: commitShort,
     commitFull: railwayCommit,
     commitCount: '0',
+    cacheVersion: 500, // Base offset for fallback
     branch: railwayBranch,
     buildDate: buildDate,
     commitDate: 'unknown',
-    message: 'Site Selector Fix & Campus Controller Integration',
+    message: 'Version Gate with Clean State on Deploy',
     features: [
       'Fixed site selector to display names instead of IDs',
       'Data Normalization Layer (P0-002)',

@@ -1,39 +1,73 @@
-// Service Worker for caching static assets with optimized strategies
-const CACHE_NAME = 'aura-cache-v16-fixed';
-const STATIC_CACHE = 'aura-static-v16';
-const DYNAMIC_CACHE = 'aura-dynamic-v16';
+/**
+ * Service Worker with Version-Based Cache Invalidation
+ *
+ * This service worker:
+ * 1. Deletes ALL caches on activation (clean slate on every deploy)
+ * 2. Claims all clients immediately
+ * 3. Uses network-first strategy for HTML to ensure fresh content
+ * 4. Uses stale-while-revalidate for hashed static assets
+ */
 
-const urlsToCache = [
-  '/',
-  '/index.html',
+// Cache version - increment this on every deploy to force cache invalidation
+// This should match CACHE_VERSION in versionGate.ts
+const CACHE_VERSION = 17;
+const CACHE_NAME = `aura-cache-v${CACHE_VERSION}`;
+const STATIC_CACHE = `aura-static-v${CACHE_VERSION}`;
+
+// Minimal list - don't cache HTML, let it always be fetched fresh
+const STATIC_ASSETS = [
   '/manifest.json',
 ];
 
-// Install event - cache static assets
+// Install event - skip waiting to activate immediately
 self.addEventListener('install', (event) => {
+  console.log(`[SW] Installing v${CACHE_VERSION}`);
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('[Service Worker] Caching static assets');
-        return cache.addAll(urlsToCache);
+        console.log('[SW] Pre-caching static assets');
+        return cache.addAll(STATIC_ASSETS);
       })
-      .then(() => self.skipWaiting())
+      .then(() => {
+        console.log('[SW] Skip waiting');
+        return self.skipWaiting();
+      })
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - DELETE ALL CACHES and claim clients
 self.addEventListener('activate', (event) => {
+  console.log(`[SW] Activating v${CACHE_VERSION}`);
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME && cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-            console.log('[Service Worker] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches.keys()
+      .then((cacheNames) => {
+        console.log(`[SW] Found ${cacheNames.length} cache(s)`);
+        // Delete ALL caches that don't match current version
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (!cacheName.includes(`v${CACHE_VERSION}`)) {
+              console.log('[SW] Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+            return Promise.resolve();
+          })
+        );
+      })
+      .then(() => {
+        console.log('[SW] Claiming clients');
+        return self.clients.claim();
+      })
+      .then(() => {
+        // Notify all clients that the service worker has updated
+        return self.clients.matchAll().then((clients) => {
+          clients.forEach((client) => {
+            client.postMessage({
+              type: 'SW_ACTIVATED',
+              version: CACHE_VERSION,
+            });
+          });
+        });
+      })
   );
 });
 
@@ -44,40 +78,49 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip API requests (don't cache API responses here, use app-level cache instead)
-  if (event.request.url.includes('/api/')) {
-    return;
-  }
-
   const { request } = event;
   const url = new URL(request.url);
 
-  // Only handle same-origin requests (skip external URLs like Supabase)
+  // Skip cross-origin requests (API calls, Supabase, etc.)
   if (url.origin !== location.origin) {
     return;
   }
 
-  // Stale-while-revalidate for static assets (JS, CSS, images, fonts)
-  if (url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|gif|woff|woff2|ttf|eot|ico)$/)) {
+  // Skip API requests - these should never be cached by SW
+  if (url.pathname.includes('/api/') || url.pathname.includes('/v1/')) {
+    return;
+  }
+
+  // NETWORK-FIRST for HTML - always try to get fresh HTML
+  // This ensures users get the latest index.html with new asset hashes
+  if (url.pathname === '/' || url.pathname.endsWith('.html')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Don't cache HTML - let browser handle with no-store headers
+          return response;
+        })
+        .catch(() => {
+          // Only use cache as absolute fallback (offline)
+          return caches.match(request);
+        })
+    );
+    return;
+  }
+
+  // Stale-while-revalidate for hashed static assets (JS, CSS with hash in filename)
+  // These files are immutable once deployed
+  if (url.pathname.match(/\.[a-f0-9]{8,}\.(js|css)$/)) {
     event.respondWith(
       caches.open(STATIC_CACHE).then((cache) => {
         return cache.match(request).then((cachedResponse) => {
           const fetchPromise = fetch(request).then((networkResponse) => {
-            // Update cache with fresh response
             if (networkResponse && networkResponse.status === 200) {
               cache.put(request, networkResponse.clone());
             }
             return networkResponse;
-          }).catch((error) => {
-            // If network fails and we have cache, return it
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            // Otherwise, re-throw to let the browser handle it
-            throw error;
-          });
+          }).catch(() => cachedResponse);
 
-          // Return cached response immediately, update in background
           return cachedResponse || fetchPromise;
         });
       })
@@ -85,36 +128,52 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for HTML (with network fallback)
-  if (url.pathname === '/' || url.pathname.endsWith('.html')) {
+  // Stale-while-revalidate for other static assets (images, fonts)
+  if (url.pathname.match(/\.(png|jpg|jpeg|svg|gif|woff|woff2|ttf|eot|ico|webp)$/)) {
     event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        return fetch(request).then((response) => {
-          return caches.open(CACHE_NAME).then((cache) => {
-            if (response.status === 200) {
-              cache.put(request, response.clone());
+      caches.open(STATIC_CACHE).then((cache) => {
+        return cache.match(request).then((cachedResponse) => {
+          const fetchPromise = fetch(request).then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(request, networkResponse.clone());
             }
-            return response;
-          });
+            return networkResponse;
+          }).catch(() => cachedResponse);
+
+          return cachedResponse || fetchPromise;
         });
       })
     );
     return;
   }
 
-  // Network-first for everything else (same-origin only)
+  // Network-first for everything else
   event.respondWith(
-    fetch(request).catch((error) => {
-      return caches.match(request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        // No cache available, re-throw to let browser handle it
-        throw error;
-      });
-    })
+    fetch(request).catch(() => caches.match(request))
   );
+});
+
+// Listen for messages from the main thread
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('[SW] Received SKIP_WAITING message');
+    self.skipWaiting();
+  }
+
+  if (event.data && event.data.type === 'CLEAR_ALL_CACHES') {
+    console.log('[SW] Received CLEAR_ALL_CACHES message');
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          console.log('[SW] Clearing cache:', cacheName);
+          return caches.delete(cacheName);
+        })
+      );
+    }).then(() => {
+      event.source.postMessage({
+        type: 'CACHES_CLEARED',
+        version: CACHE_VERSION,
+      });
+    });
+  }
 });

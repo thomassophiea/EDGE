@@ -1,5 +1,9 @@
 /// <reference types="vite/client" />
 
+// Version constants injected by Vite at build time
+declare const __APP_VERSION__: string;
+declare const __CACHE_VERSION__: number;
+
 interface ImportMetaEnv {
   readonly VITE_APP_VERSION: string;
   readonly VITE_APP_COMMIT_HASH: string;
