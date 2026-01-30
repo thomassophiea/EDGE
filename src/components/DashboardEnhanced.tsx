@@ -1165,7 +1165,7 @@ function DashboardEnhancedComponent() {
           }}
         />
         <FilterBar
-          showSiteFilter={true}
+          showSiteFilter={false}
           showTimeRangeFilter={true}
           showContextFilter={false}
         />

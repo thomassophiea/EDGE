@@ -103,11 +103,28 @@ export function ContextualInsightsSelector({
             { id: 'all', name: 'All Access Points', subtitle: `${aps.length} APs` }
           ];
           aps.slice(0, 50).forEach((ap: any) => {
+            // Determine AP name - prioritize friendly names over serial
+            const apName = ap.displayName || ap.name || ap.hostname || ap.serialNumber;
+
+            // Determine online status using same logic as DashboardEnhanced
+            const statusStr = (ap.status || ap.connectionState || ap.operationalState || '').toLowerCase();
+            const isUp = ap.isUp;
+            const isOnline = ap.online;
+            const apIsOnline = (
+              statusStr === 'inservice' ||
+              statusStr.includes('up') ||
+              statusStr.includes('online') ||
+              statusStr.includes('connected') ||
+              isUp === true ||
+              isOnline === true ||
+              (!statusStr && isUp !== false && isOnline !== false)
+            );
+
             apItems.push({
               id: ap.serialNumber || ap.id,
-              name: ap.displayName || ap.name || ap.serialNumber,
+              name: apName,
               subtitle: ap.siteName || ap.model || undefined,
-              status: ap.connectionState === 'Connected' || ap.status === 'online' ? 'online' : 'offline'
+              status: apIsOnline ? 'online' : 'offline'
             });
           });
           setItems(apItems);
@@ -120,11 +137,22 @@ export function ContextualInsightsSelector({
               { id: 'all', name: 'All Switches', subtitle: `${switches.length} switches` }
             ];
             switches.slice(0, 50).forEach((sw: any) => {
+              const swName = sw.displayName || sw.name || sw.hostname || sw.serialNumber;
+              const swStatusStr = (sw.status || sw.connectionState || sw.operationalState || '').toLowerCase();
+              const swIsOnline = (
+                swStatusStr === 'inservice' ||
+                swStatusStr.includes('up') ||
+                swStatusStr.includes('online') ||
+                swStatusStr.includes('connected') ||
+                sw.isUp === true ||
+                sw.online === true ||
+                (!swStatusStr && sw.isUp !== false && sw.online !== false)
+              );
               switchItems.push({
                 id: sw.serialNumber || sw.id,
-                name: sw.displayName || sw.name || sw.serialNumber,
+                name: swName,
                 subtitle: sw.siteName || sw.model || undefined,
-                status: sw.connectionState === 'Connected' || sw.status === 'online' ? 'online' : 'offline'
+                status: swIsOnline ? 'online' : 'offline'
               });
             });
             setItems(switchItems);
