@@ -152,7 +152,7 @@ export function OSOneWidget({
         <CardContent>
           <div className="flex items-center gap-2 text-muted-foreground">
             <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">{error || 'Unable to load controller information'}</span>
+            <span className="text-sm">{error || 'Unable to load OS ONE information'}</span>
           </div>
         </CardContent>
       </Card>
@@ -170,7 +170,7 @@ export function OSOneWidget({
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-500 opacity-[0.08] group-hover:opacity-[0.12] transition-opacity" />
         <div className="absolute -right-8 -top-8 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all" />
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-          <CardTitle className="text-sm font-semibold">OS ONE Controller</CardTitle>
+          <CardTitle className="text-sm font-semibold">OS ONE Control</CardTitle>
           <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 shadow-md group-hover:scale-110 transition-transform">
             <Server className="h-3.5 w-3.5 text-white" />
           </div>
@@ -217,7 +217,7 @@ export function OSOneWidget({
                 {siteName && <Badge variant="outline" className="ml-2">{siteName}</Badge>}
               </CardTitle>
               <CardDescription>
-                {manufacturing?.model || 'Controller System Information'}
+                {manufacturing?.model || 'System Information'}
               </CardDescription>
             </div>
           </div>

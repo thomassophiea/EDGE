@@ -2152,17 +2152,17 @@ function DashboardEnhancedComponent() {
         />
       )}
 
-      {/* Phase 5+ Widgets: Configuration Profiles, Audit Logs, OS ONE */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* OS ONE Controller Widget */}
-        <OSOneWidget compact={true} />
-
+      {/* Phase 5+ Widgets: Configuration Profiles and Audit Logs */}
+      <div className="grid gap-4 md:grid-cols-2">
         {/* Configuration Profiles Widget */}
         <ConfigurationProfilesWidget />
 
         {/* Audit Logs Widget */}
         <AuditLogsWidget />
       </div>
+
+      {/* OS ONE Control - System Information */}
+      <OSOneWidget compact={true} />
 
 
       {/* Client Detail Dialog */}
