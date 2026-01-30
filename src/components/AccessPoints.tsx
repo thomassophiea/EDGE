@@ -328,7 +328,8 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
     }
   };
 
-  // Load AP metrics (CPU/Memory) in background from individual AP details
+  // Load AP metrics (CPU/Memory) in background
+  // Strategy: Try bulk /v1/aps/ifstats first, fall back to individual AP details
   const loadAPMetrics = async (aps: AccessPoint[]) => {
     if (aps.length === 0) {
       return;
@@ -339,36 +340,69 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
     const metricsByAP: Record<string, { cpuUsage?: number; memoryUsage?: number }> = {};
 
     try {
-      // Load metrics in parallel for all APs
+      // First, try the bulk interface stats endpoint (more efficient)
+      const ifStats = await apiService.getAllAPInterfaceStats();
+
+      if (ifStats && ifStats.length > 0) {
+        console.log('[AP Metrics] Using bulk ifstats endpoint, received', ifStats.length, 'entries');
+        // Log first entry to see available fields
+        if (ifStats[0]) {
+          console.log('[AP Metrics] Sample ifstats entry fields:', Object.keys(ifStats[0]));
+        }
+
+        ifStats.forEach((stat: any) => {
+          const serial = stat.serialNumber || stat.serial || stat.apSerial || stat.apSerialNumber;
+          if (serial) {
+            const cpu = stat.cpuUsage ?? stat.cpuUtilization ?? stat.cpu ?? stat.cpuPercent ?? stat.cpuLoad;
+            const mem = stat.memoryUsage ?? stat.memUtilization ?? stat.memory ?? stat.memPercent ?? stat.memUsed ?? stat.memoryPercent;
+            if (cpu !== undefined || mem !== undefined) {
+              metricsByAP[serial] = { cpuUsage: cpu, memoryUsage: mem };
+            }
+          }
+        });
+
+        // If we got data from ifstats, use it
+        if (Object.keys(metricsByAP).length > 0) {
+          console.log('[AP Metrics] Found metrics for', Object.keys(metricsByAP).length, 'APs from ifstats');
+          setApMetrics(metricsByAP);
+          setIsLoadingMetrics(false);
+          return;
+        }
+      }
+
+      console.log('[AP Metrics] Bulk ifstats did not return CPU/Memory, trying individual AP details...');
+
+      // Fallback: Load metrics from individual AP details in parallel
       const promises = aps.map(async (ap) => {
         try {
           const details = await apiService.getAccessPointDetails(ap.serialNumber);
+          // Log first AP details to see available fields
+          if (aps.indexOf(ap) === 0) {
+            console.log('[AP Metrics] Sample AP details fields:', Object.keys(details));
+          }
           return {
             serialNumber: ap.serialNumber,
-            cpuUsage: details.cpuUsage ?? (details as any).cpuUtilization ?? (details as any).cpu,
-            memoryUsage: details.memoryUsage ?? (details as any).memUtilization ?? (details as any).memory
+            cpuUsage: details.cpuUsage ?? (details as any).cpuUtilization ?? (details as any).cpu ?? (details as any).cpuPercent,
+            memoryUsage: details.memoryUsage ?? (details as any).memUtilization ?? (details as any).memory ?? (details as any).memPercent
           };
         } catch (error) {
-          // Return undefined for failed APs
           return { serialNumber: ap.serialNumber, cpuUsage: undefined, memoryUsage: undefined };
         }
       });
 
-      // Wait for all requests to complete in parallel
       const results = await Promise.all(promises);
 
-      // Update metrics
       results.forEach(({ serialNumber, cpuUsage, memoryUsage }) => {
         if (cpuUsage !== undefined || memoryUsage !== undefined) {
           metricsByAP[serialNumber] = { cpuUsage, memoryUsage };
         }
       });
 
-      // Set final state once
+      console.log('[AP Metrics] Found metrics for', Object.keys(metricsByAP).length, 'APs from individual details');
       setApMetrics(metricsByAP);
 
     } catch (err) {
-      console.error('Error loading AP metrics:', err);
+      console.error('[AP Metrics] Error loading metrics:', err);
       setApMetrics(metricsByAP);
     } finally {
       setIsLoadingMetrics(false);
