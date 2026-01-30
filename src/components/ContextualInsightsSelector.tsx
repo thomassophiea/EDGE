@@ -34,16 +34,16 @@ interface ContextualInsightsSelectorProps {
   className?: string;
 }
 
-const tabs: { id: SelectorTab; label: string; shortLabel: string; icon: React.ElementType; beta?: boolean }[] = [
+const tabs: { id: SelectorTab; label: string; shortLabel: string; icon: React.ElementType; beta?: boolean; noSearch?: boolean }[] = [
+  { id: 'ai-insights', label: 'AI Insights', shortLabel: 'AI Insights', icon: Sparkles, noSearch: true },
   { id: 'site', label: 'Site', shortLabel: 'Site', icon: Building },
   { id: 'access-point', label: 'Access Point', shortLabel: 'AP', icon: Radio },
   { id: 'switch', label: 'Switch', shortLabel: 'Switch', icon: Network, beta: true },
   { id: 'client', label: 'Client', shortLabel: 'Client', icon: Users },
-  { id: 'ai-insights', label: 'AI Insights', shortLabel: 'AI Insights', icon: Sparkles },
 ];
 
 export function ContextualInsightsSelector({
-  activeTab = 'site',
+  activeTab = 'ai-insights',
   selectedId,
   onTabChange,
   onSelectionChange,
@@ -188,7 +188,15 @@ export function ContextualInsightsSelector({
   const handleTabChange = (tab: SelectorTab) => {
     setCurrentTab(tab);
     setSearchQuery('');
-    // Don't reset selection when switching tabs - let user browse
+
+    // AI Insights doesn't need selection - just select the tab and close
+    if (tab === 'ai-insights') {
+      setSelectedItemId(null);
+      setSelectedItemName(null);
+      onTabChange?.(tab);
+      onSelectionChange?.(tab, null, undefined);
+      setOpen(false);
+    }
   };
 
   const handleItemSelect = (item: SelectorItem) => {
@@ -257,7 +265,8 @@ export function ContextualInsightsSelector({
           ))}
         </div>
 
-        {/* Search Box */}
+        {/* Search Box - Not shown for AI Insights */}
+        {currentTab !== 'ai-insights' && (
         <div className="p-2 border-b">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -269,8 +278,10 @@ export function ContextualInsightsSelector({
             />
           </div>
         </div>
+        )}
 
-        {/* Items List */}
+        {/* Items List - Not shown for AI Insights */}
+        {currentTab !== 'ai-insights' && (
         <ScrollArea className="h-[240px]">
           <div className="p-1">
             {loading ? (
@@ -319,6 +330,7 @@ export function ContextualInsightsSelector({
             )}
           </div>
         </ScrollArea>
+        )}
       </PopoverContent>
     </Popover>
 

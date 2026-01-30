@@ -232,7 +232,7 @@ function DashboardEnhancedComponent() {
   const [isTopClientsCollapsed, setIsTopClientsCollapsed] = useState(true);
 
   // Contextual Insights Selector state
-  const [selectorTab, setSelectorTab] = useState<SelectorTab>('site');
+  const [selectorTab, setSelectorTab] = useState<SelectorTab>('ai-insights');
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   const [selectedEntityName, setSelectedEntityName] = useState<string | null>(null);
   const [isConnectedClientsCollapsed, setIsConnectedClientsCollapsed] = useState(true);
@@ -1181,40 +1181,265 @@ function DashboardEnhancedComponent() {
           CONTEXTUAL CONTENT BASED ON SELECTION
           ======================================== */}
 
-      {/* AI INSIGHTS VIEW */}
+      {/* AI INSIGHTS VIEW - Bird's Eye Network Overview */}
       {selectorTab === 'ai-insights' && (
         <div className="space-y-6">
+          {/* Header */}
           <div className="border-b pb-2">
-            <h3 className="text-lg font-semibold">AI-Powered Network Insights</h3>
-            <p className="text-sm text-muted-foreground">Intelligent analysis and recommendations</p>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              <h3 className="text-lg font-semibold">AI-Powered Network Insights</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">Bird's eye view of your entire network with intelligent analysis</p>
           </div>
-          <Card className="border-dashed border-2">
-            <CardContent className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 p-6 mb-6">
-                <Sparkles className="h-12 w-12 text-purple-500" />
-              </div>
-              <h4 className="text-xl font-semibold mb-3">AI Insights Coming Soon</h4>
-              <p className="text-muted-foreground max-w-lg mb-6">
-                Advanced AI-powered analytics will provide intelligent network analysis,
-                anomaly detection, predictive maintenance recommendations, and optimization suggestions.
-              </p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div className="flex flex-col items-center p-3 rounded-lg bg-muted/50">
-                  <Activity className="h-5 w-5 mb-2 text-blue-500" />
-                  <span>Anomaly Detection</span>
+
+          {/* Quick Stats Overview */}
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Access Points</p>
+                    <p className="text-2xl font-bold">{apStats.total}</p>
+                    <p className="text-xs text-green-600">{apStats.online} online</p>
+                  </div>
+                  <Wifi className="h-8 w-8 text-blue-500/50" />
                 </div>
-                <div className="flex flex-col items-center p-3 rounded-lg bg-muted/50">
-                  <TrendingUp className="h-5 w-5 mb-2 text-green-500" />
-                  <span>Predictive Analysis</span>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-violet-500/10 to-purple-500/10 border-violet-500/20">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Connected Clients</p>
+                    <p className="text-2xl font-bold">{clientStats.total}</p>
+                    <p className="text-xs text-green-600">{clientStats.authenticated} authenticated</p>
+                  </div>
+                  <Users className="h-8 w-8 text-violet-500/50" />
                 </div>
-                <div className="flex flex-col items-center p-3 rounded-lg bg-muted/50">
-                  <Target className="h-5 w-5 mb-2 text-orange-500" />
-                  <span>Optimization Tips</span>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/20">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Network Throughput</p>
+                    <p className="text-2xl font-bold">{formatBps(clientStats.throughputUpload + clientStats.throughputDownload)}</p>
+                    <p className="text-xs text-muted-foreground">↑{formatBps(clientStats.throughputUpload)} ↓{formatBps(clientStats.throughputDownload)}</p>
+                  </div>
+                  <Activity className="h-8 w-8 text-emerald-500/50" />
                 </div>
-                <div className="flex flex-col items-center p-3 rounded-lg bg-muted/50">
-                  <Shield className="h-5 w-5 mb-2 text-red-500" />
-                  <span>Security Insights</span>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/20">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Active Alerts</p>
+                    <p className="text-2xl font-bold">{alertCounts.critical + alertCounts.warning}</p>
+                    <p className="text-xs">
+                      <span className="text-red-600">{alertCounts.critical} critical</span>
+                      {alertCounts.warning > 0 && <span className="text-amber-600 ml-2">{alertCounts.warning} warning</span>}
+                    </p>
+                  </div>
+                  <AlertTriangle className="h-8 w-8 text-amber-500/50" />
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Insight Cards Grid */}
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Network Health */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-green-500/10">
+                    <Activity className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Network Health</CardTitle>
+                    <CardDescription>Infrastructure status overview</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>AP Availability</span>
+                    <span className="font-medium">{apStats.total > 0 ? Math.round((apStats.online / apStats.total) * 100) : 0}%</span>
+                  </div>
+                  <Progress value={apStats.total > 0 ? (apStats.online / apStats.total) * 100 : 0} className="h-2" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Client Auth Rate</span>
+                    <span className="font-medium">{clientStats.total > 0 ? Math.round((clientStats.authenticated / clientStats.total) * 100) : 0}%</span>
+                  </div>
+                  <Progress value={clientStats.total > 0 ? (clientStats.authenticated / clientStats.total) * 100 : 0} className="h-2" />
+                </div>
+                <div className="grid grid-cols-3 gap-2 pt-2">
+                  <div className="text-center p-2 rounded bg-muted/50">
+                    <p className="text-lg font-semibold text-green-600">{apStats.online}</p>
+                    <p className="text-xs text-muted-foreground">Online</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-muted/50">
+                    <p className="text-lg font-semibold text-red-600">{apStats.offline}</p>
+                    <p className="text-xs text-muted-foreground">Offline</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-muted/50">
+                    <p className="text-lg font-semibold">{Object.keys(apStats.models).length}</p>
+                    <p className="text-xs text-muted-foreground">Models</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Anomaly Detection */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-amber-500/10">
+                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Anomaly Detection</CardTitle>
+                    <CardDescription>Unusual patterns and alerts</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {apStats.offline > 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <WifiOff className="h-5 w-5 text-red-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-red-600">Offline Access Points</p>
+                      <p className="text-xs text-muted-foreground">{apStats.offline} AP(s) are currently offline and require attention</p>
+                    </div>
+                  </div>
+                )}
+                {alertCounts.critical > 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-red-600">Critical Alerts</p>
+                      <p className="text-xs text-muted-foreground">{alertCounts.critical} critical issue(s) need immediate attention</p>
+                    </div>
+                  </div>
+                )}
+                {apStats.offline === 0 && alertCounts.critical === 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-green-600">All Clear</p>
+                      <p className="text-xs text-muted-foreground">No anomalies detected - network operating normally</p>
+                    </div>
+                  </div>
+                )}
+                <div className="pt-2 text-xs text-muted-foreground">
+                  Last checked: {lastUpdate?.toLocaleTimeString() || 'Updating...'}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Capacity Planning */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-blue-500/10">
+                    <BarChart3 className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Capacity Planning</CardTitle>
+                    <CardDescription>Resource utilization trends</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Avg Clients per AP</span>
+                    <span className="font-medium">{apStats.online > 0 ? Math.round(clientStats.total / apStats.online) : 0}</span>
+                  </div>
+                  <Progress value={Math.min((apStats.online > 0 ? clientStats.total / apStats.online : 0) / 50 * 100, 100)} className="h-2" />
+                  <p className="text-xs text-muted-foreground">Recommended: &lt;50 clients per AP</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Upload className="h-4 w-4 text-blue-500" />
+                      <span className="text-xs text-muted-foreground">Upload</span>
+                    </div>
+                    <p className="text-lg font-semibold">{formatBps(clientStats.throughputUpload)}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Download className="h-4 w-4 text-green-500" />
+                      <span className="text-xs text-muted-foreground">Download</span>
+                    </div>
+                    <p className="text-lg font-semibold">{formatBps(clientStats.throughputDownload)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Predictive Maintenance */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-purple-500/10">
+                    <Timer className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Predictive Maintenance</CardTitle>
+                    <CardDescription>Potential issues forecast</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {apStats.lowPower > 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <Zap className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-600">Low Power APs</p>
+                      <p className="text-xs text-muted-foreground">{apStats.lowPower} AP(s) running in low power mode - check PoE budget</p>
+                    </div>
+                  </div>
+                )}
+                {poorServices.length > 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <Network className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-600">Service Degradation</p>
+                      <p className="text-xs text-muted-foreground">{poorServices.length} service(s) showing performance issues</p>
+                    </div>
+                  </div>
+                )}
+                {apStats.lowPower === 0 && poorServices.length === 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-green-600">Systems Healthy</p>
+                      <p className="text-xs text-muted-foreground">No maintenance issues predicted in the near term</p>
+                    </div>
+                  </div>
+                )}
+                <div className="pt-2">
+                  <p className="text-xs text-muted-foreground">
+                    Models tracked: {Object.entries(apStats.models).slice(0, 3).map(([m]) => m).join(', ')}
+                    {Object.keys(apStats.models).length > 3 && ` +${Object.keys(apStats.models).length - 3} more`}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Drill-down hint */}
+          <Card className="bg-muted/30 border-dashed">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+                <Sparkles className="h-4 w-4" />
+                <span>Select <strong>Site</strong>, <strong>AP</strong>, <strong>Switch</strong>, or <strong>Client</strong> above to drill into specific details</span>
               </div>
             </CardContent>
           </Card>
