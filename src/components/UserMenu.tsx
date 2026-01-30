@@ -12,9 +12,11 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Dialog, DialogContent } from './ui/dialog';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
+import { ApiDocumentation } from './ApiDocumentation';
 
 interface UserMenuProps {
   onLogout: () => void;
@@ -25,6 +27,7 @@ interface UserMenuProps {
 
 export function UserMenu({ onLogout, theme, onThemeToggle, userEmail }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showApiDocs, setShowApiDocs] = useState(false);
 
   // Extract name from email if available
   const getNameFromEmail = (email: string) => {
@@ -63,14 +66,6 @@ export function UserMenu({ onLogout, theme, onThemeToggle, userEmail }: UserMenu
     email: userEmail,
     organization: getOrganizationFromEmail(userEmail),
     initials: getInitialsFromEmail(userEmail)
-  };
-
-  // Get API documentation URL (swagger UI on the controller)
-  const getApiDocsUrl = () => {
-    // In production, use relative path; in dev, use the configured controller URL
-    const isProduction = import.meta.env.PROD || window.location.hostname !== 'localhost';
-    const devBaseUrl = import.meta.env.VITE_DEV_CAMPUS_CONTROLLER_URL || 'https://localhost:443';
-    return isProduction ? '/api/swagger-ui.html' : `${devBaseUrl}/swagger-ui.html`;
   };
 
   const menuItems = [
@@ -121,9 +116,8 @@ export function UserMenu({ onLogout, theme, onThemeToggle, userEmail }: UserMenu
       type: 'item',
       label: 'API Documentation',
       icon: BookOpen,
-      externalLink: true,
       action: () => {
-        window.open(getApiDocsUrl(), '_blank', 'noopener,noreferrer');
+        setShowApiDocs(true);
       }
     },
     {
@@ -166,6 +160,7 @@ export function UserMenu({ onLogout, theme, onThemeToggle, userEmail }: UserMenu
   };
 
   return (
+    <>
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button
@@ -271,5 +266,13 @@ export function UserMenu({ onLogout, theme, onThemeToggle, userEmail }: UserMenu
         </div>
       </PopoverContent>
     </Popover>
+
+    {/* API Documentation Dialog */}
+    <Dialog open={showApiDocs} onOpenChange={setShowApiDocs}>
+      <DialogContent className="max-w-6xl h-[85vh] p-0 overflow-hidden">
+        <ApiDocumentation onClose={() => setShowApiDocs(false)} />
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
