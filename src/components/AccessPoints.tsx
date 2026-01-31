@@ -101,8 +101,11 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
   const [isE911ConfigOpen, setIsE911ConfigOpen] = useState(false);
   const [e911Config, setE911Config] = useState({
     provider: 'redsky',
-    apiEndpoint: '',
-    apiKey: '',
+    username: '',
+    password: '',
+    location: '',
+    description: '',
+    masking: true,
     autoSync: true,
     syncInterval: 60,
     lastSync: null as Date | null
@@ -2110,15 +2113,33 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
         description="Configure automatic BSSID sync to E911 location services"
         width="md"
       >
-        <div className="space-y-6">
+        <div className="space-y-5">
+          {/* Live Sync Status - At top for visibility */}
+          <div className="flex items-center justify-between p-3 rounded-lg border border-green-500/40 bg-green-500/10">
+            <div className="flex items-center gap-3">
+              <div className="relative flex items-center justify-center">
+                <span className="absolute h-3 w-3 bg-green-500 rounded-full animate-ping opacity-75" />
+                <span className="relative h-2.5 w-2.5 bg-green-500 rounded-full" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Live Sync Active</p>
+                <p className="text-xs text-muted-foreground">
+                  {e911Config.lastSync
+                    ? `Last synced: ${e911Config.lastSync.toLocaleTimeString()}`
+                    : 'Ready to sync BSSID data'}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Provider Selection */}
           <div className="space-y-2">
-            <Label htmlFor="e911-provider">E911 Service Provider</Label>
+            <Label htmlFor="e911-provider" className="text-sm font-semibold text-foreground">E911 Service Provider</Label>
             <Select
               value={e911Config.provider}
               onValueChange={(value) => setE911Config(prev => ({ ...prev, provider: value }))}
             >
-              <SelectTrigger id="e911-provider">
+              <SelectTrigger id="e911-provider" className="bg-background">
                 <SelectValue placeholder="Select provider" />
               </SelectTrigger>
               <SelectContent>
@@ -2130,36 +2151,82 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
             </Select>
           </div>
 
-          {/* API Endpoint */}
-          <div className="space-y-2">
-            <Label htmlFor="e911-endpoint">API Endpoint URL</Label>
-            <Input
-              id="e911-endpoint"
-              placeholder="https://api.redsky.com/v1/locations"
-              value={e911Config.apiEndpoint}
-              onChange={(e) => setE911Config(prev => ({ ...prev, apiEndpoint: e.target.value }))}
-            />
-            <p className="text-xs text-muted-foreground">
-              The endpoint URL provided by your E911 service
-            </p>
+          {/* Authentication Section */}
+          <div className="space-y-4 p-4 rounded-lg border bg-muted/20">
+            <h4 className="text-sm font-semibold text-foreground">Authentication</h4>
+
+            <div className="space-y-2">
+              <Label htmlFor="e911-username" className="text-sm font-medium text-foreground">Username</Label>
+              <Input
+                id="e911-username"
+                placeholder="Enter your RedSky username"
+                value={e911Config.username}
+                onChange={(e) => setE911Config(prev => ({ ...prev, username: e.target.value }))}
+                className="bg-background"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="e911-password" className="text-sm font-medium text-foreground">Password</Label>
+              <Input
+                id="e911-password"
+                type="password"
+                placeholder="Enter your RedSky password"
+                value={e911Config.password}
+                onChange={(e) => setE911Config(prev => ({ ...prev, password: e.target.value }))}
+                className="bg-background"
+              />
+            </div>
           </div>
 
-          {/* API Key */}
-          <div className="space-y-2">
-            <Label htmlFor="e911-apikey">API Key</Label>
-            <Input
-              id="e911-apikey"
-              type="password"
-              placeholder="Enter your API key"
-              value={e911Config.apiKey}
-              onChange={(e) => setE911Config(prev => ({ ...prev, apiKey: e.target.value }))}
-            />
+          {/* BSSID Discovery Settings */}
+          <div className="space-y-4 p-4 rounded-lg border bg-muted/20">
+            <h4 className="text-sm font-semibold text-foreground">BSSID Discovery Settings</h4>
+
+            <div className="space-y-2">
+              <Label htmlFor="e911-location" className="text-sm font-medium text-foreground">Location</Label>
+              <Input
+                id="e911-location"
+                placeholder="RedSky Location ID or address"
+                value={e911Config.location}
+                onChange={(e) => setE911Config(prev => ({ ...prev, location: e.target.value }))}
+                className="bg-background"
+              />
+              <p className="text-xs text-muted-foreground">
+                The RedSky location to associate with discovered BSSIDs
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="e911-description" className="text-sm font-medium text-foreground">Description</Label>
+              <Input
+                id="e911-description"
+                placeholder="Optional description for BSSID entries"
+                value={e911Config.description}
+                onChange={(e) => setE911Config(prev => ({ ...prev, description: e.target.value }))}
+                className="bg-background"
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2">
+              <div className="space-y-0.5">
+                <Label htmlFor="e911-masking" className="text-sm font-medium text-foreground">Enable Masking</Label>
+                <p className="text-xs text-muted-foreground">
+                  Apply masking to BSSID data for privacy
+                </p>
+              </div>
+              <Switch
+                id="e911-masking"
+                checked={e911Config.masking}
+                onCheckedChange={(checked) => setE911Config(prev => ({ ...prev, masking: checked }))}
+              />
+            </div>
           </div>
 
           {/* Auto Sync Toggle */}
-          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-            <div className="space-y-1">
-              <Label htmlFor="e911-autosync" className="font-medium">Automatic Sync</Label>
+          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
+            <div className="space-y-0.5">
+              <Label htmlFor="e911-autosync" className="text-sm font-semibold text-foreground">Automatic Sync</Label>
               <p className="text-xs text-muted-foreground">
                 Automatically push BSSID updates to E911 service
               </p>
@@ -2174,12 +2241,12 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
           {/* Sync Interval */}
           {e911Config.autoSync && (
             <div className="space-y-2">
-              <Label htmlFor="e911-interval">Sync Interval (minutes)</Label>
+              <Label htmlFor="e911-interval" className="text-sm font-semibold text-foreground">Sync Interval</Label>
               <Select
                 value={e911Config.syncInterval.toString()}
                 onValueChange={(value) => setE911Config(prev => ({ ...prev, syncInterval: parseInt(value) }))}
               >
-                <SelectTrigger id="e911-interval">
+                <SelectTrigger id="e911-interval" className="bg-background">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -2193,37 +2260,17 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
             </div>
           )}
 
-          {/* Status Card */}
-          <Card className="border-green-500/30 bg-green-500/5">
-            <CardContent className="py-3">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Radio className="h-5 w-5 text-green-600" />
-                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Live Sync Active</p>
-                  <p className="text-xs text-muted-foreground">
-                    {e911Config.lastSync
-                      ? `Last synced: ${e911Config.lastSync.toLocaleTimeString()}`
-                      : 'Ready to sync BSSID data'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4 border-t">
+          {/* Action Buttons - More prominent */}
+          <div className="flex gap-3 pt-4 border-t mt-6">
             <Button
               variant="outline"
-              className="flex-1"
+              className="flex-1 h-11 text-sm font-medium"
               onClick={() => setIsE911ConfigOpen(false)}
             >
               Cancel
             </Button>
             <Button
-              className="flex-1 bg-red-600 hover:bg-red-700"
+              className="flex-1 h-11 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-md"
               onClick={() => {
                 toast.success('E911 configuration saved');
                 setE911Config(prev => ({ ...prev, lastSync: new Date() }));

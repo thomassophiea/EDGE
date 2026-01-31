@@ -1,13 +1,13 @@
 {
-  "version": "v546.7781cc7",
-  "commit": "7781cc7",
-  "commitFull": "7781cc7",
-  "commitCount": "546",
-  "cacheVersion": 1046,
+  "version": "v559.502e4e4",
+  "commit": "502e4e4",
+  "commitFull": "502e4e423762178a438b9529fa5b76f52d92a54a",
+  "commitCount": "559",
+  "cacheVersion": 1059,
   "branch": "main",
-  "buildDate": "2026-01-30T03:15:00.000Z",
-  "commitDate": "2026-01-29",
-  "message": "Update API Documentation with complete 244+ endpoints from real swagger.json",
+  "buildDate": "2026-01-31T00:34:38.271Z",
+  "commitDate": "2026-01-30 19:21:07 -0500",
+  "message": "Improve E911 gear icon and add configuration slide out",
   "features": [
     "Data Normalization Layer (P0-002)",
     "Universal FilterBar Component (P0-003)",
@@ -18,8 +18,6 @@
     "Anomaly Detector Widget (P1-005)",
     "RF Quality Index (RFQI) Widget",
     "Application Analytics Widget",
-    "Extreme Platform ONE Widget API Integration",
-    "E911 BSSID Export (CSV/JSON)",
-    "Complete API Documentation (244+ endpoints)"
+    "Campus Controller Widget API Integration"
   ]
 }
