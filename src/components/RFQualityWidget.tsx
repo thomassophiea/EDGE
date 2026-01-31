@@ -146,8 +146,57 @@ export function RFQualityWidget({ siteId, duration = '24H' }: RFQualityWidgetPro
     );
   }
 
-  // Extract metrics from data (structure may vary based on API response)
-  const overallScore = rfData.score || rfData.overall?.score || 0;
+  // Extract metrics from data - handle multiple API response structures
+  // Structure 1: Direct score (rfData.score or rfData.overall.score)
+  // Structure 2: Time-series array from /v1/report/sites (rfData is an array with statistics)
+  let overallScore = 0;
+  let channelUtilization: number | undefined;
+  let interference: number | undefined;
+
+  if (rfData.score !== undefined) {
+    // Direct score format
+    overallScore = rfData.score;
+    channelUtilization = rfData.channelUtilization;
+    interference = rfData.interference;
+  } else if (rfData.overall?.score !== undefined) {
+    // Nested overall format
+    overallScore = rfData.overall.score;
+    channelUtilization = rfData.metrics?.channelUtilization;
+    interference = rfData.metrics?.interference;
+  } else if (Array.isArray(rfData) && rfData.length > 0) {
+    // Time-series array format from /v1/report/sites endpoint
+    const report = rfData[0];
+    const stats = report?.statistics;
+    if (stats && Array.isArray(stats)) {
+      // Look for RFQI or rfQuality stat
+      const rfqiStat = stats.find((s: any) => 
+        s.statName?.toLowerCase().includes('rfqi') || 
+        s.statName?.toLowerCase().includes('rfquality') ||
+        s.statName?.toLowerCase().includes('rf quality')
+      );
+      
+      if (rfqiStat?.values && rfqiStat.values.length > 0) {
+        // Calculate average from recent values
+        const values = rfqiStat.values.slice(-10); // Last 10 data points
+        const sum = values.reduce((acc: number, v: any) => acc + (parseFloat(v.value) || 0), 0);
+        overallScore = sum / values.length;
+      }
+    }
+  } else if (rfData.statistics && Array.isArray(rfData.statistics)) {
+    // Single report object with statistics
+    const rfqiStat = rfData.statistics.find((s: any) => 
+      s.statName?.toLowerCase().includes('rfqi') || 
+      s.statName?.toLowerCase().includes('rfquality') ||
+      s.statName?.toLowerCase().includes('rf quality')
+    );
+    
+    if (rfqiStat?.values && rfqiStat.values.length > 0) {
+      const values = rfqiStat.values.slice(-10);
+      const sum = values.reduce((acc: number, v: any) => acc + (parseFloat(v.value) || 0), 0);
+      overallScore = sum / values.length;
+    }
+  }
+
   const status = getScoreStatus(overallScore);
 
   return (
@@ -207,7 +256,7 @@ export function RFQualityWidget({ siteId, duration = '24H' }: RFQualityWidgetPro
         </Card>
 
         {/* Channel Utilization */}
-        {(rfData.channelUtilization !== undefined || rfData.metrics?.channelUtilization !== undefined) && (
+        {channelUtilization !== undefined && (
           <Card>
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2">
@@ -219,14 +268,14 @@ export function RFQualityWidget({ siteId, duration = '24H' }: RFQualityWidgetPro
             <CardContent>
               <div className="space-y-3">
                 <div className="text-3xl font-bold">
-                  {((rfData.channelUtilization || rfData.metrics?.channelUtilization || 0) * 100).toFixed(1)}%
+                  {(channelUtilization * 100).toFixed(1)}%
                 </div>
                 <Progress
-                  value={(rfData.channelUtilization || rfData.metrics?.channelUtilization || 0) * 100}
+                  value={channelUtilization * 100}
                   className="h-2"
                 />
                 <p className="text-xs text-muted-foreground">
-                  {(rfData.channelUtilization || 0) > 0.8 ? 'High utilization detected' : 'Normal range'}
+                  {channelUtilization > 0.8 ? 'High utilization detected' : 'Normal range'}
                 </p>
               </div>
             </CardContent>
@@ -234,7 +283,7 @@ export function RFQualityWidget({ siteId, duration = '24H' }: RFQualityWidgetPro
         )}
 
         {/* Interference Level */}
-        {(rfData.interference !== undefined || rfData.metrics?.interference !== undefined) && (
+        {interference !== undefined && (
           <Card>
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2">
@@ -246,14 +295,14 @@ export function RFQualityWidget({ siteId, duration = '24H' }: RFQualityWidgetPro
             <CardContent>
               <div className="space-y-3">
                 <div className="text-3xl font-bold">
-                  {((rfData.interference || rfData.metrics?.interference || 0) * 100).toFixed(1)}%
+                  {(interference * 100).toFixed(1)}%
                 </div>
                 <Progress
-                  value={(rfData.interference || rfData.metrics?.interference || 0) * 100}
+                  value={interference * 100}
                   className="h-2"
                 />
                 <p className="text-xs text-muted-foreground">
-                  {(rfData.interference || 0) > 0.3 ? 'Interference detected' : 'Low interference'}
+                  {interference > 0.3 ? 'Interference detected' : 'Low interference'}
                 </p>
               </div>
             </CardContent>
@@ -262,7 +311,7 @@ export function RFQualityWidget({ siteId, duration = '24H' }: RFQualityWidgetPro
       </div>
 
       {/* Debug info when no structured data */}
-      {!rfData.score && !rfData.overall && (
+      {overallScore === 0 && (
         <Card className="border-yellow-500">
           <CardHeader>
             <CardTitle className="text-sm">Raw RF Data (Debug)</CardTitle>

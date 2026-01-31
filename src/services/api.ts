@@ -5909,10 +5909,10 @@ class ApiService {
   }
 
   /**
-   * Get switch port report
+   * Get individual switch port report
    * Endpoint: GET /v1/switches/{serialNumber}/ports/{portId}/report
    */
-  async getSwitchPortReport(serialNumber: string, portId: string): Promise<any> {
+  async getSwitchIndividualPortReport(serialNumber: string, portId: string): Promise<any> {
     try {
       const endpoint = `/v1/switches/${encodeURIComponent(serialNumber)}/ports/${encodeURIComponent(portId)}/report`;
       logger.log(`[API] Fetching port report for switch ${serialNumber}, port ${portId}`);
