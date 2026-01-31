@@ -52,7 +52,7 @@ import { apiService, ApiCallLog } from './services/api';
 import { sleDataCollectionService } from './services/sleDataCollection';
 import { Toaster } from './components/ui/sonner';
 import { Button } from './components/ui/button';
-import { Activity, Sun, Moon, Braces, Github } from 'lucide-react';
+import { Activity, Sun, Moon, Braces, Github, FlaskConical } from 'lucide-react';
 import { AppsMenu } from './components/AppsMenu';
 import { UserMenu } from './components/UserMenu';
 import { NotificationsMenu } from './components/NotificationsMenu';
@@ -1049,6 +1049,17 @@ export default function App() {
                       onClick={() => setCurrentPage('api-test')}
                       className="flex items-center"
                       title="API Test Tool"
+                    >
+                      <FlaskConical className="h-4 w-4" />
+                    </Button>
+
+                    {/* GitHub Repository */}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => window.open('https://github.com/thomassophiea/EDGE', '_blank', 'noopener,noreferrer')}
+                      className="flex items-center"
+                      title="View on GitHub"
                     >
                       <Github className="h-4 w-4" />
                     </Button>
