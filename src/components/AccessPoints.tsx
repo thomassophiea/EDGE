@@ -9,7 +9,9 @@ import { DetailSlideOut } from './DetailSlideOut';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
-import { AlertCircle, Wifi, Search, RefreshCw, Filter, Eye, Users, Activity, Signal, Cpu, HardDrive, MoreVertical, Shield, Key, RotateCcw, MapPin, Settings, AlertTriangle, Download, Trash2, Cloud, Power, WifiOff, CheckCircle2, XCircle, Building, Info, Columns, Anchor, Phone, FileDown } from 'lucide-react';
+import { AlertCircle, Wifi, Search, RefreshCw, Filter, Eye, Users, Activity, Signal, Cpu, HardDrive, MoreVertical, Shield, Key, RotateCcw, MapPin, Settings, AlertTriangle, Download, Trash2, Cloud, Power, WifiOff, CheckCircle2, XCircle, Building, Info, Columns, Anchor, Phone, FileDown, Radio } from 'lucide-react';
+import { Label } from './ui/label';
+import { Switch } from './ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { Checkbox } from './ui/checkbox';
 import { Alert, AlertDescription } from './ui/alert';
@@ -96,6 +98,15 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
   const [queryColumns, setQueryColumns] = useState<APQueryColumn[]>([]);
   const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+  const [isE911ConfigOpen, setIsE911ConfigOpen] = useState(false);
+  const [e911Config, setE911Config] = useState({
+    provider: 'redsky',
+    apiEndpoint: '',
+    apiKey: '',
+    autoSync: true,
+    syncInterval: 60,
+    lastSync: null as Date | null
+  });
   const [, setTimeUpdateCounter] = useState(0);
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
     // Load from localStorage or use defaults
@@ -1546,17 +1557,22 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
                 ({filteredAccessPoints.length} APs)
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              {/* Live Update Configuration - Pulsing gear icon */}
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 w-7 p-0 relative"
-                title="Configure Live E911 Updates (RedSky)"
-              >
-                <span className="absolute inset-0 rounded-md bg-red-500/20 animate-ping" />
-                <Settings className="h-3.5 w-3.5 text-red-600 animate-[spin_3s_linear_infinite]" />
-              </Button>
+            <div className="flex items-center gap-3">
+              {/* Live Update Configuration - Pulsing gear icon (no box) */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setIsE911ConfigOpen(true)}
+                    className="relative p-1 hover:opacity-80 transition-opacity cursor-pointer"
+                  >
+                    <span className="absolute inset-0 bg-red-500/30 rounded-full animate-ping" />
+                    <Settings className="h-4 w-4 text-red-600 relative animate-[spin_4s_linear_infinite]" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Configure Live E911 Updates</p>
+                </TooltipContent>
+              </Tooltip>
               <Button
                 onClick={handleDownloadBSSIDs}
                 size="sm"
@@ -2083,6 +2099,140 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
                 </TabsContent>
               </Tabs>
             ) : null}
+        </div>
+      </DetailSlideOut>
+
+      {/* E911 Configuration Slide Out */}
+      <DetailSlideOut
+        isOpen={isE911ConfigOpen}
+        onClose={() => setIsE911ConfigOpen(false)}
+        title="E911 Live Update Configuration"
+        description="Configure automatic BSSID sync to E911 location services"
+        width="md"
+      >
+        <div className="space-y-6">
+          {/* Provider Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="e911-provider">E911 Service Provider</Label>
+            <Select
+              value={e911Config.provider}
+              onValueChange={(value) => setE911Config(prev => ({ ...prev, provider: value }))}
+            >
+              <SelectTrigger id="e911-provider">
+                <SelectValue placeholder="Select provider" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="redsky">RedSky (Intrado)</SelectItem>
+                <SelectItem value="bandwidth">Bandwidth</SelectItem>
+                <SelectItem value="911enable">911 Enable</SelectItem>
+                <SelectItem value="custom">Custom API</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* API Endpoint */}
+          <div className="space-y-2">
+            <Label htmlFor="e911-endpoint">API Endpoint URL</Label>
+            <Input
+              id="e911-endpoint"
+              placeholder="https://api.redsky.com/v1/locations"
+              value={e911Config.apiEndpoint}
+              onChange={(e) => setE911Config(prev => ({ ...prev, apiEndpoint: e.target.value }))}
+            />
+            <p className="text-xs text-muted-foreground">
+              The endpoint URL provided by your E911 service
+            </p>
+          </div>
+
+          {/* API Key */}
+          <div className="space-y-2">
+            <Label htmlFor="e911-apikey">API Key</Label>
+            <Input
+              id="e911-apikey"
+              type="password"
+              placeholder="Enter your API key"
+              value={e911Config.apiKey}
+              onChange={(e) => setE911Config(prev => ({ ...prev, apiKey: e.target.value }))}
+            />
+          </div>
+
+          {/* Auto Sync Toggle */}
+          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+            <div className="space-y-1">
+              <Label htmlFor="e911-autosync" className="font-medium">Automatic Sync</Label>
+              <p className="text-xs text-muted-foreground">
+                Automatically push BSSID updates to E911 service
+              </p>
+            </div>
+            <Switch
+              id="e911-autosync"
+              checked={e911Config.autoSync}
+              onCheckedChange={(checked) => setE911Config(prev => ({ ...prev, autoSync: checked }))}
+            />
+          </div>
+
+          {/* Sync Interval */}
+          {e911Config.autoSync && (
+            <div className="space-y-2">
+              <Label htmlFor="e911-interval">Sync Interval (minutes)</Label>
+              <Select
+                value={e911Config.syncInterval.toString()}
+                onValueChange={(value) => setE911Config(prev => ({ ...prev, syncInterval: parseInt(value) }))}
+              >
+                <SelectTrigger id="e911-interval">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">Every 15 minutes</SelectItem>
+                  <SelectItem value="30">Every 30 minutes</SelectItem>
+                  <SelectItem value="60">Every hour</SelectItem>
+                  <SelectItem value="360">Every 6 hours</SelectItem>
+                  <SelectItem value="1440">Once daily</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Status Card */}
+          <Card className="border-green-500/30 bg-green-500/5">
+            <CardContent className="py-3">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Radio className="h-5 w-5 text-green-600" />
+                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Live Sync Active</p>
+                  <p className="text-xs text-muted-foreground">
+                    {e911Config.lastSync
+                      ? `Last synced: ${e911Config.lastSync.toLocaleTimeString()}`
+                      : 'Ready to sync BSSID data'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4 border-t">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setIsE911ConfigOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                toast.success('E911 configuration saved');
+                setE911Config(prev => ({ ...prev, lastSync: new Date() }));
+                setIsE911ConfigOpen(false);
+              }}
+            >
+              Save Configuration
+            </Button>
+          </div>
         </div>
       </DetailSlideOut>
     </div>
