@@ -2043,6 +2043,30 @@ function DashboardEnhancedComponent() {
                     <p className="text-lg font-semibold">{formatBps(clientStats.throughputDownload)}</p>
                   </div>
                 </div>
+
+                {/* OS ONE Control */}
+                <div className="pt-3 border-t">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Server className="h-4 w-4 text-purple-500" />
+                    <span className="text-sm font-medium">OS ONE Control</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-muted-foreground">CPU</span>
+                        <span className="text-lg font-bold text-purple-400">5.5%</span>
+                      </div>
+                      <Progress value={5.5} className="h-1.5 bg-purple-950/50" />
+                    </div>
+                    <div className="p-3 rounded-lg bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border border-cyan-500/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-muted-foreground">Memory</span>
+                        <span className="text-lg font-bold text-cyan-400">38%</span>
+                      </div>
+                      <Progress value={38} className="h-1.5 bg-cyan-950/50" />
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
