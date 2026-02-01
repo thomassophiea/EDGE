@@ -298,7 +298,7 @@ export function AppInsights({ api }: AppInsightsProps) {
     return insights.slice(0, 2);
   }, [chartData, stats]);
 
-  // Unified Comparison Card - ENHANCED with better readability
+  // Unified Comparison Card
   const ComparisonCard = ({ topData, bottomData, title, unit, icon: Icon, color }: any) => {
     const maxTop = Math.max(...topData.map((d: any) => d.value), 1);
     const maxBottom = Math.max(...bottomData.map((d: any) => d.value), 1);
@@ -310,24 +310,24 @@ export function AppInsights({ api }: AppInsightsProps) {
     };
 
     return (
-      <Card className="hover:shadow-xl hover:shadow-purple-500/10 hover:scale-[1.02] transition-all duration-300 group relative overflow-hidden border-slate-700/50 bg-gradient-to-br from-slate-900 to-slate-950">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <Card className="hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         <CardHeader className="pb-2 relative">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={`p-2 rounded-lg ${color} shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all`}>
-                <Icon className="h-4 w-4 text-white" />
+            <div className="flex items-center gap-1.5">
+              <div className={`p-1.5 rounded ${color} shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all`}>
+                <Icon className="h-3.5 w-3.5 text-white" />
               </div>
-              <CardTitle className="text-sm font-bold text-white">{title}</CardTitle>
+              <CardTitle className="text-xs font-semibold text-slate-200">{title}</CardTitle>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 pt-0 relative">
           {/* Top Categories */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5 mb-2">
-              <ChevronUp className="h-4 w-4 text-emerald-400" />
-              <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wide">Top Performers</span>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 mb-1">
+              <ChevronUp className="h-3 w-3 text-emerald-400" />
+              <span className="text-[10px] font-medium text-slate-400">Top Performers</span>
             </div>
             {topData.slice(0, 5).map((item: any, index: number) => {
               const percentage = maxTop > 0 ? (item.value / maxTop) * 100 : 0;
@@ -335,26 +335,26 @@ export function AppInsights({ api }: AppInsightsProps) {
               const itemColor = getCategoryColor(item.name, index);
 
               return (
-                <div key={item.id} className="space-y-1.5">
+                <div key={item.id} className="space-y-1">
                   <div className="flex items-center gap-2">
                     <div 
-                      className="p-1.5 rounded-lg border" 
+                      className="p-1 rounded border" 
                       style={{ 
-                        backgroundColor: `${itemColor}30`, 
-                        borderColor: `${itemColor}60` 
+                        backgroundColor: `${itemColor}20`, 
+                        borderColor: `${itemColor}50` 
                       }}
                     >
-                      <CategoryIcon className="h-3.5 w-3.5" style={{ color: itemColor }} />
+                      <CategoryIcon className="h-3 w-3" style={{ color: itemColor }} />
                     </div>
-                    <span className="text-sm font-medium truncate flex-1 text-slate-200" title={item.name}>
+                    <span className="text-xs font-medium truncate flex-1 text-slate-200" title={item.name}>
                       {item.name}
                     </span>
-                    <span className="text-sm font-bold tabular-nums" style={{ color: itemColor }}>{formatValue(item.value)}</span>
+                    <span className="text-xs font-bold tabular-nums" style={{ color: itemColor }}>{formatValue(item.value)}</span>
                   </div>
-                  <div className="h-2 bg-slate-800 rounded-full overflow-hidden ml-7">
+                  <div className="h-1.5 bg-slate-800/40 rounded-full overflow-hidden ml-6">
                     <div
-                      className="h-full rounded-full transition-all duration-500 shadow-lg"
-                      style={{ width: `${percentage}%`, backgroundColor: itemColor, boxShadow: `0 0 10px ${itemColor}50` }}
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${percentage}%`, backgroundColor: itemColor }}
                     />
                   </div>
                 </div>
@@ -363,10 +363,10 @@ export function AppInsights({ api }: AppInsightsProps) {
           </div>
 
           {/* Bottom Categories */}
-          <div className="space-y-2 pt-3 border-t border-slate-700/50">
-            <div className="flex items-center gap-1.5 mb-2">
-              <ChevronDown className="h-4 w-4 text-amber-400" />
-              <span className="text-xs font-semibold text-amber-400 uppercase tracking-wide">Low Activity</span>
+          <div className="space-y-1.5 pt-2 border-t border-border/50">
+            <div className="flex items-center gap-1.5 mb-1">
+              <ChevronDown className="h-3 w-3 text-amber-400" />
+              <span className="text-[10px] font-medium text-slate-500">Low Activity</span>
             </div>
             {bottomData.slice(0, 5).map((item: any, index: number) => {
               const percentage = maxBottom > 0 ? (item.value / maxBottom) * 100 : 0;
@@ -374,26 +374,26 @@ export function AppInsights({ api }: AppInsightsProps) {
               const itemColor = getCategoryColor(item.name, index + 5);
 
               return (
-                <div key={item.id} className="space-y-1.5 opacity-80 hover:opacity-100 transition-opacity">
+                <div key={item.id} className="space-y-1 opacity-60 hover:opacity-100 transition-opacity">
                   <div className="flex items-center gap-2">
                     <div 
-                      className="p-1.5 rounded-lg border" 
+                      className="p-1 rounded border" 
                       style={{ 
-                        backgroundColor: `${itemColor}20`, 
-                        borderColor: `${itemColor}40` 
+                        backgroundColor: `${itemColor}15`, 
+                        borderColor: `${itemColor}30` 
                       }}
                     >
-                      <CategoryIcon className="h-3.5 w-3.5" style={{ color: itemColor }} />
+                      <CategoryIcon className="h-3 w-3" style={{ color: itemColor }} />
                     </div>
-                    <span className="text-sm font-medium truncate flex-1 text-slate-400" title={item.name}>
+                    <span className="text-xs font-medium truncate flex-1 text-slate-400" title={item.name}>
                       {item.name}
                     </span>
-                    <span className="text-sm tabular-nums text-slate-400">{formatValue(item.value)}</span>
+                    <span className="text-xs tabular-nums text-slate-400">{formatValue(item.value)}</span>
                   </div>
-                  <div className="h-1.5 bg-slate-800/50 rounded-full overflow-hidden ml-7">
+                  <div className="h-1 bg-slate-800/30 rounded-full overflow-hidden ml-6">
                     <div
                       className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${percentage}%`, backgroundColor: `${itemColor}90` }}
+                      style={{ width: `${percentage}%`, backgroundColor: `${itemColor}80` }}
                     />
                   </div>
                 </div>
@@ -446,24 +446,24 @@ export function AppInsights({ api }: AppInsightsProps) {
 
   return (
     <div className="p-4 space-y-3">
-      {/* Header - ENHANCED */}
-      <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-gradient-to-r from-violet-500/15 via-purple-500/15 to-fuchsia-500/15 border border-violet-400/30 backdrop-blur-sm overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 opacity-10 animate-pulse" />
-        <div className="absolute -right-10 -top-10 w-32 h-32 bg-violet-400/30 rounded-full blur-3xl" />
-        <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-fuchsia-400/30 rounded-full blur-3xl" />
+      {/* Header */}
+      <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 border border-violet-500/20 backdrop-blur-sm overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 opacity-5 animate-pulse" />
+        <div className="absolute -right-10 -top-10 w-32 h-32 bg-violet-500/20 rounded-full blur-3xl" />
+        <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-fuchsia-500/20 rounded-full blur-3xl" />
 
         <div className="flex items-center gap-2.5 relative z-10">
-          <div className="p-2.5 rounded-lg bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 shadow-lg shadow-violet-500/50">
-            <AppWindow className="h-6 w-6 text-white" />
+          <div className="p-2 rounded-lg bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 shadow-lg shadow-violet-500/50 animate-pulse">
+            <AppWindow className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-lg">
+            <h1 className="text-xl font-bold tracking-tight text-slate-100">
               App Insights
             </h1>
-            <p className="text-sm text-slate-300">
+            <p className="text-xs text-slate-400">
               Application visibility and traffic analytics
               {selectedSite !== 'all' && (
-                <span className="ml-1 text-cyan-400 font-medium">
+                <span className="ml-1 text-violet-400 font-medium">
                   • {sites.find(s => s.id === selectedSite)?.name || selectedSite}
                 </span>
               )}
@@ -506,84 +506,84 @@ export function AppInsights({ api }: AppInsightsProps) {
         </div>
       </div>
 
-      {/* Summary Cards - ENHANCED with brighter colors */}
+      {/* Summary Cards */}
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-          <Card className="relative overflow-hidden border border-cyan-500/30 bg-gradient-to-br from-slate-900 to-slate-950 hover:shadow-xl hover:shadow-cyan-500/20 hover:scale-[1.02] transition-all duration-300 group">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 opacity-[0.15] group-hover:opacity-[0.25] transition-opacity" />
-            <div className="absolute -right-6 -top-6 w-24 h-24 bg-cyan-400/20 rounded-full blur-2xl group-hover:bg-cyan-400/40 transition-all" />
-            <CardContent className="p-4 relative">
+          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 opacity-[0.08] group-hover:opacity-[0.12] transition-opacity" />
+            <div className="absolute -right-6 -top-6 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all" />
+            <CardContent className="p-3 relative">
               <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-cyan-300 uppercase tracking-wider flex items-center gap-1">
+                <div className="space-y-0.5">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                     Total Data
-                    <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+                    <TrendingUp className="h-3 w-3 text-emerald-400" />
                   </p>
-                  <p className="text-2xl font-bold text-cyan-400">{formatBytes(stats.totalUsage)}</p>
-                  <p className="text-xs text-slate-400">{stats.totalCategories} categories</p>
+                  <p className="text-lg font-bold text-cyan-400">{formatBytes(stats.totalUsage)}</p>
+                  <p className="text-[10px] text-slate-500">{stats.totalCategories} categories</p>
                 </div>
-                <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg shadow-cyan-500/30 group-hover:scale-110 transition-transform">
-                  <HardDrive className="h-5 w-5 text-white" />
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 shadow-md group-hover:scale-110 transition-transform">
+                  <HardDrive className="h-3.5 w-3.5 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border border-emerald-500/30 bg-gradient-to-br from-slate-900 to-slate-950 hover:shadow-xl hover:shadow-emerald-500/20 hover:scale-[1.02] transition-all duration-300 group">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-green-500 opacity-[0.15] group-hover:opacity-[0.25] transition-opacity" />
-            <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-400/20 rounded-full blur-2xl group-hover:bg-emerald-400/40 transition-all" />
-            <CardContent className="p-4 relative">
+          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-green-500 opacity-[0.08] group-hover:opacity-[0.12] transition-opacity" />
+            <div className="absolute -right-6 -top-6 w-20 h-20 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all" />
+            <CardContent className="p-3 relative">
               <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-emerald-300 uppercase tracking-wider flex items-center gap-1">
+                <div className="space-y-0.5">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                     Throughput
-                    <Activity className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
+                    <Activity className="h-3 w-3 text-emerald-400 animate-pulse" />
                   </p>
-                  <p className="text-2xl font-bold text-emerald-400">{formatThroughput(stats.totalThroughput)}</p>
-                  <p className="text-xs text-slate-400">Avg bandwidth</p>
+                  <p className="text-lg font-bold text-emerald-400">{formatThroughput(stats.totalThroughput)}</p>
+                  <p className="text-[10px] text-slate-500">Avg bandwidth</p>
                 </div>
-                <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
-                  <Gauge className="h-5 w-5 text-white" />
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 shadow-md group-hover:scale-110 transition-transform">
+                  <Gauge className="h-3.5 w-3.5 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border border-violet-500/30 bg-gradient-to-br from-slate-900 to-slate-950 hover:shadow-xl hover:shadow-violet-500/20 hover:scale-[1.02] transition-all duration-300 group">
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-purple-500 opacity-[0.15] group-hover:opacity-[0.25] transition-opacity" />
-            <div className="absolute -right-6 -top-6 w-24 h-24 bg-violet-400/20 rounded-full blur-2xl group-hover:bg-violet-400/40 transition-all" />
-            <CardContent className="p-4 relative">
+          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-purple-500 opacity-[0.08] group-hover:opacity-[0.12] transition-opacity" />
+            <div className="absolute -right-6 -top-6 w-20 h-20 bg-violet-500/10 rounded-full blur-2xl group-hover:bg-violet-500/20 transition-all" />
+            <CardContent className="p-3 relative">
               <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-violet-300 uppercase tracking-wider flex items-center gap-1">
+                <div className="space-y-0.5">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                     Active Clients
-                    <ArrowUpRight className="h-3.5 w-3.5 text-violet-400" />
+                    <ArrowUpRight className="h-3 w-3 text-violet-400" />
                   </p>
-                  <p className="text-2xl font-bold text-violet-400">{formatNumber(stats.totalClients)}</p>
-                  <p className="text-xs text-slate-400">Using apps</p>
+                  <p className="text-lg font-bold text-violet-400">{formatNumber(stats.totalClients)}</p>
+                  <p className="text-[10px] text-slate-500">Using apps</p>
                 </div>
-                <div className="p-2 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 shadow-lg shadow-violet-500/30 group-hover:scale-110 transition-transform">
-                  <Users className="h-5 w-5 text-white" />
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 shadow-md group-hover:scale-110 transition-transform">
+                  <Users className="h-3.5 w-3.5 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border border-amber-500/30 bg-gradient-to-br from-slate-900 to-slate-950 hover:shadow-xl hover:shadow-amber-500/20 hover:scale-[1.02] transition-all duration-300 group">
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 opacity-[0.15] group-hover:opacity-[0.25] transition-opacity" />
-            <div className="absolute -right-6 -top-6 w-24 h-24 bg-amber-400/20 rounded-full blur-2xl group-hover:bg-amber-400/40 transition-all" />
-            <CardContent className="p-4 relative">
+          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 opacity-[0.08] group-hover:opacity-[0.12] transition-opacity" />
+            <div className="absolute -right-6 -top-6 w-20 h-20 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all" />
+            <CardContent className="p-3 relative">
               <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-amber-300 uppercase tracking-wider flex items-center gap-1">
+                <div className="space-y-0.5">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                     Top Category
-                    <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                    <Sparkles className="h-3 w-3 text-amber-400" />
                   </p>
-                  <p className="text-xl font-bold truncate text-amber-400">{stats.topCategory}</p>
-                  <p className="text-xs text-slate-400">{stats.topCategoryPercent}% of traffic</p>
+                  <p className="text-base font-bold truncate text-amber-400">{stats.topCategory}</p>
+                  <p className="text-[10px] text-slate-500">{stats.topCategoryPercent}% of traffic</p>
                 </div>
-                <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
-                  <Zap className="h-5 w-5 text-white" />
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 shadow-md group-hover:scale-110 transition-transform">
+                  <Zap className="h-3.5 w-3.5 text-white" />
                 </div>
               </div>
             </CardContent>
@@ -591,20 +591,20 @@ export function AppInsights({ api }: AppInsightsProps) {
         </div>
       )}
 
-      {/* Insights Banner - ENHANCED */}
+      {/* Insights Banner */}
       {insights.length > 0 && (
-        <Card className="border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10">
-          <CardContent className="py-3 px-4">
-            <div className="flex items-start gap-3">
-              <div className="p-1.5 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-500 shadow-lg shadow-cyan-500/30">
-                <Sparkles className="h-4 w-4 text-white" />
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="py-2 px-3">
+            <div className="flex items-start gap-2">
+              <div className="p-1 rounded bg-primary/10">
+                <Sparkles className="h-3.5 w-3.5 text-violet-400" />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-bold text-cyan-400 uppercase tracking-wide mb-1">Quick Insights</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                <p className="text-[10px] font-semibold text-violet-400 uppercase tracking-wide mb-0.5">Quick Insights</p>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                   {insights.map((insight, i) => (
-                    <p key={i} className="text-sm text-slate-300 flex items-center gap-1.5">
-                      <Info className="h-3.5 w-3.5 text-cyan-400" />
+                    <p key={i} className="text-xs text-slate-300 flex items-center gap-1">
+                      <Info className="h-3 w-3 text-violet-400" />
                       {insight.text}
                     </p>
                   ))}
@@ -619,11 +619,11 @@ export function AppInsights({ api }: AppInsightsProps) {
       {chartData && stats && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
           {/* Top Categories Donut Chart */}
-          <Card className="border-violet-500/30 bg-gradient-to-br from-slate-900 to-slate-950">
+          <Card className="border-border/50">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-bold flex items-center gap-2 text-white">
-                  <PieChart className="h-5 w-5 text-violet-400" />
+                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-200">
+                  <PieChart className="h-4 w-4 text-violet-400" />
                   Top Categories by Usage
                 </CardTitle>
               </div>
@@ -640,7 +640,7 @@ export function AppInsights({ api }: AppInsightsProps) {
                       outerRadius={95}
                       paddingAngle={2}
                       dataKey="value"
-                      label={({ name, cx, cy, midAngle, innerRadius, outerRadius }) => {
+                      label={({ name, cx, cy, midAngle, outerRadius }) => {
                         const RADIAN = Math.PI / 180;
                         const radius = outerRadius + 25;
                         const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -651,13 +651,14 @@ export function AppInsights({ api }: AppInsightsProps) {
                           <text
                             x={x}
                             y={y}
-                            fill="hsl(var(--foreground))"
+                            fill="#e2e8f0"
                             textAnchor={x > cx ? 'start' : 'end'}
                             dominantBaseline="central"
-                            className="text-xs font-medium"
+                            fontSize={12}
+                            fontWeight={500}
                             style={{
                               paintOrder: 'stroke',
-                              stroke: 'hsl(var(--background))',
+                              stroke: '#0f172a',
                               strokeWidth: 3,
                               strokeLinecap: 'round',
                               strokeLinejoin: 'round'
@@ -667,7 +668,7 @@ export function AppInsights({ api }: AppInsightsProps) {
                           </text>
                         );
                       }}
-                      labelLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
+                      labelLine={{ stroke: '#64748b', strokeWidth: 1 }}
                     >
                       {chartData.topUsage.slice(0, 6).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={getCategoryColor(entry.name, index)} />
@@ -677,11 +678,11 @@ export function AppInsights({ api }: AppInsightsProps) {
                       formatter={(value: number) => formatBytes(value)}
                       labelFormatter={() => ''}
                       contentStyle={{
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        color: 'hsl(var(--foreground))'
+                        backgroundColor: '#1e293b',
+                        border: '1px solid #475569',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        color: '#f1f5f9'
                       }}
                     />
                   </RechartsPieChart>
@@ -691,10 +692,10 @@ export function AppInsights({ api }: AppInsightsProps) {
           </Card>
 
           {/* Top Applications Bar Chart */}
-          <Card className="border-cyan-500/30 bg-gradient-to-br from-slate-900 to-slate-950">
+          <Card className="border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-bold flex items-center gap-2 text-white">
-                <BarChart3 className="h-5 w-5 text-cyan-400" />
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-200">
+                <BarChart3 className="h-4 w-4 text-cyan-400" />
                 Application Bandwidth Distribution
               </CardTitle>
             </CardHeader>
@@ -706,7 +707,7 @@ export function AppInsights({ api }: AppInsightsProps) {
                     layout="horizontal"
                     margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#475569" opacity={0.4} vertical={false} />
                     <XAxis
                       dataKey="name"
                       tick={{ fontSize: 11, fill: '#94a3b8' }}
@@ -728,14 +729,14 @@ export function AppInsights({ api }: AppInsightsProps) {
                       formatter={(value: number) => [formatThroughput(value), 'Throughput']}
                       labelFormatter={(label) => label}
                       contentStyle={{
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
+                        backgroundColor: '#1e293b',
+                        border: '1px solid #475569',
                         borderRadius: '8px',
                         fontSize: '12px',
-                        color: 'hsl(var(--foreground))',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                        color: '#f1f5f9',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
                       }}
-                      cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
+                      cursor={{ fill: '#334155', opacity: 0.3 }}
                     />
                     <Bar
                       dataKey="value"
