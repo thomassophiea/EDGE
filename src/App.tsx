@@ -49,6 +49,7 @@ const SecurityDashboard = lazy(() => import('./components/SecurityDashboard').th
 const GuestManagement = lazy(() => import('./components/GuestManagement').then(m => ({ default: m.GuestManagement })));
 const ApiDocumentation = lazy(() => import('./components/ApiDocumentation').then(m => ({ default: m.ApiDocumentation })));
 const Workspace = lazy(() => import('./components/Workspace').then(m => ({ default: m.Workspace })));
+const HelpPage = lazy(() => import('./components/HelpPage').then(m => ({ default: m.HelpPage })));
 import { apiService, ApiCallLog } from './services/api';
 import { sleDataCollectionService } from './services/sleDataCollection';
 import { Toaster } from './components/ui/sonner';
@@ -90,6 +91,7 @@ const pageInfo = {
   'api-documentation': { title: 'API Documentation', description: 'AIO Platform REST API reference' },
   'configure-sites': { title: 'Sites', description: 'Manage and configure network sites and locations' },
   'configure-networks': { title: 'Configure Networks', description: 'Set up and manage network configurations' },
+  'help': { title: 'Help & Support', description: 'Get assistance with the EDGE platform using AI' },
 };
 
 interface DetailPanelState {
@@ -926,6 +928,8 @@ export default function App() {
         return <ApiTestTool />;
       case 'api-documentation':
         return <ApiDocumentation onNavigateBack={() => setCurrentPage('service-levels')} />;
+      case 'help':
+        return <HelpPage />;
       default:
         const info = pageInfo[currentPage as keyof typeof pageInfo];
         if (!info) {
