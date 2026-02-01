@@ -266,6 +266,12 @@ function DashboardEnhancedComponent() {
     rfqi: number;
   }>>([]);
 
+  // RF Metrics for Device Health Overview
+  const [bandDistribution, setBandDistribution] = useState<{ band: string; count: number; color: string }[]>([]);
+  const [snrDistribution, setSnrDistribution] = useState<{ category: string; count: number; color: string }[]>([]);
+  const [avgSnr, setAvgSnr] = useState<number>(0);
+  const [avgRssi, setAvgRssi] = useState<number>(0);
+
   const [selectedNetworkEvent, setSelectedNetworkEvent] = useState<{
     id: string;
     time: string;
@@ -996,6 +1002,78 @@ function DashboardEnhancedComponent() {
       servicesData
     );
 
+    // Calculate RF metrics for Device Health Overview
+    const bandCounts: Record<string, number> = { '2.4 GHz': 0, '5 GHz': 0, '6 GHz': 0 };
+    const snrCounts: Record<string, number> = { 'Excellent': 0, 'Good': 0, 'Fair': 0, 'Poor': 0 };
+    let totalSnr = 0;
+    let totalRssi = 0;
+    let snrCount = 0;
+    let rssiCount = 0;
+
+    stations.forEach(station => {
+      // Band distribution - try to detect from rate or explicit band field
+      const rate = Math.max(station.txRate || 0, station.rxRate || 0);
+      const stationBand = (station as any).band || (station as any).frequencyBand;
+      
+      if (stationBand) {
+        if (stationBand.includes('6') || stationBand.includes('6E')) {
+          bandCounts['6 GHz']++;
+        } else if (stationBand.includes('5')) {
+          bandCounts['5 GHz']++;
+        } else {
+          bandCounts['2.4 GHz']++;
+        }
+      } else if (rate > 0) {
+        // Heuristic based on max rate
+        if (rate > 1200) {
+          bandCounts['6 GHz']++;
+        } else if (rate > 150) {
+          bandCounts['5 GHz']++;
+        } else {
+          bandCounts['2.4 GHz']++;
+        }
+      }
+
+      // SNR distribution
+      const snr = (station as any).snr || 0;
+      if (snr > 0) {
+        totalSnr += snr;
+        snrCount++;
+        if (snr >= 40) snrCounts['Excellent']++;
+        else if (snr >= 25) snrCounts['Good']++;
+        else if (snr >= 15) snrCounts['Fair']++;
+        else snrCounts['Poor']++;
+      }
+
+      // RSSI average
+      const rssi = station.rssi || (station as any).rss || 0;
+      if (rssi < 0) { // Valid RSSI is negative
+        totalRssi += rssi;
+        rssiCount++;
+      }
+    });
+
+    // Set band distribution
+    const bandData = [
+      { band: '2.4 GHz', count: bandCounts['2.4 GHz'], color: '#f59e0b' },
+      { band: '5 GHz', count: bandCounts['5 GHz'], color: '#3b82f6' },
+      { band: '6 GHz', count: bandCounts['6 GHz'], color: '#8b5cf6' }
+    ].filter(b => b.count > 0);
+    setBandDistribution(bandData);
+
+    // Set SNR distribution
+    const snrData = [
+      { category: 'Excellent', count: snrCounts['Excellent'], color: '#10b981' },
+      { category: 'Good', count: snrCounts['Good'], color: '#22d3ee' },
+      { category: 'Fair', count: snrCounts['Fair'], color: '#f59e0b' },
+      { category: 'Poor', count: snrCounts['Poor'], color: '#ef4444' }
+    ].filter(s => s.count > 0);
+    setSnrDistribution(snrData);
+
+    // Set averages
+    setAvgSnr(snrCount > 0 ? Math.round(totalSnr / snrCount) : 0);
+    setAvgRssi(rssiCount > 0 ? Math.round(totalRssi / rssiCount) : 0);
+
     console.log('[Dashboard] Client Stats:', {
       total: stations.length,
       authenticated,
@@ -1622,7 +1700,7 @@ function DashboardEnhancedComponent() {
             </button>
           </div>
 
-          {/* Client/Device Health Stacked Bar Chart - BADASS EDITION */}
+          {/* Device Health Overview - COMPREHENSIVE RF INTELLIGENCE */}
           <Card className="relative overflow-hidden border-purple-500/30 bg-gradient-to-br from-background via-background to-purple-950/20">
             {/* Animated background glow */}
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-pink-500/5 animate-pulse" />
@@ -1633,67 +1711,177 @@ function DashboardEnhancedComponent() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <Brain className="h-6 w-6 text-cyan-400 animate-pulse" />
+                    <Radio className="h-6 w-6 text-cyan-400 animate-pulse" />
                     <div className="absolute inset-0 h-6 w-6 bg-cyan-400/30 blur-md animate-pulse" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    <CardTitle className="text-lg font-bold text-slate-100">
                       {healthViewMode === 'clients' ? 'Client' : 'Device'} Health Overview
                     </CardTitle>
-                    <p className="text-xs text-muted-foreground">Real-time RF Quality Intelligence</p>
+                    <p className="text-xs text-slate-400">Real-time RF Quality Intelligence</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
                   <span className="text-sm font-medium text-cyan-400">LIVE</span>
-                  <span className="text-xs text-muted-foreground border-l border-muted pl-2 ml-1">24h</span>
+                  <span className="text-xs text-slate-500 border-l border-slate-700 pl-2 ml-1">24h</span>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="relative z-10">
-              {/* RFQI Data Source Indicator - Enhanced */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 shadow-lg shadow-purple-500/10">
-                    <Signal className="h-4 w-4 text-purple-400 animate-pulse" />
-                    <span className="text-sm font-semibold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">RFQI</span>
+            <CardContent className="relative z-10 space-y-4">
+              {/* Top Row: Key RF Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {/* RFQI Score */}
+                <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Signal className="h-4 w-4 text-purple-400" />
+                    <span className="text-xs font-medium text-slate-400">RFQI Score</span>
                   </div>
-                  {rfqiData.length > 0 && (
+                  <p className="text-2xl font-bold text-purple-400 tabular-nums">
+                    {rfqiData.length > 0 ? Math.round(rfqiData.reduce((acc, d) => acc + d.healthy, 0) / rfqiData.length) : '--'}%
+                  </p>
+                </div>
+
+                {/* Average RSSI */}
+                <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border border-cyan-500/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Wifi className="h-4 w-4 text-cyan-400" />
+                    <span className="text-xs font-medium text-slate-400">Avg RSSI</span>
+                  </div>
+                  <p className="text-2xl font-bold text-cyan-400 tabular-nums">
+                    {avgRssi !== 0 ? `${avgRssi} dBm` : '--'}
+                  </p>
+                </div>
+
+                {/* Average SNR */}
+                <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Activity className="h-4 w-4 text-emerald-400" />
+                    <span className="text-xs font-medium text-slate-400">Avg SNR</span>
+                  </div>
+                  <p className="text-2xl font-bold text-emerald-400 tabular-nums">
+                    {avgSnr > 0 ? `${avgSnr} dB` : '--'}
+                  </p>
+                </div>
+
+                {/* Total Clients */}
+                <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Users className="h-4 w-4 text-amber-400" />
+                    <span className="text-xs font-medium text-slate-400">Connected</span>
+                  </div>
+                  <p className="text-2xl font-bold text-amber-400 tabular-nums">
+                    {clientStats.total}
+                  </p>
+                </div>
+              </div>
+
+              {/* Middle Row: Band Distribution & SNR Quality */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Band Distribution */}
+                <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-700/50">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Average:</span>
-                      <span className="text-lg font-bold text-cyan-400 tabular-nums">
-                        {Math.round(rfqiData.reduce((acc, d) => acc + d.healthy, 0) / rfqiData.length)}%
-                      </span>
+                      <Radio className="h-4 w-4 text-blue-400" />
+                      <span className="text-sm font-semibold text-slate-200">Client Distribution by Band</span>
+                    </div>
+                    <span className="text-xs text-slate-500">{clientStats.total} total</span>
+                  </div>
+                  {bandDistribution.length > 0 ? (
+                    <div className="space-y-2">
+                      {bandDistribution.map((band) => {
+                        const percentage = clientStats.total > 0 ? (band.count / clientStats.total) * 100 : 0;
+                        return (
+                          <div key={band.band} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-slate-300 font-medium">{band.band}</span>
+                              <span className="tabular-nums" style={{ color: band.color }}>{band.count} ({Math.round(percentage)}%)</span>
+                            </div>
+                            <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${percentage}%`, backgroundColor: band.color }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-16 text-slate-500 text-sm">
+                      No band data available
                     </div>
                   )}
                 </div>
-                {rfqiData.length > 0 && (
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-3 w-3 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 shadow-lg shadow-green-500/30" />
-                      <span className="text-emerald-400 font-semibold tabular-nums">{Math.round(rfqiData[rfqiData.length - 1]?.healthy || 0)}%</span>
+
+                {/* SNR Quality Distribution */}
+                <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-700/50">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-emerald-400" />
+                      <span className="text-sm font-semibold text-slate-200">Signal Quality (SNR)</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-3 w-3 rounded-full bg-gradient-to-br from-red-400 to-rose-600 shadow-lg shadow-red-500/30" />
-                      <span className="text-red-400 font-semibold tabular-nums">{Math.round(rfqiData[rfqiData.length - 1]?.needsAttention || 0)}%</span>
-                    </div>
+                    <span className="text-xs text-slate-500">
+                      {snrDistribution.reduce((acc, s) => acc + s.count, 0)} clients
+                    </span>
                   </div>
-                )}
+                  {snrDistribution.length > 0 ? (
+                    <div className="space-y-2">
+                      {snrDistribution.map((snr) => {
+                        const totalSnrClients = snrDistribution.reduce((acc, s) => acc + s.count, 0);
+                        const percentage = totalSnrClients > 0 ? (snr.count / totalSnrClients) * 100 : 0;
+                        return (
+                          <div key={snr.category} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-slate-300 font-medium">{snr.category}</span>
+                              <span className="tabular-nums" style={{ color: snr.color }}>{snr.count} ({Math.round(percentage)}%)</span>
+                            </div>
+                            <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${percentage}%`, backgroundColor: snr.color }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-16 text-slate-500 text-sm">
+                      No SNR data available
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Stacked Bar Chart Visualization - ENHANCED */}
-              <div className="relative rounded-xl p-4 bg-gradient-to-b from-slate-900/80 to-slate-950/80 border border-slate-700/50 shadow-2xl shadow-purple-500/5">
-                {/* Grid lines for that techy look */}
-                <div className="absolute inset-4 flex flex-col justify-between pointer-events-none opacity-20">
-                  {[...Array(5)].map((_, i) => (
+              {/* Bottom Row: RFQI Timeline */}
+              <div className="relative rounded-xl p-4 bg-gradient-to-b from-slate-900/80 to-slate-950/80 border border-slate-700/50">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-purple-400" />
+                    <span className="text-sm font-semibold text-slate-200">RF Quality Timeline</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                      <span className="text-slate-400">Healthy</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                      <span className="text-slate-400">Attention</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grid lines */}
+                <div className="absolute inset-x-4 top-16 bottom-8 flex flex-col justify-between pointer-events-none opacity-20">
+                  {[...Array(4)].map((_, i) => (
                     <div key={i} className="border-t border-dashed border-slate-500" />
                   ))}
                 </div>
                 
-                <div className="h-36 flex items-end gap-1 relative">
-                  {/* Generate 24 bars using RFQI data when available */}
+                <div className="h-24 flex items-end gap-0.5 relative">
                   {(rfqiData.length > 0 ? rfqiData.slice(-24) : Array.from({ length: 24 }, (_, i) => {
-                    // Fallback to basic stats if no RFQI data
                     const baseHealthy = healthViewMode === 'clients' ? clientStats.authenticated : apStats.online;
                     const baseAttention = healthViewMode === 'clients' ? Math.max(0, clientStats.total - clientStats.authenticated) : apStats.offline;
                     const total = baseHealthy + baseAttention || 1;
@@ -1713,61 +1901,30 @@ function DashboardEnhancedComponent() {
                       <div
                         key={i}
                         className={`flex-1 flex flex-col justify-end cursor-pointer transition-all duration-300 group ${
-                          isCurrentHour ? 'opacity-100 scale-105 z-10' : 'opacity-70 hover:opacity-100 hover:scale-102'
+                          isCurrentHour ? 'opacity-100 scale-105 z-10' : 'opacity-60 hover:opacity-100'
                         }`}
                         onClick={() => setAiInsightsDetailPanel(true)}
-                        title={`${hour.toString().padStart(2, '0')}:00 - RFQI: ${Math.round(dataPoint.rfqi)}% | Healthy: ${Math.round(healthyPct)}%`}
-                        style={{ animationDelay: `${i * 30}ms` }}
+                        title={`${hour.toString().padStart(2, '0')}:00 - Healthy: ${Math.round(healthyPct)}%`}
                       >
-                        {/* Needs Attention bar */}
                         <div
-                          className={`bg-gradient-to-t from-red-600 via-rose-500 to-red-400 rounded-t transition-all duration-500 ${
-                            isCurrentHour ? 'shadow-lg shadow-red-500/40' : 'group-hover:shadow-md group-hover:shadow-red-500/30'
-                          }`}
-                          style={{ 
-                            height: `${attentionPct}%`, 
-                            minHeight: attentionPct > 0 ? '3px' : '0',
-                          }}
+                          className="bg-gradient-to-t from-red-600 to-red-400 rounded-t transition-all"
+                          style={{ height: `${attentionPct}%`, minHeight: attentionPct > 0 ? '2px' : '0' }}
                         />
-                        {/* Healthy bar */}
                         <div
-                          className={`bg-gradient-to-t from-emerald-600 via-green-500 to-cyan-400 rounded-b transition-all duration-500 ${
-                            isCurrentHour ? 'shadow-lg shadow-emerald-500/40' : 'group-hover:shadow-md group-hover:shadow-emerald-500/30'
+                          className={`bg-gradient-to-t from-emerald-600 to-cyan-400 rounded-b transition-all ${
+                            isCurrentHour ? 'shadow-md shadow-emerald-500/40' : ''
                           }`}
-                          style={{ 
-                            height: `${healthyPct}%`, 
-                            minHeight: healthyPct > 0 ? '4px' : '0',
-                          }}
+                          style={{ height: `${healthyPct}%`, minHeight: healthyPct > 0 ? '3px' : '0' }}
                         />
-                        {/* Current hour glow effect */}
-                        {isCurrentHour && (
-                          <div className="absolute -inset-1 bg-gradient-to-t from-cyan-500/20 to-transparent rounded blur-sm pointer-events-none" />
-                        )}
                       </div>
                     );
                   })}
                 </div>
                 
-                {/* X-axis labels - Enhanced */}
-                <div className="flex justify-between mt-3 text-xs">
-                  <span className="text-slate-500 font-mono">{((new Date().getHours() - 23 + 24) % 24).toString().padStart(2, '0')}:00</span>
-                  <span className="text-slate-500 font-mono">{((new Date().getHours() - 12 + 24) % 24).toString().padStart(2, '0')}:00</span>
-                  <span className="text-cyan-400 font-mono font-semibold flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                    NOW
-                  </span>
-                </div>
-              </div>
-
-              {/* Legend - Enhanced */}
-              <div className="flex items-center justify-center gap-8 mt-5">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                  <div className="w-4 h-4 bg-gradient-to-t from-emerald-600 via-green-500 to-cyan-400 rounded shadow-lg shadow-emerald-500/30" />
-                  <span className="text-sm font-medium text-emerald-400">Healthy</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
-                  <div className="w-4 h-4 bg-gradient-to-t from-red-600 via-rose-500 to-red-400 rounded shadow-lg shadow-red-500/30" />
-                  <span className="text-sm font-medium text-red-400">Needs Attention</span>
+                <div className="flex justify-between mt-2 text-xs text-slate-500 font-mono">
+                  <span>{((new Date().getHours() - 23 + 24) % 24).toString().padStart(2, '0')}:00</span>
+                  <span>{((new Date().getHours() - 12 + 24) % 24).toString().padStart(2, '0')}:00</span>
+                  <span className="text-cyan-400 font-semibold">NOW</span>
                 </div>
               </div>
             </CardContent>
