@@ -10,8 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { HelpCircle, MessageSquare, Book, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
 
-// Configure your Chatbase bot ID here
-const CHATBASE_BOT_ID = 'YOUR_CHATBASE_BOT_ID'; // Replace with your actual bot ID
+// Chatbase bot configuration
+const CHATBASE_BOT_ID = 'ZLVPw60JOZQsutoX-Nuyg';
 
 export function HelpPage() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -22,23 +22,35 @@ export function HelpPage() {
     if (scriptLoadedRef.current) return;
 
     // Check if Chatbase script is already loaded
-    if (document.querySelector('script[src*="chatbase.co/embed"]')) {
+    if (document.getElementById(CHATBASE_BOT_ID)) {
       scriptLoadedRef.current = true;
       return;
     }
 
-    // Configure Chatbase
-    (window as any).embeddedChatbotConfig = {
-      chatbotId: CHATBASE_BOT_ID,
-      domain: 'www.chatbase.co'
-    };
+    // Initialize Chatbase queue if not already initialized
+    const win = window as any;
+    if (!win.chatbase || win.chatbase('getState') !== 'initialized') {
+      win.chatbase = (...args: any[]) => {
+        if (!win.chatbase.q) {
+          win.chatbase.q = [];
+        }
+        win.chatbase.q.push(args);
+      };
+      win.chatbase = new Proxy(win.chatbase, {
+        get(target: any, prop: string) {
+          if (prop === 'q') {
+            return target.q;
+          }
+          return (...args: any[]) => target(prop, ...args);
+        }
+      });
+    }
 
     // Load Chatbase embed script
     const script = document.createElement('script');
     script.src = 'https://www.chatbase.co/embed.min.js';
-    script.setAttribute('chatbotId', CHATBASE_BOT_ID);
+    script.id = CHATBASE_BOT_ID;
     script.setAttribute('domain', 'www.chatbase.co');
-    script.defer = true;
 
     script.onload = () => {
       console.log('[HelpPage] Chatbase script loaded');
