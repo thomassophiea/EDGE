@@ -15,19 +15,22 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collap
 import { 
   Brain, AlertTriangle, AlertCircle, Info, ChevronDown, ChevronUp,
   Radio, Activity, Zap, Users, Wifi, Clock, ExternalLink, Lightbulb,
-  CheckCircle2, TrendingUp, TrendingDown, Target
+  CheckCircle2, TrendingUp, TrendingDown, Target, Wrench, BarChart3,
+  ArrowUp, ArrowDown, Minus, Timer
 } from 'lucide-react';
 import { cn } from './ui/utils';
 import { useOperationalContext } from '../hooks/useOperationalContext';
 import { 
-  generateInsights, getInsightsSummary, 
-  type InsightCard, type MetricsSnapshot 
+  generateInsights, getInsightsSummary, getInsightsByGroup,
+  INSIGHT_GROUP_META,
+  type InsightCard, type MetricsSnapshot, type InsightGroup
 } from '../services/aiInsights';
 import { getEnvironmentProfile } from '../config/environmentProfiles';
 
 interface AIInsightsPanelProps {
   metrics: MetricsSnapshot;
   className?: string;
+  groupedView?: boolean;
 }
 
 const categoryIcons: Record<string, React.ElementType> = {
@@ -37,7 +40,24 @@ const categoryIcons: Record<string, React.ElementType> = {
   client_performance: Users,
   connectivity: Wifi,
   capacity: TrendingUp,
-  anomaly: AlertTriangle
+  anomaly: AlertTriangle,
+  trending: BarChart3,
+  predictive: Timer,
+  historical: Clock
+};
+
+const groupIcons: Record<InsightGroup, React.ElementType> = {
+  network_health: Activity,
+  capacity_planning: TrendingUp,
+  anomaly_detection: AlertTriangle,
+  predictive_maintenance: Wrench
+};
+
+const groupColors: Record<InsightGroup, string> = {
+  network_health: 'blue',
+  capacity_planning: 'purple',
+  anomaly_detection: 'amber',
+  predictive_maintenance: 'red'
 };
 
 const severityStyles: Record<string, { bg: string; border: string; icon: React.ElementType }> = {
@@ -183,11 +203,38 @@ export function AIInsightsPanel({ metrics, className }: AIInsightsPanelProps) {
                         </div>
                         
                         <div className="flex-1 text-left">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium text-sm">{insight.title}</span>
                             <Badge variant="outline" className="text-[10px] px-1.5 h-4">
                               {insight.scope}
                             </Badge>
+                            {/* Trend indicator */}
+                            {insight.trend && (
+                              <Badge 
+                                variant="outline" 
+                                className={cn(
+                                  "text-[10px] px-1.5 h-4 gap-0.5",
+                                  insight.trend.direction === 'improving' && "border-green-500/50 text-green-600",
+                                  insight.trend.direction === 'degrading' && "border-red-500/50 text-red-600",
+                                  insight.trend.direction === 'stable' && "border-gray-500/50 text-gray-600"
+                                )}
+                              >
+                                {insight.trend.direction === 'improving' && <ArrowUp className="h-2.5 w-2.5" />}
+                                {insight.trend.direction === 'degrading' && <ArrowDown className="h-2.5 w-2.5" />}
+                                {insight.trend.direction === 'stable' && <Minus className="h-2.5 w-2.5" />}
+                                {insight.trend.changePercent.toFixed(0)}%
+                              </Badge>
+                            )}
+                            {/* Prediction indicator */}
+                            {insight.prediction && (
+                              <Badge 
+                                variant="outline" 
+                                className="text-[10px] px-1.5 h-4 gap-0.5 border-purple-500/50 text-purple-600"
+                              >
+                                <Timer className="h-2.5 w-2.5" />
+                                {insight.prediction.timeframe}
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                             {insight.whyItMatters}

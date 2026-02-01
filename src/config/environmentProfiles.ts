@@ -7,6 +7,7 @@
  */
 
 export type EnvironmentProfileType = 
+  | 'AI_BASELINE'
   | 'RETAIL' 
   | 'WAREHOUSE' 
   | 'DISTRIBUTION' 
@@ -34,11 +35,27 @@ export interface EnvironmentProfile {
 }
 
 export const ENVIRONMENT_PROFILES: Record<EnvironmentProfileType, EnvironmentProfile> = {
+  AI_BASELINE: {
+    id: 'AI_BASELINE',
+    name: 'AI Baseline',
+    description: 'Auto-generated thresholds based on your network\'s actual performance patterns',
+    icon: 'Sparkles',
+    thresholds: {
+      rfqiTarget: 75,
+      rfqiPoor: 55,
+      channelUtilizationPct: 65,
+      noiseFloorDbm: -85,
+      clientDensity: 50,
+      latencyP95Ms: 75,
+      retryRatePct: 15,
+      interferenceHigh: 0.3
+    }
+  },
   RETAIL: {
     id: 'RETAIL',
     name: 'Retail Store',
     description: 'High client density, critical customer experience, moderate RF challenges',
-    icon: '🏪',
+    icon: 'Store',
     thresholds: {
       rfqiTarget: 80,
       rfqiPoor: 60,
@@ -54,7 +71,7 @@ export const ENVIRONMENT_PROFILES: Record<EnvironmentProfileType, EnvironmentPro
     id: 'WAREHOUSE',
     name: 'Warehouse',
     description: 'Sparse client density, RF challenges from metal/racking, high mobility',
-    icon: '🏭',
+    icon: 'Warehouse',
     thresholds: {
       rfqiTarget: 70,
       rfqiPoor: 50,
@@ -70,7 +87,7 @@ export const ENVIRONMENT_PROFILES: Record<EnvironmentProfileType, EnvironmentPro
     id: 'DISTRIBUTION',
     name: 'Distribution Center',
     description: 'Mixed environment, high device mobility, critical for operations',
-    icon: '📦',
+    icon: 'Package',
     thresholds: {
       rfqiTarget: 65,
       rfqiPoor: 45,
@@ -86,7 +103,7 @@ export const ENVIRONMENT_PROFILES: Record<EnvironmentProfileType, EnvironmentPro
     id: 'HQ',
     name: 'Headquarters',
     description: 'Office environment, high density, low tolerance for issues',
-    icon: '🏢',
+    icon: 'Building2',
     thresholds: {
       rfqiTarget: 85,
       rfqiPoor: 65,
@@ -102,7 +119,7 @@ export const ENVIRONMENT_PROFILES: Record<EnvironmentProfileType, EnvironmentPro
     id: 'CAMPUS',
     name: 'Campus',
     description: 'Mixed use, varied building types, balance of performance and coverage',
-    icon: '🎓',
+    icon: 'GraduationCap',
     thresholds: {
       rfqiTarget: 75,
       rfqiPoor: 55,
@@ -118,7 +135,7 @@ export const ENVIRONMENT_PROFILES: Record<EnvironmentProfileType, EnvironmentPro
     id: 'CUSTOM',
     name: 'Custom',
     description: 'User-defined thresholds for unique environments',
-    icon: '⚙️',
+    icon: 'Settings',
     thresholds: {
       rfqiTarget: 75,
       rfqiPoor: 55,

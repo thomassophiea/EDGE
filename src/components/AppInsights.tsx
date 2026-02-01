@@ -94,24 +94,36 @@ interface AppInsightsData {
   worstAppGroupsByThroughputReport: AppGroupReport[];
 }
 
-// Color palette for charts
+// Modern color palette for charts - vibrant but readable on dark backgrounds
 const CHART_COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316',
-  '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6',
+  '#818cf8', // Indigo 400
+  '#a78bfa', // Violet 400
+  '#f472b6', // Pink 400
+  '#fb7185', // Rose 400
+  '#fb923c', // Orange 400
+  '#fbbf24', // Amber 400
+  '#4ade80', // Green 400
+  '#2dd4bf', // Teal 400
+  '#22d3ee', // Cyan 400
+  '#60a5fa', // Blue 400
 ];
 
-// Category color mapping
+// Category color mapping - brighter, more saturated for dark mode readability
 const CATEGORY_COLORS: Record<string, string> = {
-  streaming: '#ec4899',
-  storage: '#3b82f6',
-  cloud: '#06b6d4',
-  social: '#8b5cf6',
-  gaming: '#f43f5e',
-  web: '#22c55e',
-  search: '#f97316',
-  communication: '#6366f1',
-  business: '#14b8a6',
-  security: '#eab308',
+  streaming: '#f472b6',      // Pink 400
+  storage: '#60a5fa',        // Blue 400
+  cloud: '#22d3ee',          // Cyan 400
+  social: '#a78bfa',         // Violet 400
+  gaming: '#fb7185',         // Rose 400
+  web: '#4ade80',            // Green 400
+  search: '#fb923c',         // Orange 400
+  communication: '#818cf8',  // Indigo 400
+  business: '#2dd4bf',       // Teal 400
+  security: '#fbbf24',       // Amber 400
+  realtime: '#c084fc',       // Purple 400
+  corporate: '#94a3b8',      // Slate 400
+  content: '#38bdf8',        // Sky 400
+  applications: '#34d399',   // Emerald 400
 };
 
 const getCategoryColor = (category: string, index: number): string => {
@@ -325,15 +337,21 @@ export function AppInsights({ api }: AppInsightsProps) {
               return (
                 <div key={item.id} className="space-y-0.5">
                   <div className="flex items-center gap-1.5">
-                    <div className="p-0.5 rounded" style={{ backgroundColor: `${itemColor}20` }}>
+                    <div 
+                      className="p-0.5 rounded-sm border" 
+                      style={{ 
+                        backgroundColor: `${itemColor}15`, 
+                        borderColor: `${itemColor}40` 
+                      }}
+                    >
                       <CategoryIcon className="h-2.5 w-2.5" style={{ color: itemColor }} />
                     </div>
-                    <span className="text-[11px] font-medium truncate flex-1" title={item.name}>
+                    <span className="text-[11px] font-medium truncate flex-1 text-foreground" title={item.name}>
                       {item.name}
                     </span>
-                    <span className="text-[11px] font-semibold tabular-nums">{formatValue(item.value)}</span>
+                    <span className="text-[11px] font-semibold tabular-nums text-foreground">{formatValue(item.value)}</span>
                   </div>
-                  <div className="h-1 bg-muted/50 rounded-full overflow-hidden ml-4">
+                  <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden ml-4">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{ width: `${percentage}%`, backgroundColor: itemColor }}
@@ -345,9 +363,9 @@ export function AppInsights({ api }: AppInsightsProps) {
           </div>
 
           {/* Bottom Categories */}
-          <div className="space-y-1.5 pt-2 border-t">
+          <div className="space-y-1.5 pt-2 border-t border-border/50">
             <div className="flex items-center gap-1.5 mb-1">
-              <ChevronDown className="h-3 w-3 text-amber-500" />
+              <ChevronDown className="h-3 w-3 text-amber-400" />
               <span className="text-[10px] font-medium text-muted-foreground">Low Activity</span>
             </div>
             {bottomData.slice(0, 5).map((item: any, index: number) => {
@@ -356,9 +374,15 @@ export function AppInsights({ api }: AppInsightsProps) {
               const itemColor = getCategoryColor(item.name, index + 5);
 
               return (
-                <div key={item.id} className="space-y-0.5">
+                <div key={item.id} className="space-y-0.5 opacity-75 hover:opacity-100 transition-opacity">
                   <div className="flex items-center gap-1.5">
-                    <div className="p-0.5 rounded" style={{ backgroundColor: `${itemColor}20` }}>
+                    <div 
+                      className="p-0.5 rounded-sm border" 
+                      style={{ 
+                        backgroundColor: `${itemColor}10`, 
+                        borderColor: `${itemColor}30` 
+                      }}
+                    >
                       <CategoryIcon className="h-2.5 w-2.5" style={{ color: itemColor }} />
                     </div>
                     <span className="text-[11px] font-medium truncate flex-1 text-muted-foreground" title={item.name}>
@@ -366,10 +390,10 @@ export function AppInsights({ api }: AppInsightsProps) {
                     </span>
                     <span className="text-[11px] tabular-nums text-muted-foreground">{formatValue(item.value)}</span>
                   </div>
-                  <div className="h-1 bg-muted/50 rounded-full overflow-hidden ml-4">
+                  <div className="h-1 bg-muted/30 rounded-full overflow-hidden ml-4">
                     <div
-                      className="h-full rounded-full transition-all duration-500 opacity-60"
-                      style={{ width: `${percentage}%`, backgroundColor: itemColor }}
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${percentage}%`, backgroundColor: `${itemColor}80` }}
                     />
                   </div>
                 </div>
@@ -595,11 +619,11 @@ export function AppInsights({ api }: AppInsightsProps) {
       {chartData && stats && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
           {/* Top Categories Donut Chart */}
-          <Card>
+          <Card className="border-border/50">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <PieChart className="h-4 w-4 text-primary" />
+                  <PieChart className="h-4 w-4 text-violet-400" />
                   Top Categories by Usage
                 </CardTitle>
               </div>
@@ -612,8 +636,8 @@ export function AppInsights({ api }: AppInsightsProps) {
                       data={chartData.topUsage.slice(0, 6)}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
+                      innerRadius={65}
+                      outerRadius={95}
                       paddingAngle={2}
                       dataKey="value"
                       label={({ name, cx, cy, midAngle, innerRadius, outerRadius }) => {
@@ -667,10 +691,10 @@ export function AppInsights({ api }: AppInsightsProps) {
           </Card>
 
           {/* Top Applications Bar Chart */}
-          <Card>
+          <Card className="border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-primary" />
+                <BarChart3 className="h-4 w-4 text-cyan-400" />
                 Application Bandwidth Distribution
               </CardTitle>
             </CardHeader>
@@ -680,36 +704,42 @@ export function AppInsights({ api }: AppInsightsProps) {
                   <BarChart
                     data={chartData.topThroughput.slice(0, 8)}
                     layout="horizontal"
-                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                    margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.3} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} vertical={false} />
                     <XAxis
                       dataKey="name"
-                      tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                       angle={-45}
                       textAnchor="end"
                       height={60}
                       interval={0}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                      tickLine={{ stroke: 'hsl(var(--border))' }}
                     />
                     <YAxis
-                      tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                       tickFormatter={(v) => formatThroughputCompact(v)}
-                      width={40}
+                      width={45}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                      tickLine={{ stroke: 'hsl(var(--border))' }}
                     />
                     <Tooltip
                       formatter={(value: number) => [formatThroughput(value), 'Throughput']}
-                      labelFormatter={() => ''}
+                      labelFormatter={(label) => label}
                       contentStyle={{
                         backgroundColor: 'hsl(var(--background))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '6px',
-                        fontSize: '11px',
-                        color: 'hsl(var(--foreground))'
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        color: 'hsl(var(--foreground))',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                       }}
+                      cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
                     />
                     <Bar
                       dataKey="value"
-                      radius={[4, 4, 0, 0]}
+                      radius={[6, 6, 0, 0]}
                     >
                       {chartData.topThroughput.slice(0, 8).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={getCategoryColor(entry.name, index)} />

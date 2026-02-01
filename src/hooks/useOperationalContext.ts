@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 export type ContextMode = 'AI_INSIGHTS' | 'SITE' | 'AP' | 'CLIENT';
 
-export type EnvironmentProfileId = 'RETAIL' | 'WAREHOUSE' | 'DISTRIBUTION' | 'HQ' | 'CAMPUS' | 'CUSTOM';
+export type EnvironmentProfileId = 'AI_BASELINE' | 'RETAIL' | 'WAREHOUSE' | 'DISTRIBUTION' | 'HQ' | 'CAMPUS' | 'CUSTOM';
 
 export interface EnvironmentProfile {
   id: EnvironmentProfileId;
@@ -28,6 +28,15 @@ export interface OperationalContext {
 }
 
 export const DEFAULT_PROFILES: Record<EnvironmentProfileId, EnvironmentProfile> = {
+  AI_BASELINE: {
+    id: 'AI_BASELINE',
+    rfqiTarget: 75,
+    channelUtilizationPct: 65,
+    noiseFloorDbm: -85,
+    clientDensity: 50,
+    latencyP95Ms: 75,
+    retryRatePct: 15,
+  },
   RETAIL: {
     id: 'RETAIL',
     rfqiTarget: 80,
