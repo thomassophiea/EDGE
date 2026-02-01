@@ -1480,7 +1480,7 @@ function DashboardEnhancedComponent() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="flex flex-col h-full space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>AP Availability</span>
@@ -1497,6 +1497,8 @@ function DashboardEnhancedComponent() {
                   <Progress value={100} className="h-2" />
                   <p className="text-xs text-muted-foreground">All APs running OS ONE</p>
                 </div>
+
+                <div className="flex-1" />
 
                 {/* RF Quality */}
                 <div className="pt-3 border-t">
@@ -1537,7 +1539,7 @@ function DashboardEnhancedComponent() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="flex flex-col h-full space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Avg Clients per AP</span>
@@ -1562,6 +1564,8 @@ function DashboardEnhancedComponent() {
                     <p className="text-lg font-semibold">{formatBps(clientStats.throughputDownload)}</p>
                   </div>
                 </div>
+
+                <div className="flex-1" />
 
                 {/* OS ONE Control */}
                 <div className="pt-3 border-t">
@@ -1750,7 +1754,7 @@ function DashboardEnhancedComponent() {
                     <span className="text-xs font-medium text-slate-400">RFQI Score</span>
                   </div>
                   <p className="text-2xl font-bold text-purple-400 tabular-nums">
-                    {rfqiData.length > 0 ? Math.round(rfqiData.reduce((acc, d) => acc + d.healthy, 0) / rfqiData.length) : '--'}%
+                    {rfqiData.length > 0 ? Math.round(rfqiData.reduce((acc, d) => acc + (d.rfqi > 5 ? d.rfqi : d.rfqi * 20), 0) / rfqiData.length) : '--'}%
                   </p>
                 </div>
 

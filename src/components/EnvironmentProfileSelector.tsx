@@ -28,6 +28,7 @@ import {
   type EnvironmentProfileType 
 } from '../config/environmentProfiles';
 import { aiBaselineService, getAIBaselineThresholds } from '../services/aiBaselineService';
+import { ContextConfigModal } from './ContextConfigModal';
 
 // Map icon names to Lucide components
 const iconMap: Record<string, LucideIcon> = {
@@ -51,6 +52,7 @@ export function EnvironmentProfileSelector({
 }: EnvironmentProfileSelectorProps) {
   const { ctx, setEnvironmentProfile } = useOperationalContext();
   const [open, setOpen] = useState(false);
+  const [contextModalOpen, setContextModalOpen] = useState(false);
   const [aiBaselineSummary, setAiBaselineSummary] = useState<{
     sampleCount: number;
     confidenceLevel: 'none' | 'low' | 'moderate' | 'high';
@@ -123,6 +125,7 @@ export function EnvironmentProfileSelector({
   const CurrentIcon = iconMap[currentProfile.icon] || Settings;
 
   return (
+    <>
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button 
@@ -228,12 +231,24 @@ export function EnvironmentProfileSelector({
         })}
         
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-muted-foreground gap-2">
+        <DropdownMenuItem 
+          className="text-muted-foreground gap-2 cursor-pointer"
+          onClick={() => {
+            setOpen(false);
+            setContextModalOpen(true);
+          }}
+        >
           <Settings2 className="h-4 w-4" />
           <span className="text-sm">Customize thresholds...</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    
+    <ContextConfigModal 
+      open={contextModalOpen} 
+      onOpenChange={setContextModalOpen} 
+    />
+  </>
   );
 }
 

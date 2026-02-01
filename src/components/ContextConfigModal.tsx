@@ -234,7 +234,7 @@ export function ContextConfigModal({ open, onOpenChange }: ContextConfigModalPro
                                 style={!isAI ? { backgroundColor: `${context.color}20` } : undefined}
                               >
                                 <IconComponent
-                                  className={`h-5 w-5 ${isAI ? 'text-purple-400 animate-pulse' : ''}`}
+                                  className={`h-5 w-5 ${isAI ? 'text-purple-400 animate-sparkle' : ''}`}
                                   style={!isAI ? { color: context.color } : undefined}
                                 />
                               </div>
