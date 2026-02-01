@@ -364,98 +364,85 @@ export function RFQualityWidgetAnchored() {
         )}
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Main RFQI Display */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            {/* Star Rating */}
+      <CardContent className="space-y-3 pt-2">
+        {/* Main RFQI Display - Compact horizontal layout */}
+        <div className="flex items-center gap-6">
+          {/* RFQI Score */}
+          <div className="flex items-center gap-3">
             {renderStars(displayRfqi)}
-            
-            {/* Numeric values */}
-            <div className="flex items-baseline gap-2">
-              <span className={`text-4xl font-bold ${status.color}`}>
+            <div className="flex items-baseline gap-1">
+              <span className={`text-2xl font-bold ${status.color}`}>
                 {displayRfqi.toFixed(1)}
               </span>
-              <span className="text-lg text-muted-foreground">/5</span>
-              <span className="text-sm text-muted-foreground ml-2">
+              <span className="text-sm text-muted-foreground">/5</span>
+              <span className="text-xs text-muted-foreground ml-1">
                 ({displayPercent.toFixed(0)}%)
               </span>
             </div>
-            
             <p className="text-xs text-muted-foreground">
               {ctx.timeCursor ? 'At cursor' : 'Current'}
             </p>
           </div>
           
-          <div className="text-right">
-            <Badge variant={status.variant} className="mb-2">
-              {status.label}
-            </Badge>
-            
-            {/* Cursor lock status */}
-            {ctx.timeCursor && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground justify-end">
-                {ctx.cursorLocked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
-                <span>{new Date(ctx.timeCursor).toLocaleTimeString()}</span>
-              </div>
-            )}
-          </div>
-        </div>
+          <Badge variant={status.variant}>
+            {status.label}
+          </Badge>
+          
+          {/* Cursor lock status */}
+          {ctx.timeCursor && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              {ctx.cursorLocked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+              <span>{new Date(ctx.timeCursor).toLocaleTimeString()}</span>
+            </div>
+          )}
 
-        {/* Contributing Factors - Only show if we have realtime data */}
-        {metrics?.source === 'realtime' && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {metrics.channelUtilization !== null && (
-              <div className="p-2 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                  <Activity className="h-3 w-3" />
-                  <span>Ch. Util</span>
+          {/* Contributing Factors - Inline when realtime */}
+          {metrics?.source === 'realtime' && (
+            <div className="flex items-center gap-4 ml-auto">
+              {metrics.channelUtilization !== null && (
+                <div className="flex items-center gap-1.5">
+                  <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Ch. Util</span>
+                  <span className={`text-sm font-semibold ${metrics.channelUtilization > 70 ? 'text-amber-600' : ''}`}>
+                    {metrics.channelUtilization.toFixed(0)}%
+                  </span>
                 </div>
-                <p className={`text-lg font-semibold ${metrics.channelUtilization > 70 ? 'text-amber-600' : ''}`}>
-                  {metrics.channelUtilization.toFixed(0)}%
-                </p>
-              </div>
-            )}
-            
-            {metrics.interference !== null && (
-              <div className="p-2 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                  <Zap className="h-3 w-3" />
-                  <span>Interference</span>
+              )}
+              
+              {metrics.interference !== null && (
+                <div className="flex items-center gap-1.5">
+                  <Zap className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Interference</span>
+                  <span className={`text-sm font-semibold ${metrics.interference > 20 ? 'text-amber-600' : ''}`}>
+                    {metrics.interference.toFixed(0)}%
+                  </span>
                 </div>
-                <p className={`text-lg font-semibold ${metrics.interference > 20 ? 'text-amber-600' : ''}`}>
-                  {metrics.interference.toFixed(0)}%
-                </p>
-              </div>
-            )}
-            
-            {metrics.noiseFloorDbm !== null && (
-              <div className="p-2 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                  <Volume2 className="h-3 w-3" />
-                  <span>Noise</span>
+              )}
+              
+              {metrics.noiseFloorDbm !== null && (
+                <div className="flex items-center gap-1.5">
+                  <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Noise</span>
+                  <span className="text-sm font-semibold">
+                    {metrics.noiseFloorDbm.toFixed(0)} dBm
+                  </span>
                 </div>
-                <p className="text-lg font-semibold">
-                  {metrics.noiseFloorDbm.toFixed(0)} dBm
-                </p>
-              </div>
-            )}
-            
-            {metrics.clientCount > 0 && (
-              <div className="p-2 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                  <Users className="h-3 w-3" />
-                  <span>Clients</span>
+              )}
+              
+              {metrics.clientCount > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Clients</span>
+                  <span className="text-sm font-semibold">{metrics.clientCount}</span>
                 </div>
-                <p className="text-lg font-semibold">{metrics.clientCount}</p>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
 
         {/* AP Count indicator */}
         {metrics?.apCount && metrics.apCount > 0 && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
             <Wifi className="h-3 w-3" />
             <span>Aggregated from {metrics.apCount} access point{metrics.apCount > 1 ? 's' : ''}</span>
           </div>

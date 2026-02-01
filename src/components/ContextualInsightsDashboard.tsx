@@ -383,12 +383,12 @@ export function ContextualInsightsDashboard({
         </Card>
       )}
 
-      {/* Insight Groups - 2x2 Grid */}
+      {/* Insight Groups - 2x2 Grid (Anomaly & Predictive prioritized) */}
       <div className="grid gap-4 md:grid-cols-2">
-        {renderGroupSection('network_health', groupedInsights.network_health)}
-        {renderGroupSection('capacity_planning', groupedInsights.capacity_planning)}
         {renderGroupSection('anomaly_detection', groupedInsights.anomaly_detection)}
         {renderGroupSection('predictive_maintenance', groupedInsights.predictive_maintenance)}
+        {renderGroupSection('network_health', groupedInsights.network_health)}
+        {renderGroupSection('capacity_planning', groupedInsights.capacity_planning)}
       </div>
 
       {/* All Healthy State */}
