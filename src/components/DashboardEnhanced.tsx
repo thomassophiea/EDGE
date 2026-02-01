@@ -1497,22 +1497,6 @@ function DashboardEnhancedComponent() {
                   <Progress value={100} className="h-2" />
                   <p className="text-xs text-muted-foreground">All APs running OS ONE</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="p-3 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Wifi className="h-4 w-4 text-green-500" />
-                      <span className="text-xs text-muted-foreground">Online</span>
-                    </div>
-                    <p className="text-lg font-semibold text-green-600">{apStats.online}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-2 mb-1">
-                      <WifiOff className="h-4 w-4 text-red-500" />
-                      <span className="text-xs text-muted-foreground">Offline</span>
-                    </div>
-                    <p className="text-lg font-semibold text-red-600">{apStats.offline}</p>
-                  </div>
-                </div>
 
                 {/* RF Quality */}
                 <div className="pt-3 border-t">

@@ -121,6 +121,25 @@ export const AVAILABLE_METRICS: ContextMetric[] = [
 
 export const DEFAULT_CONTEXTS: SiteContext[] = [
   {
+    id: 'ai-context',
+    name: 'AI Context',
+    description: 'AI-driven adaptive thresholds that learn from your network behavior',
+    color: '#a855f7',
+    metrics: {
+      apUptimeThreshold: 97,
+      throughputThreshold: 50,
+      signalQualityThreshold: -68,
+      clientDensity: 25,
+      latencyThreshold: 35,
+      packetLossThreshold: 0.5,
+      coverageThreshold: 95,
+      interferenceThreshold: 12
+    },
+    isCustom: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
     id: 'retail-store',
     name: 'Retail Store',
     description: 'High-density customer environment with moderate throughput needs',

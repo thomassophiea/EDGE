@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
-import { Plus, Trash2, RotateCcw, Save, Info, ArrowLeft, Settings2, Building2, Warehouse, Store, Landmark } from 'lucide-react';
+import { Plus, Trash2, RotateCcw, Save, Info, ArrowLeft, Settings2, Building2, Warehouse, Store, Landmark, Sparkles } from 'lucide-react';
 import { useSiteContexts } from '../hooks/useSiteContexts';
 import { SiteContext, AVAILABLE_METRICS } from '../types/siteContext';
 import { Alert, AlertDescription } from './ui/alert';
@@ -28,10 +28,17 @@ interface ContextConfigModalProps {
 // Icon mapping for context types
 const getContextIcon = (name: string) => {
   const nameLower = name.toLowerCase();
+  if (nameLower.includes('ai context') || nameLower.includes('ai-context')) return Sparkles;
   if (nameLower.includes('retail') || nameLower.includes('store')) return Store;
   if (nameLower.includes('warehouse') || nameLower.includes('distribution')) return Warehouse;
   if (nameLower.includes('headquarters') || nameLower.includes('office') || nameLower.includes('corporate')) return Building2;
   return Landmark;
+};
+
+// Check if context is AI Context
+const isAIContext = (name: string) => {
+  const nameLower = name.toLowerCase();
+  return nameLower.includes('ai context') || nameLower.includes('ai-context');
 };
 
 export function ContextConfigModal({ open, onOpenChange }: ContextConfigModalProps) {
@@ -205,6 +212,7 @@ export function ContextConfigModal({ open, onOpenChange }: ContextConfigModalPro
                   <div className="space-y-2">
                     {contexts.map((context) => {
                       const IconComponent = getContextIcon(context.name);
+                      const isAI = isAIContext(context.name);
                       return (
                         <Card
                           key={context.id}
@@ -212,7 +220,7 @@ export function ContextConfigModal({ open, onOpenChange }: ContextConfigModalPro
                             selectedContextId === context.id
                               ? 'border-primary ring-1 ring-primary shadow-md'
                               : 'hover:border-muted-foreground/30'
-                          }`}
+                          } ${isAI ? 'bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-purple-500/10 border-purple-500/30' : ''}`}
                           onClick={() => {
                             setSelectedContextId(context.id);
                             setEditingContext(null);
@@ -222,22 +230,27 @@ export function ContextConfigModal({ open, onOpenChange }: ContextConfigModalPro
                           <CardHeader className="p-4">
                             <div className="flex items-start gap-3">
                               <div
-                                className="p-2 rounded-lg"
-                                style={{ backgroundColor: `${context.color}20` }}
+                                className={`p-2 rounded-lg ${isAI ? 'bg-gradient-to-br from-purple-500/20 to-blue-500/20' : ''}`}
+                                style={!isAI ? { backgroundColor: `${context.color}20` } : undefined}
                               >
                                 <IconComponent
-                                  className="h-5 w-5"
-                                  style={{ color: context.color }}
+                                  className={`h-5 w-5 ${isAI ? 'text-purple-400 animate-pulse' : ''}`}
+                                  style={!isAI ? { color: context.color } : undefined}
                                 />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <CardTitle className="text-sm font-medium truncate">
+                                <CardTitle className={`text-sm font-medium truncate ${isAI ? 'bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent' : ''}`}>
                                   {context.name}
                                 </CardTitle>
                                 <CardDescription className="text-xs mt-0.5 line-clamp-2">
                                   {context.description}
                                 </CardDescription>
-                                {context.isCustom && (
+                                {isAI && (
+                                  <Badge className="text-xs mt-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white border-0">
+                                    Recommended
+                                  </Badge>
+                                )}
+                                {context.isCustom && !isAI && (
                                   <Badge variant="secondary" className="text-xs mt-2">
                                     Custom
                                   </Badge>
