@@ -16,6 +16,7 @@ import { cn } from './ui/utils';
 import { apiService, Site } from '../services/api';
 import { getSiteDisplayName } from '../contexts/SiteContext';
 import { ContextConfigModal } from './ContextConfigModal';
+import { useOperationalContext } from '../hooks/useOperationalContext';
 
 export type SelectorTab = 'ai-insights' | 'site' | 'access-point' | 'switch' | 'client';
 
@@ -63,6 +64,7 @@ export function ContextualInsightsSelector({
   onSelectionChange,
   className = ''
 }: ContextualInsightsSelectorProps) {
+  const { ctx, setMode, selectSite, selectAP, selectClient, updateContext } = useOperationalContext();
   const [open, setOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState<SelectorTab>(activeTab);
   const [searchQuery, setSearchQuery] = useState('');
@@ -271,6 +273,16 @@ export function ContextualInsightsSelector({
     setCurrentTab(tab);
     setSearchQuery('');
 
+    // Update operational context based on tab
+    const modeMap: Record<SelectorTab, 'AI_INSIGHTS' | 'SITE' | 'AP' | 'CLIENT'> = {
+      'ai-insights': 'AI_INSIGHTS',
+      'site': 'SITE',
+      'access-point': 'AP',
+      'switch': 'SITE', // Switches are site-scoped for now
+      'client': 'CLIENT'
+    };
+    setMode(modeMap[tab]);
+
     // AI Insights doesn't need selection - just select the tab and close
     if (tab === 'ai-insights') {
       setSelectedItemId(null);
@@ -284,8 +296,37 @@ export function ContextualInsightsSelector({
   const handleItemSelect = (item: SelectorItem) => {
     setSelectedItemId(item.id);
     setSelectedItemName(item.id === 'all' ? null : item.name);
+    
+    // Update operational context based on selection
+    const effectiveId = item.id === 'all' ? null : item.id;
+    switch (currentTab) {
+      case 'site':
+        if (effectiveId) {
+          selectSite(effectiveId);
+        } else {
+          setMode('AI_INSIGHTS'); // "All Sites" goes back to AI insights
+        }
+        break;
+      case 'access-point':
+        if (effectiveId) {
+          selectAP(effectiveId, item.siteName);
+        } else {
+          setMode('SITE');
+        }
+        break;
+      case 'client':
+        if (effectiveId) {
+          selectClient(effectiveId, item.apName, item.siteName);
+        } else {
+          setMode('SITE');
+        }
+        break;
+      default:
+        break;
+    }
+    
     onTabChange?.(currentTab);
-    onSelectionChange?.(currentTab, item.id === 'all' ? null : item.id, item.name);
+    onSelectionChange?.(currentTab, effectiveId, item.name);
     setOpen(false);
   };
 

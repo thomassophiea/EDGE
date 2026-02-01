@@ -56,6 +56,11 @@ import { FilterBar } from './FilterBar';
 import { VersionBadge } from './VersionBadge';
 import { ContextualInsightsSelector, SelectorTab } from './ContextualInsightsSelector';
 import { useGlobalFilters } from '../hooks/useGlobalFilters';
+import { useOperationalContext } from '../hooks/useOperationalContext';
+import { RFQualityWidgetAnchored } from './RFQualityWidgetAnchored';
+import { AIInsightsPanel } from './AIInsightsPanel';
+import { TimelineCursorControls } from './TimelineCursorControls';
+import { EnvironmentProfileSelector } from './EnvironmentProfileSelector';
 import { VenueStatisticsWidget } from './VenueStatisticsWidget';
 import { ConfigurationProfilesWidget } from './ConfigurationProfilesWidget';
 import { AuditLogsWidget } from './AuditLogsWidget';
@@ -164,6 +169,9 @@ function DashboardEnhancedComponent() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+
+  // Operational Context for Contextual Insights
+  const { ctx: operationalCtx } = useOperationalContext();
 
   // AP Data
   const [accessPoints, setAccessPoints] = useState<AccessPoint[]>([]);
@@ -1269,26 +1277,32 @@ function DashboardEnhancedComponent() {
       </div>
 
       {/* Filter Bar with Context Selector */}
-      <div className="flex flex-wrap items-center gap-3">
-        <ContextualInsightsSelector
-          activeTab={selectorTab}
-          selectedId={selectedEntityId || undefined}
-          onTabChange={(tab) => {
-            setSelectorTab(tab);
-            setSelectedEntityId(null);
-            setSelectedEntityName(null);
-          }}
-          onSelectionChange={(tab, id, name) => {
-            setSelectedEntityId(id);
-            setSelectedEntityName(name || null);
-            console.log('[Dashboard] Selection changed:', { tab, id, name });
-          }}
-        />
-        <FilterBar
-          showSiteFilter={false}
-          showTimeRangeFilter={true}
-          showContextFilter={false}
-        />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <ContextualInsightsSelector
+            activeTab={selectorTab}
+            selectedId={selectedEntityId || undefined}
+            onTabChange={(tab) => {
+              setSelectorTab(tab);
+              setSelectedEntityId(null);
+              setSelectedEntityName(null);
+            }}
+            onSelectionChange={(tab, id, name) => {
+              setSelectedEntityId(id);
+              setSelectedEntityName(name || null);
+              console.log('[Dashboard] Selection changed:', { tab, id, name });
+            }}
+          />
+          <FilterBar
+            showSiteFilter={false}
+            showTimeRangeFilter={true}
+            showContextFilter={false}
+          />
+          <EnvironmentProfileSelector showThresholds={false} />
+        </div>
+        
+        {/* Timeline Cursor Controls - visible when exploring data */}
+        <TimelineCursorControls />
       </div>
 
       {/* ========================================
@@ -1299,6 +1313,24 @@ function DashboardEnhancedComponent() {
       {/* UI Design inspired by Sunil Jose Kodiyan, Analytics Director Product Line */}
       {selectorTab === 'ai-insights' && (
         <div className="space-y-4">
+          {/* RFQI Anchor + AI Insights Row - Always visible per spec */}
+          <div className="grid gap-4 lg:grid-cols-2">
+            {/* RFQI Widget - The Anchor metric */}
+            <RFQualityWidgetAnchored />
+            
+            {/* AI Insights Panel */}
+            <AIInsightsPanel 
+              metrics={{
+                rfqi: rfqiData.length > 0 ? rfqiData[rfqiData.length - 1]?.rfqi : undefined,
+                clientCount: clientStats.total,
+                apCount: apStats.total,
+                apOnlineCount: apStats.online,
+                throughputBps: clientStats.throughputUpload + clientStats.throughputDownload,
+                timestamp: Date.now()
+              }}
+            />
+          </div>
+
           {/* Compact View Toggle */}
           <div className="flex items-center justify-end gap-2">
             <span className="text-sm text-muted-foreground mr-2">View:</span>
