@@ -1387,6 +1387,216 @@ function DashboardEnhancedComponent() {
             </Card>
           </div>
 
+          {/* Insight Cards Grid */}
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Network Health */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-green-500/10">
+                    <Activity className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Network Health</CardTitle>
+                    <CardDescription>Infrastructure status overview</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>AP Availability</span>
+                    <span className="font-medium">{apStats.total > 0 ? Math.round((apStats.online / apStats.total) * 100) : 0}%</span>
+                  </div>
+                  <Progress value={apStats.total > 0 ? (apStats.online / apStats.total) * 100 : 0} className="h-2" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Client Auth Rate</span>
+                    <span className="font-medium">{clientStats.total > 0 ? Math.round((clientStats.authenticated / clientStats.total) * 100) : 0}%</span>
+                  </div>
+                  <Progress value={clientStats.total > 0 ? (clientStats.authenticated / clientStats.total) * 100 : 0} className="h-2" />
+                </div>
+                <div className="grid grid-cols-3 gap-2 pt-2">
+                  <div className="text-center p-2 rounded bg-muted/50">
+                    <p className="text-lg font-semibold text-green-600">{apStats.online}</p>
+                    <p className="text-xs text-muted-foreground">Online</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-muted/50">
+                    <p className="text-lg font-semibold text-red-600">{apStats.offline}</p>
+                    <p className="text-xs text-muted-foreground">Offline</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-muted/50">
+                    <p className="text-lg font-semibold">{Object.keys(apStats.models).length}</p>
+                    <p className="text-xs text-muted-foreground">Models</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Capacity Planning */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-blue-500/10">
+                    <BarChart3 className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Capacity Planning</CardTitle>
+                    <CardDescription>Resource utilization trends</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Avg Clients per AP</span>
+                    <span className="font-medium">{apStats.online > 0 ? Math.round(clientStats.total / apStats.online) : 0}</span>
+                  </div>
+                  <Progress value={Math.min((apStats.online > 0 ? clientStats.total / apStats.online : 0) / 50 * 100, 100)} className="h-2" />
+                  <p className="text-xs text-muted-foreground">Recommended: &lt;50 clients per AP</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Upload className="h-4 w-4 text-blue-500" />
+                      <span className="text-xs text-muted-foreground">Upload</span>
+                    </div>
+                    <p className="text-lg font-semibold">{formatBps(clientStats.throughputUpload)}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Download className="h-4 w-4 text-green-500" />
+                      <span className="text-xs text-muted-foreground">Download</span>
+                    </div>
+                    <p className="text-lg font-semibold">{formatBps(clientStats.throughputDownload)}</p>
+                  </div>
+                </div>
+
+                {/* OS ONE Control */}
+                <div className="pt-3 border-t">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Server className="h-4 w-4 text-purple-500" />
+                    <span className="text-sm font-medium">OS ONE Control</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-muted-foreground">CPU</span>
+                        <span className="text-lg font-bold text-purple-400">5.5%</span>
+                      </div>
+                      <Progress value={5.5} className="h-1.5 bg-purple-950/50" />
+                    </div>
+                    <div className="p-3 rounded-lg bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border border-cyan-500/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-muted-foreground">Memory</span>
+                        <span className="text-lg font-bold text-cyan-400">38%</span>
+                      </div>
+                      <Progress value={38} className="h-1.5 bg-cyan-950/50" />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Anomaly Detection */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-amber-500/10">
+                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Anomaly Detection</CardTitle>
+                    <CardDescription>Unusual patterns and alerts</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {apStats.offline > 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <WifiOff className="h-5 w-5 text-red-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-red-600">Offline Access Points</p>
+                      <p className="text-xs text-muted-foreground">{apStats.offline} AP(s) are currently offline and require attention</p>
+                    </div>
+                  </div>
+                )}
+                {alertCounts.critical > 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-red-600">Critical Alerts</p>
+                      <p className="text-xs text-muted-foreground">{alertCounts.critical} critical issue(s) need immediate attention</p>
+                    </div>
+                  </div>
+                )}
+                {apStats.offline === 0 && alertCounts.critical === 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-green-600">All Clear</p>
+                      <p className="text-xs text-muted-foreground">No anomalies detected - network operating normally</p>
+                    </div>
+                  </div>
+                )}
+                <div className="pt-2 text-xs text-muted-foreground">
+                  Last checked: {lastUpdate?.toLocaleTimeString() || 'Updating...'}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Predictive Maintenance */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-purple-500/10">
+                    <Timer className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Predictive Maintenance</CardTitle>
+                    <CardDescription>Potential issues forecast</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {apStats.lowPower > 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <Zap className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-600">Low Power APs</p>
+                      <p className="text-xs text-muted-foreground">{apStats.lowPower} AP(s) running in low power mode - check PoE budget</p>
+                    </div>
+                  </div>
+                )}
+                {poorServices.length > 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <Network className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-600">Service Degradation</p>
+                      <p className="text-xs text-muted-foreground">{poorServices.length} service(s) showing performance issues</p>
+                    </div>
+                  </div>
+                )}
+                {apStats.lowPower === 0 && poorServices.length === 0 && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-green-600">Systems Healthy</p>
+                      <p className="text-xs text-muted-foreground">No maintenance issues predicted in the near term</p>
+                    </div>
+                  </div>
+                )}
+                <div className="pt-2">
+                  <p className="text-xs text-muted-foreground">
+                    Models tracked: {Object.entries(apStats.models).slice(0, 3).map(([m]) => m).join(', ')}
+                    {Object.keys(apStats.models).length > 3 && ` +${Object.keys(apStats.models).length - 3} more`}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Compact View Toggle */}
           <div className="flex items-center justify-end gap-2">
             <span className="text-sm text-muted-foreground mr-2">View:</span>
@@ -1412,38 +1622,79 @@ function DashboardEnhancedComponent() {
             </button>
           </div>
 
-          {/* Client/Device Health Stacked Bar Chart */}
-          <Card>
-            <CardHeader className="pb-2">
+          {/* Client/Device Health Stacked Bar Chart - BADASS EDITION */}
+          <Card className="relative overflow-hidden border-purple-500/30 bg-gradient-to-br from-background via-background to-purple-950/20">
+            {/* Animated background glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-pink-500/5 animate-pulse" />
+            <div className="absolute top-0 left-1/4 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-0 right-1/4 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+            
+            <CardHeader className="pb-2 relative z-10">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-teal-600" />
-                  <CardTitle className="text-base">{healthViewMode === 'clients' ? 'Client' : 'Device'} Health Overview</CardTitle>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Brain className="h-6 w-6 text-cyan-400 animate-pulse" />
+                    <div className="absolute inset-0 h-6 w-6 bg-cyan-400/30 blur-md animate-pulse" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                      {healthViewMode === 'clients' ? 'Client' : 'Device'} Health Overview
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground">Real-time RF Quality Intelligence</p>
+                  </div>
                 </div>
-                <span className="text-sm text-muted-foreground">Last 24 hours</span>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
+                  <span className="text-sm font-medium text-cyan-400">LIVE</span>
+                  <span className="text-xs text-muted-foreground border-l border-muted pl-2 ml-1">24h</span>
+                </div>
               </div>
             </CardHeader>
-            <CardContent>
-              {/* RFQI Data Source Indicator */}
-              {rfqiData.length > 0 && (
-                <div className="flex items-center gap-2 mb-3 text-xs">
-                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
-                    <Signal className="h-3 w-3 text-purple-500" />
-                    <span className="text-purple-400 font-medium">RFQI Data</span>
+            <CardContent className="relative z-10">
+              {/* RFQI Data Source Indicator - Enhanced */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 shadow-lg shadow-purple-500/10">
+                    <Signal className="h-4 w-4 text-purple-400 animate-pulse" />
+                    <span className="text-sm font-semibold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">RFQI</span>
                   </div>
-                  <span className="text-muted-foreground">
-                    Avg: <span className="font-medium text-foreground">{Math.round(rfqiData.reduce((acc, d) => acc + d.healthy, 0) / rfqiData.length)}%</span>
-                  </span>
+                  {rfqiData.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Average:</span>
+                      <span className="text-lg font-bold text-cyan-400 tabular-nums">
+                        {Math.round(rfqiData.reduce((acc, d) => acc + d.healthy, 0) / rfqiData.length)}%
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
+                {rfqiData.length > 0 && (
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-3 w-3 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 shadow-lg shadow-green-500/30" />
+                      <span className="text-emerald-400 font-semibold tabular-nums">{Math.round(rfqiData[rfqiData.length - 1]?.healthy || 0)}%</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-3 w-3 rounded-full bg-gradient-to-br from-red-400 to-rose-600 shadow-lg shadow-red-500/30" />
+                      <span className="text-red-400 font-semibold tabular-nums">{Math.round(rfqiData[rfqiData.length - 1]?.needsAttention || 0)}%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              {/* Stacked Bar Chart Visualization */}
-              <div className="border rounded-lg p-4 bg-muted/20">
-                <div className="h-32 flex items-end gap-0.5">
+              {/* Stacked Bar Chart Visualization - ENHANCED */}
+              <div className="relative rounded-xl p-4 bg-gradient-to-b from-slate-900/80 to-slate-950/80 border border-slate-700/50 shadow-2xl shadow-purple-500/5">
+                {/* Grid lines for that techy look */}
+                <div className="absolute inset-4 flex flex-col justify-between pointer-events-none opacity-20">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="border-t border-dashed border-slate-500" />
+                  ))}
+                </div>
+                
+                <div className="h-36 flex items-end gap-1 relative">
                   {/* Generate 24 bars using RFQI data when available */}
-                  {(rfqiData.length >= 24 ? rfqiData.slice(-24) : Array.from({ length: 24 }, (_, i) => {
+                  {(rfqiData.length > 0 ? rfqiData.slice(-24) : Array.from({ length: 24 }, (_, i) => {
                     // Fallback to basic stats if no RFQI data
-                    const baseHealthy = healthViewMode === 'clients' ? clientStats.total : apStats.online;
+                    const baseHealthy = healthViewMode === 'clients' ? clientStats.authenticated : apStats.online;
                     const baseAttention = healthViewMode === 'clients' ? Math.max(0, clientStats.total - clientStats.authenticated) : apStats.offline;
                     const total = baseHealthy + baseAttention || 1;
                     return {
@@ -1452,54 +1703,71 @@ function DashboardEnhancedComponent() {
                       healthy: (baseHealthy / total) * 100,
                       needsAttention: (baseAttention / total) * 100
                     };
-                  })).map((dataPoint, i) => {
+                  })).map((dataPoint, i, arr) => {
                     const hour = new Date(dataPoint.timestamp).getHours();
-                    const isCurrentHour = i === 23 || (rfqiData.length >= 24 && i === rfqiData.slice(-24).length - 1);
+                    const isCurrentHour = i === arr.length - 1;
                     const healthyPct = dataPoint.healthy;
                     const attentionPct = dataPoint.needsAttention;
 
                     return (
                       <div
                         key={i}
-                        className={`flex-1 flex flex-col justify-end cursor-pointer transition-all duration-200 ${isCurrentHour ? 'opacity-100 scale-105' : 'opacity-60 hover:opacity-90'}`}
+                        className={`flex-1 flex flex-col justify-end cursor-pointer transition-all duration-300 group ${
+                          isCurrentHour ? 'opacity-100 scale-105 z-10' : 'opacity-70 hover:opacity-100 hover:scale-102'
+                        }`}
                         onClick={() => setAiInsightsDetailPanel(true)}
                         title={`${hour.toString().padStart(2, '0')}:00 - RFQI: ${Math.round(dataPoint.rfqi)}% | Healthy: ${Math.round(healthyPct)}%`}
+                        style={{ animationDelay: `${i * 30}ms` }}
                       >
+                        {/* Needs Attention bar */}
                         <div
-                          className="bg-gradient-to-t from-red-600 to-red-400 rounded-t-sm transition-all"
-                          style={{ height: `${attentionPct}%`, minHeight: attentionPct > 0 ? '2px' : '0' }}
+                          className={`bg-gradient-to-t from-red-600 via-rose-500 to-red-400 rounded-t transition-all duration-500 ${
+                            isCurrentHour ? 'shadow-lg shadow-red-500/40' : 'group-hover:shadow-md group-hover:shadow-red-500/30'
+                          }`}
+                          style={{ 
+                            height: `${attentionPct}%`, 
+                            minHeight: attentionPct > 0 ? '3px' : '0',
+                          }}
                         />
+                        {/* Healthy bar */}
                         <div
-                          className="bg-gradient-to-t from-green-600 to-green-400 rounded-b-sm transition-all"
-                          style={{ height: `${healthyPct}%`, minHeight: healthyPct > 0 ? '4px' : '0' }}
+                          className={`bg-gradient-to-t from-emerald-600 via-green-500 to-cyan-400 rounded-b transition-all duration-500 ${
+                            isCurrentHour ? 'shadow-lg shadow-emerald-500/40' : 'group-hover:shadow-md group-hover:shadow-emerald-500/30'
+                          }`}
+                          style={{ 
+                            height: `${healthyPct}%`, 
+                            minHeight: healthyPct > 0 ? '4px' : '0',
+                          }}
                         />
+                        {/* Current hour glow effect */}
+                        {isCurrentHour && (
+                          <div className="absolute -inset-1 bg-gradient-to-t from-cyan-500/20 to-transparent rounded blur-sm pointer-events-none" />
+                        )}
                       </div>
                     );
                   })}
                 </div>
-                {/* X-axis labels */}
-                <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                  <span>{((new Date().getHours() - 23 + 24) % 24).toString().padStart(2, '0')}:00</span>
-                  <span>{((new Date().getHours() - 12 + 24) % 24).toString().padStart(2, '0')}:00</span>
-                  <span>Now</span>
+                
+                {/* X-axis labels - Enhanced */}
+                <div className="flex justify-between mt-3 text-xs">
+                  <span className="text-slate-500 font-mono">{((new Date().getHours() - 23 + 24) % 24).toString().padStart(2, '0')}:00</span>
+                  <span className="text-slate-500 font-mono">{((new Date().getHours() - 12 + 24) % 24).toString().padStart(2, '0')}:00</span>
+                  <span className="text-cyan-400 font-mono font-semibold flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                    NOW
+                  </span>
                 </div>
               </div>
 
-              {/* Legend */}
-              <div className="flex items-center justify-center gap-6 mt-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-gradient-to-t from-green-600 to-green-400 rounded" />
-                  <span className="text-sm text-muted-foreground">Healthy</span>
-                  {rfqiData.length > 0 && (
-                    <span className="text-xs text-green-500 font-medium">({Math.round(rfqiData[rfqiData.length - 1]?.healthy || 0)}%)</span>
-                  )}
+              {/* Legend - Enhanced */}
+              <div className="flex items-center justify-center gap-8 mt-5">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="w-4 h-4 bg-gradient-to-t from-emerald-600 via-green-500 to-cyan-400 rounded shadow-lg shadow-emerald-500/30" />
+                  <span className="text-sm font-medium text-emerald-400">Healthy</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-gradient-to-t from-red-600 to-red-400 rounded" />
-                  <span className="text-sm text-muted-foreground">Needs Attention</span>
-                  {rfqiData.length > 0 && (
-                    <span className="text-xs text-red-500 font-medium">({Math.round(rfqiData[rfqiData.length - 1]?.needsAttention || 0)}%)</span>
-                  )}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <div className="w-4 h-4 bg-gradient-to-t from-red-600 via-rose-500 to-red-400 rounded shadow-lg shadow-red-500/30" />
+                  <span className="text-sm font-medium text-red-400">Needs Attention</span>
                 </div>
               </div>
             </CardContent>
@@ -2107,216 +2375,6 @@ function DashboardEnhancedComponent() {
               </CardContent>
             </Card>
           )}
-
-          {/* Insight Cards Grid */}
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Network Health */}
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-green-500/10">
-                    <Activity className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base">Network Health</CardTitle>
-                    <CardDescription>Infrastructure status overview</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>AP Availability</span>
-                    <span className="font-medium">{apStats.total > 0 ? Math.round((apStats.online / apStats.total) * 100) : 0}%</span>
-                  </div>
-                  <Progress value={apStats.total > 0 ? (apStats.online / apStats.total) * 100 : 0} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Client Auth Rate</span>
-                    <span className="font-medium">{clientStats.total > 0 ? Math.round((clientStats.authenticated / clientStats.total) * 100) : 0}%</span>
-                  </div>
-                  <Progress value={clientStats.total > 0 ? (clientStats.authenticated / clientStats.total) * 100 : 0} className="h-2" />
-                </div>
-                <div className="grid grid-cols-3 gap-2 pt-2">
-                  <div className="text-center p-2 rounded bg-muted/50">
-                    <p className="text-lg font-semibold text-green-600">{apStats.online}</p>
-                    <p className="text-xs text-muted-foreground">Online</p>
-                  </div>
-                  <div className="text-center p-2 rounded bg-muted/50">
-                    <p className="text-lg font-semibold text-red-600">{apStats.offline}</p>
-                    <p className="text-xs text-muted-foreground">Offline</p>
-                  </div>
-                  <div className="text-center p-2 rounded bg-muted/50">
-                    <p className="text-lg font-semibold">{Object.keys(apStats.models).length}</p>
-                    <p className="text-xs text-muted-foreground">Models</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Capacity Planning */}
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-blue-500/10">
-                    <BarChart3 className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base">Capacity Planning</CardTitle>
-                    <CardDescription>Resource utilization trends</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Avg Clients per AP</span>
-                    <span className="font-medium">{apStats.online > 0 ? Math.round(clientStats.total / apStats.online) : 0}</span>
-                  </div>
-                  <Progress value={Math.min((apStats.online > 0 ? clientStats.total / apStats.online : 0) / 50 * 100, 100)} className="h-2" />
-                  <p className="text-xs text-muted-foreground">Recommended: &lt;50 clients per AP</p>
-                </div>
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="p-3 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Upload className="h-4 w-4 text-blue-500" />
-                      <span className="text-xs text-muted-foreground">Upload</span>
-                    </div>
-                    <p className="text-lg font-semibold">{formatBps(clientStats.throughputUpload)}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Download className="h-4 w-4 text-green-500" />
-                      <span className="text-xs text-muted-foreground">Download</span>
-                    </div>
-                    <p className="text-lg font-semibold">{formatBps(clientStats.throughputDownload)}</p>
-                  </div>
-                </div>
-
-                {/* OS ONE Control */}
-                <div className="pt-3 border-t">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Server className="h-4 w-4 text-purple-500" />
-                    <span className="text-sm font-medium">OS ONE Control</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-muted-foreground">CPU</span>
-                        <span className="text-lg font-bold text-purple-400">5.5%</span>
-                      </div>
-                      <Progress value={5.5} className="h-1.5 bg-purple-950/50" />
-                    </div>
-                    <div className="p-3 rounded-lg bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border border-cyan-500/20">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-muted-foreground">Memory</span>
-                        <span className="text-lg font-bold text-cyan-400">38%</span>
-                      </div>
-                      <Progress value={38} className="h-1.5 bg-cyan-950/50" />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Anomaly Detection */}
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-amber-500/10">
-                    <AlertCircle className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base">Anomaly Detection</CardTitle>
-                    <CardDescription>Unusual patterns and alerts</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {apStats.offline > 0 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                    <WifiOff className="h-5 w-5 text-red-600 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-red-600">Offline Access Points</p>
-                      <p className="text-xs text-muted-foreground">{apStats.offline} AP(s) are currently offline and require attention</p>
-                    </div>
-                  </div>
-                )}
-                {alertCounts.critical > 0 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                    <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-red-600">Critical Alerts</p>
-                      <p className="text-xs text-muted-foreground">{alertCounts.critical} critical issue(s) need immediate attention</p>
-                    </div>
-                  </div>
-                )}
-                {apStats.offline === 0 && alertCounts.critical === 0 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-green-600">All Clear</p>
-                      <p className="text-xs text-muted-foreground">No anomalies detected - network operating normally</p>
-                    </div>
-                  </div>
-                )}
-                <div className="pt-2 text-xs text-muted-foreground">
-                  Last checked: {lastUpdate?.toLocaleTimeString() || 'Updating...'}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Predictive Maintenance */}
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-purple-500/10">
-                    <Timer className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base">Predictive Maintenance</CardTitle>
-                    <CardDescription>Potential issues forecast</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {apStats.lowPower > 0 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                    <Zap className="h-5 w-5 text-amber-600 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-amber-600">Low Power APs</p>
-                      <p className="text-xs text-muted-foreground">{apStats.lowPower} AP(s) running in low power mode - check PoE budget</p>
-                    </div>
-                  </div>
-                )}
-                {poorServices.length > 0 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                    <Network className="h-5 w-5 text-amber-600 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-amber-600">Service Degradation</p>
-                      <p className="text-xs text-muted-foreground">{poorServices.length} service(s) showing performance issues</p>
-                    </div>
-                  </div>
-                )}
-                {apStats.lowPower === 0 && poorServices.length === 0 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-green-600">Systems Healthy</p>
-                      <p className="text-xs text-muted-foreground">No maintenance issues predicted in the near term</p>
-                    </div>
-                  </div>
-                )}
-                <div className="pt-2">
-                  <p className="text-xs text-muted-foreground">
-                    Models tracked: {Object.entries(apStats.models).slice(0, 3).map(([m]) => m).join(', ')}
-                    {Object.keys(apStats.models).length > 3 && ` +${Object.keys(apStats.models).length - 3} more`}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
 
           {/* Drill-down hint & Attribution */}
           <Card className="bg-muted/30 border-dashed">
