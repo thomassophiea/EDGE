@@ -5,7 +5,7 @@
  * for RF quality and network metrics.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { 
   DropdownMenu, 
@@ -16,9 +16,10 @@ import {
   DropdownMenuTrigger 
 } from './ui/dropdown-menu';
 import { Badge } from './ui/badge';
+import { Progress } from './ui/progress';
 import { 
   Check, ChevronDown, Settings2, Store, Warehouse, Package, 
-  Building2, GraduationCap, Settings, Sparkles, type LucideIcon 
+  Building2, GraduationCap, Settings, Sparkles, Brain, type LucideIcon 
 } from 'lucide-react';
 import { cn } from './ui/utils';
 import { useOperationalContext } from '../hooks/useOperationalContext';
@@ -26,6 +27,7 @@ import {
   ENVIRONMENT_PROFILES, 
   type EnvironmentProfileType 
 } from '../config/environmentProfiles';
+import { aiBaselineService, getAIBaselineThresholds } from '../services/aiBaselineService';
 
 // Map icon names to Lucide components
 const iconMap: Record<string, LucideIcon> = {
@@ -49,24 +51,73 @@ export function EnvironmentProfileSelector({
 }: EnvironmentProfileSelectorProps) {
   const { ctx, setEnvironmentProfile } = useOperationalContext();
   const [open, setOpen] = useState(false);
+  const [aiBaselineSummary, setAiBaselineSummary] = useState<{
+    sampleCount: number;
+    confidenceLevel: 'none' | 'low' | 'moderate' | 'high';
+    confidenceDescription: string;
+  } | null>(null);
+  
+  // Load AI Baseline summary on mount and when menu opens
+  useEffect(() => {
+    if (open) {
+      const summary = aiBaselineService.getSummary();
+      setAiBaselineSummary({
+        sampleCount: summary.sampleCount,
+        confidenceLevel: summary.confidenceLevel,
+        confidenceDescription: summary.confidenceDescription
+      });
+    }
+  }, [open]);
   
   const currentProfile = ENVIRONMENT_PROFILES[ctx.environmentProfile.id] || ENVIRONMENT_PROFILES.CAMPUS;
   
   const handleSelect = (profileId: EnvironmentProfileType) => {
     const profile = ENVIRONMENT_PROFILES[profileId];
     if (profile) {
-      // Convert from environmentProfiles.ts format to useOperationalContext format
-      setEnvironmentProfile({
-        id: profile.id,
-        rfqiTarget: profile.thresholds.rfqiTarget,
-        channelUtilizationPct: profile.thresholds.channelUtilizationPct,
-        noiseFloorDbm: profile.thresholds.noiseFloorDbm,
-        clientDensity: profile.thresholds.clientDensity,
-        latencyP95Ms: profile.thresholds.latencyP95Ms,
-        retryRatePct: profile.thresholds.retryRatePct,
-      });
+      if (profileId === 'AI_BASELINE') {
+        // Use dynamically calculated AI thresholds
+        const aiThresholds = getAIBaselineThresholds();
+        setEnvironmentProfile({
+          id: 'AI_BASELINE',
+          rfqiTarget: aiThresholds.rfqiTarget,
+          channelUtilizationPct: aiThresholds.channelUtilizationPct,
+          noiseFloorDbm: aiThresholds.noiseFloorDbm,
+          clientDensity: aiThresholds.clientDensity,
+          latencyP95Ms: aiThresholds.latencyP95Ms,
+          retryRatePct: aiThresholds.retryRatePct,
+        });
+      } else {
+        // Convert from environmentProfiles.ts format to useOperationalContext format
+        setEnvironmentProfile({
+          id: profile.id,
+          rfqiTarget: profile.thresholds.rfqiTarget,
+          channelUtilizationPct: profile.thresholds.channelUtilizationPct,
+          noiseFloorDbm: profile.thresholds.noiseFloorDbm,
+          clientDensity: profile.thresholds.clientDensity,
+          latencyP95Ms: profile.thresholds.latencyP95Ms,
+          retryRatePct: profile.thresholds.retryRatePct,
+        });
+      }
     }
     setOpen(false);
+  };
+  
+  const getConfidenceColor = (level: 'none' | 'low' | 'moderate' | 'high') => {
+    switch (level) {
+      case 'none': return 'text-muted-foreground';
+      case 'low': return 'text-amber-500';
+      case 'moderate': return 'text-blue-500';
+      case 'high': return 'text-green-500';
+    }
+  };
+  
+  const getConfidenceProgress = (level: 'none' | 'low' | 'moderate' | 'high') => {
+    switch (level) {
+      case 'none': return 0;
+      case 'low': return 25;
+      case 'moderate': return 60;
+      case 'high': return 100;
+    }
   };
 
   const CurrentIcon = iconMap[currentProfile.icon] || Settings;
@@ -140,7 +191,31 @@ export function EnvironmentProfileSelector({
                     </Badge>
                   </div>
                 )}
-                {isAI && (
+                {isAI && aiBaselineSummary && (
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-[10px]">
+                      <Brain className="h-3 w-3 text-purple-400" />
+                      <span className={getConfidenceColor(aiBaselineSummary.confidenceLevel)}>
+                        {aiBaselineSummary.confidenceDescription}
+                      </span>
+                    </div>
+                    <Progress 
+                      value={getConfidenceProgress(aiBaselineSummary.confidenceLevel)} 
+                      className="h-1.5 bg-purple-500/10"
+                    />
+                    {showThresholds && aiBaselineSummary.sampleCount > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        <Badge variant="outline" className="text-[10px] px-1 h-4 border-purple-500/30 text-purple-400">
+                          RFQI ≥{ctx.environmentProfile.rfqiTarget}
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px] px-1 h-4 border-purple-500/30 text-purple-400">
+                          Ch.Util ≤{ctx.environmentProfile.channelUtilizationPct}%
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {isAI && !aiBaselineSummary && (
                   <div className="flex items-center gap-1 mt-1.5 text-[10px] text-purple-400">
                     <Sparkles className="h-3 w-3" />
                     <span>Thresholds adapt to your network</span>

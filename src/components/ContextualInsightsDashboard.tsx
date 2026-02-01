@@ -8,18 +8,19 @@
  * - Predictive Maintenance: AP health predictions, failure forecasting
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { Progress } from './ui/progress';
 import { 
   Brain, AlertTriangle, AlertCircle, Info, ChevronDown, ChevronUp,
-  Radio, Activity, Zap, Users, Wifi, Clock, Lightbulb,
+  Radio, Activity, Zap, Users, Wifi, Clock, Lightbulb, Sparkles,
   CheckCircle2, TrendingUp, TrendingDown, Target, Wrench, BarChart3,
-  ArrowUp, ArrowDown, Minus, Timer, RefreshCw
+  ArrowUp, ArrowDown, Minus, Timer, RefreshCw, Database
 } from 'lucide-react';
 import { cn } from './ui/utils';
 import { useOperationalContext } from '../hooks/useOperationalContext';
@@ -32,6 +33,7 @@ import { getEnvironmentProfile } from '../config/environmentProfiles';
 import { RFQualityWidgetAnchored } from './RFQualityWidgetAnchored';
 import { TimelineCursorControls } from './TimelineCursorControls';
 import { EnvironmentProfileSelector } from './EnvironmentProfileSelector';
+import { aiBaselineService } from '../services/aiBaselineService';
 
 interface ContextualInsightsDashboardProps {
   metrics: MetricsSnapshot;
@@ -87,8 +89,17 @@ export function ContextualInsightsDashboard({
   const { ctx, setTimeCursor } = useOperationalContext();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<InsightGroup | 'all'>('all');
+  const [aiBaselineSummary, setAiBaselineSummary] = useState<ReturnType<typeof aiBaselineService.getSummary> | null>(null);
   
   const profile = getEnvironmentProfile(ctx.environmentProfile.id);
+  const isAIProfile = ctx.environmentProfile.id === 'AI_BASELINE';
+  
+  // Load AI Baseline summary when AI profile is selected
+  useEffect(() => {
+    if (isAIProfile) {
+      setAiBaselineSummary(aiBaselineService.getSummary());
+    }
+  }, [isAIProfile]);
   
   const insights = useMemo(() => {
     return generateInsights(metrics, profile);
@@ -310,6 +321,67 @@ export function ContextualInsightsDashboard({
 
       {/* RFQI Anchor Widget */}
       <RFQualityWidgetAnchored />
+
+      {/* AI Baseline Status Banner */}
+      {isAIProfile && aiBaselineSummary && (
+        <Card className="border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-blue-500/5">
+          <CardContent className="py-3 px-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <Sparkles className="h-4 w-4 text-purple-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">AI Baseline Active</span>
+                    <Badge variant="outline" className="text-[10px] h-4 border-purple-500/30 text-purple-400">
+                      {aiBaselineSummary.confidenceLevel}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {aiBaselineSummary.confidenceDescription}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <Database className="h-3.5 w-3.5" />
+                  <span>{aiBaselineSummary.sampleCount} samples</span>
+                </div>
+                {aiBaselineSummary.timeRangeHours > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>{aiBaselineSummary.timeRangeHours}h of data</span>
+                  </div>
+                )}
+                {aiBaselineSummary.thresholds && (
+                  <div className="hidden sm:flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px] h-4 border-purple-500/20">
+                      RFQI ≥{aiBaselineSummary.thresholds.rfqiTarget}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px] h-4 border-purple-500/20">
+                      Ch.Util ≤{aiBaselineSummary.thresholds.channelUtilizationPct}%
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            </div>
+            {aiBaselineSummary.confidenceLevel !== 'high' && (
+              <div className="mt-2">
+                <Progress 
+                  value={aiBaselineSummary.sampleCount >= 50 ? 100 : (aiBaselineSummary.sampleCount / 50) * 100} 
+                  className="h-1 bg-purple-500/10"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {aiBaselineSummary.sampleCount < 50 
+                    ? `${50 - aiBaselineSummary.sampleCount} more samples needed for high confidence`
+                    : 'Baseline fully trained'}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Insight Groups - 2x2 Grid */}
       <div className="grid gap-4 md:grid-cols-2">

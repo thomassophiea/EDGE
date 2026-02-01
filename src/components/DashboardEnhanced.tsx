@@ -69,6 +69,7 @@ import { BestPracticesWidget } from './BestPracticesWidget';
 import { OSOneWidget } from './OSOneWidget';
 import { AccessPointDetail } from './AccessPointDetail';
 import { ClientDetail } from './ClientDetail';
+import { recordNetworkMetrics } from '../services/aiBaselineService';
 
 interface AccessPoint {
   serialNumber: string;
@@ -296,6 +297,20 @@ function DashboardEnhancedComponent() {
       clearInterval(historyInterval);
     };
   }, [filters.site]); // Reload when site filter changes
+
+  // Record metrics for AI Baseline calculation when data is loaded
+  useEffect(() => {
+    // Only record when we have both AP and client data
+    if (apStats.total > 0 && clientStats.total > 0 && rfqiData.length > 0) {
+      const latestRfqi = rfqiData[rfqiData.length - 1];
+      recordNetworkMetrics({
+        rfqi: latestRfqi?.rfqi ?? 0,
+        clientCount: clientStats.total,
+        apOnlineCount: apStats.online,
+        siteId: filters.site !== 'all' ? filters.site : undefined
+      });
+    }
+  }, [apStats.online, clientStats.total, rfqiData, filters.site]);
 
   // Load station events when client is selected
   useEffect(() => {
