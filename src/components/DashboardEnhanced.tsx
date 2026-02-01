@@ -1387,39 +1387,6 @@ function DashboardEnhancedComponent() {
             </Card>
           </div>
 
-          {/* Contextual Insights Dashboard - Organized by Network Health, Capacity, Anomaly, Predictive */}
-          <ContextualInsightsDashboard 
-            metrics={{
-              // Convert RFQI from 1-5 scale to percentage for threshold comparison
-              rfqi: rfqiData.length > 0 
-                ? (rfqiData[rfqiData.length - 1]?.rfqi > 5 
-                    ? rfqiData[rfqiData.length - 1]?.rfqi 
-                    : rfqiData[rfqiData.length - 1]?.rfqi * 20) 
-                : undefined,
-              clientCount: clientStats.total,
-              apCount: apStats.total,
-              apOnlineCount: apStats.online,
-              throughputBps: clientStats.throughputUpload + clientStats.throughputDownload,
-              timestamp: Date.now(),
-              // Historical data for trend analysis
-              history: rfqiData.length >= 2 ? {
-                rfqi1hAgo: rfqiData.length > 1 
-                  ? (rfqiData[Math.max(0, rfqiData.length - 2)]?.rfqi > 5 
-                      ? rfqiData[Math.max(0, rfqiData.length - 2)]?.rfqi 
-                      : rfqiData[Math.max(0, rfqiData.length - 2)]?.rfqi * 20)
-                  : undefined,
-                rfqi24hAgo: rfqiData.length >= 24 
-                  ? (rfqiData[0]?.rfqi > 5 
-                      ? rfqiData[0]?.rfqi 
-                      : rfqiData[0]?.rfqi * 20)
-                  : undefined,
-              } : undefined
-            }}
-            rfqiTimeSeries={rfqiData}
-            onRefresh={() => loadDashboardData(true)}
-            isRefreshing={refreshing}
-          />
-
           {/* Compact View Toggle */}
           <div className="flex items-center justify-end gap-2">
             <span className="text-sm text-muted-foreground mr-2">View:</span>

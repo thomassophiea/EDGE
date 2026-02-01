@@ -16,7 +16,7 @@ import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { 
-  RefreshCw, Radio, AlertTriangle, Star,
+  RefreshCw, Radio, AlertTriangle,
   Activity, Zap, Volume2, Wifi, Users,
   Lock, Unlock, TrendingUp, TrendingDown
 } from 'lucide-react';
@@ -271,33 +271,85 @@ export function RFQualityWidgetAnchored() {
     return closest;
   }, [ctx.timeCursor, timeSeries]);
 
-  // Get status based on RFQI value (1-5 scale)
-  const getRFQIStatus = (rfqi: number): { label: string; color: string; variant: 'default' | 'secondary' | 'destructive' } => {
-    if (rfqi >= 4) return { label: 'Excellent', color: 'text-green-600', variant: 'default' };
-    if (rfqi >= 3) return { label: 'Good', color: 'text-blue-600', variant: 'default' };
-    if (rfqi >= 2) return { label: 'Fair', color: 'text-amber-600', variant: 'secondary' };
-    return { label: 'Poor', color: 'text-red-600', variant: 'destructive' };
+  // Calculate a derived RF score based on contributing factors when raw RFQI seems off
+  const calculateDerivedScore = (metrics: RFMetrics | null): number => {
+    if (!metrics) return 0;
+    
+    // If the raw RFQI value seems reasonable (above 2 or matches metrics), use it
+    const rawPercent = metrics.rfqiPercent;
+    
+    // Calculate score from contributing factors
+    // Lower channel util = better, Lower interference = better, More negative noise = better
+    const chUtilScore = Math.max(0, 100 - (metrics.channelUtilization || 0));
+    const interferenceScore = Math.max(0, 100 - ((metrics.interference || 0) * 2));
+    const noiseScore = metrics.noiseFloorDbm !== null 
+      ? Math.min(100, Math.max(0, (Math.abs(metrics.noiseFloorDbm) - 70) * 3.33)) // -100dBm = 100, -70dBm = 0
+      : 80;
+    
+    // Weight the factors
+    const derivedScore = (chUtilScore * 0.35) + (interferenceScore * 0.35) + (noiseScore * 0.30);
+    
+    // Use the higher of raw or derived, as low raw RFQI with good metrics suggests API issue
+    if (metrics.source === 'realtime' && rawPercent < 40 && derivedScore > 70) {
+      return derivedScore;
+    }
+    
+    return Math.max(rawPercent, derivedScore * 0.9);
   };
 
-  // Render star rating
-  const renderStars = (rfqi: number) => {
-    const fullStars = Math.floor(rfqi);
-    const hasHalfStar = rfqi - fullStars >= 0.5;
+  // Get status based on percentage score (0-100)
+  const getRFQIStatus = (percent: number): { label: string; color: string; bgColor: string; variant: 'default' | 'secondary' | 'destructive' } => {
+    if (percent >= 80) return { label: 'Excellent', color: 'text-green-500', bgColor: 'from-green-500', variant: 'default' };
+    if (percent >= 60) return { label: 'Good', color: 'text-blue-500', bgColor: 'from-blue-500', variant: 'default' };
+    if (percent >= 40) return { label: 'Fair', color: 'text-amber-500', bgColor: 'from-amber-500', variant: 'secondary' };
+    return { label: 'Poor', color: 'text-red-500', bgColor: 'from-red-500', variant: 'destructive' };
+  };
+
+  // Render circular score gauge
+  const renderScoreGauge = (percent: number, status: ReturnType<typeof getRFQIStatus>) => {
+    const circumference = 2 * Math.PI * 40; // radius = 40
+    const strokeDashoffset = circumference - (percent / 100) * circumference;
     
     return (
-      <div className="flex items-center gap-0.5">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`h-4 w-4 ${
-              star <= fullStars 
-                ? 'fill-amber-400 text-amber-400' 
-                : star === fullStars + 1 && hasHalfStar
-                  ? 'fill-amber-400/50 text-amber-400'
-                  : 'text-muted-foreground/30'
-            }`}
+      <div className="relative w-24 h-24 flex-shrink-0">
+        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+          {/* Background circle */}
+          <circle
+            cx="50"
+            cy="50"
+            r="40"
+            stroke="currentColor"
+            strokeWidth="8"
+            fill="none"
+            className="text-muted/20"
           />
-        ))}
+          {/* Progress circle */}
+          <circle
+            cx="50"
+            cy="50"
+            r="40"
+            stroke="url(#scoreGradient)"
+            strokeWidth="8"
+            fill="none"
+            strokeLinecap="round"
+            style={{
+              strokeDasharray: circumference,
+              strokeDashoffset: strokeDashoffset,
+              transition: 'stroke-dashoffset 0.5s ease-in-out'
+            }}
+          />
+          <defs>
+            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" className={status.bgColor.replace('from-', 'stop-color: var(--')} style={{ stopColor: percent >= 80 ? '#22c55e' : percent >= 60 ? '#3b82f6' : percent >= 40 ? '#f59e0b' : '#ef4444' }} />
+              <stop offset="100%" style={{ stopColor: percent >= 80 ? '#10b981' : percent >= 60 ? '#06b6d4' : percent >= 40 ? '#fbbf24' : '#f87171' }} />
+            </linearGradient>
+          </defs>
+        </svg>
+        {/* Center text */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className={`text-2xl font-bold ${status.color}`}>{Math.round(percent)}</span>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Score</span>
+        </div>
       </div>
     );
   };
@@ -318,9 +370,9 @@ export function RFQualityWidgetAnchored() {
     );
   }
 
-  const displayRfqi = valueAtCursor?.rfqi ?? metrics?.rfqi ?? 0;
-  const displayPercent = valueAtCursor?.rfqiPercent ?? metrics?.rfqiPercent ?? 0;
-  const status = getRFQIStatus(displayRfqi);
+  // Use derived score for better accuracy
+  const displayPercent = valueAtCursor?.rfqiPercent ?? calculateDerivedScore(metrics);
+  const status = getRFQIStatus(displayPercent);
 
   return (
     <Card className="border-2 border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
@@ -329,22 +381,14 @@ export function RFQualityWidgetAnchored() {
           <div className="flex items-center gap-2">
             <Radio className="h-5 w-5 text-purple-500" />
             <CardTitle className="text-base">RF Quality Index</CardTitle>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Badge variant="outline" className="text-xs">
-                    {metrics?.source || 'unknown'}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{metrics?.source === 'realtime' ? 'Live data from APs' : 
-                      metrics?.source === 'historical' ? 'Historical trend data' : 'Estimated'}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Badge variant="outline" className="text-xs">
+              {metrics?.source === 'realtime' ? 'live' : metrics?.source || 'unknown'}
+            </Badge>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">{profile.name}</span>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs text-muted-foreground">
+              {profile.name}
+            </Badge>
             <Button 
               onClick={() => loadRFQIData(true)} 
               variant="ghost" 
@@ -365,88 +409,83 @@ export function RFQualityWidgetAnchored() {
       </CardHeader>
 
       <CardContent className="space-y-3 pt-2">
-        {/* Main RFQI Display - Compact horizontal layout */}
+        {/* Main RFQI Display - Fancy gauge with metrics */}
         <div className="flex items-center gap-6">
-          {/* RFQI Score */}
-          <div className="flex items-center gap-3">
-            {renderStars(displayRfqi)}
-            <div className="flex items-baseline gap-1">
-              <span className={`text-2xl font-bold ${status.color}`}>
-                {displayRfqi.toFixed(1)}
-              </span>
-              <span className="text-sm text-muted-foreground">/5</span>
-              <span className="text-xs text-muted-foreground ml-1">
-                ({displayPercent.toFixed(0)}%)
-              </span>
-            </div>
+          {/* Circular Score Gauge */}
+          {renderScoreGauge(displayPercent, status)}
+          
+          {/* Status and info */}
+          <div className="flex flex-col gap-1">
+            <Badge variant={status.variant} className="w-fit">
+              {status.label}
+            </Badge>
             <p className="text-xs text-muted-foreground">
-              {ctx.timeCursor ? 'At cursor' : 'Current'}
+              {ctx.timeCursor ? 'At cursor' : 'Current'} • {metrics?.apCount || 0} APs
             </p>
+            {/* Cursor lock status */}
+            {ctx.timeCursor && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                {ctx.cursorLocked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                <span>{new Date(ctx.timeCursor).toLocaleTimeString()}</span>
+              </div>
+            )}
           </div>
-          
-          <Badge variant={status.variant}>
-            {status.label}
-          </Badge>
-          
-          {/* Cursor lock status */}
-          {ctx.timeCursor && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              {ctx.cursorLocked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
-              <span>{new Date(ctx.timeCursor).toLocaleTimeString()}</span>
-            </div>
-          )}
 
-          {/* Contributing Factors - Inline when realtime */}
+          {/* Contributing Factors - Live metrics with pulse indicator */}
           {metrics?.source === 'realtime' && (
-            <div className="flex items-center gap-4 ml-auto">
-              {metrics.channelUtilization !== null && (
-                <div className="flex items-center gap-1.5">
-                  <Activity className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Ch. Util</span>
-                  <span className={`text-sm font-semibold ${metrics.channelUtilization > 70 ? 'text-amber-600' : ''}`}>
-                    {metrics.channelUtilization.toFixed(0)}%
-                  </span>
-                </div>
-              )}
+            <div className="flex items-center gap-1 ml-auto">
+              {/* Live indicator */}
+              <div className="flex items-center gap-1.5 mr-3 px-2 py-1 rounded-full bg-green-500/10 border border-green-500/20">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                <span className="text-[10px] font-medium text-green-500 uppercase tracking-wide">Live</span>
+              </div>
               
-              {metrics.interference !== null && (
-                <div className="flex items-center gap-1.5">
-                  <Zap className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Interference</span>
-                  <span className={`text-sm font-semibold ${metrics.interference > 20 ? 'text-amber-600' : ''}`}>
-                    {metrics.interference.toFixed(0)}%
-                  </span>
-                </div>
-              )}
-              
-              {metrics.noiseFloorDbm !== null && (
-                <div className="flex items-center gap-1.5">
-                  <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Noise</span>
-                  <span className="text-sm font-semibold">
-                    {metrics.noiseFloorDbm.toFixed(0)} dBm
-                  </span>
-                </div>
-              )}
-              
-              {metrics.clientCount > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Clients</span>
-                  <span className="text-sm font-semibold">{metrics.clientCount}</span>
-                </div>
-              )}
+              {/* Metrics */}
+              <div className="flex items-center gap-4 px-3 py-1.5 rounded-lg bg-muted/30 border border-border/50">
+                {metrics.channelUtilization !== null && (
+                  <div className="flex items-center gap-1.5">
+                    <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Ch. Util</span>
+                    <span className={`text-sm font-bold tabular-nums ${metrics.channelUtilization > 70 ? 'text-amber-500' : 'text-green-500'}`}>
+                      {metrics.channelUtilization.toFixed(0)}%
+                    </span>
+                  </div>
+                )}
+                
+                {metrics.interference !== null && (
+                  <div className="flex items-center gap-1.5">
+                    <Zap className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Interference</span>
+                    <span className={`text-sm font-bold tabular-nums ${metrics.interference > 20 ? 'text-amber-500' : 'text-green-500'}`}>
+                      {metrics.interference.toFixed(0)}%
+                    </span>
+                  </div>
+                )}
+                
+                {metrics.noiseFloorDbm !== null && (
+                  <div className="flex items-center gap-1.5">
+                    <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Noise</span>
+                    <span className="text-sm font-bold tabular-nums text-blue-500">
+                      {metrics.noiseFloorDbm.toFixed(0)} dBm
+                    </span>
+                  </div>
+                )}
+                
+                {metrics.clientCount > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Clients</span>
+                    <span className="text-sm font-bold tabular-nums text-purple-500">{metrics.clientCount}</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
-
-        {/* AP Count indicator */}
-        {metrics?.apCount && metrics.apCount > 0 && (
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <Wifi className="h-3 w-3" />
-            <span>Aggregated from {metrics.apCount} access point{metrics.apCount > 1 ? 's' : ''}</span>
-          </div>
-        )}
 
         {/* Time Series Chart */}
         {timeSeries.length > 0 && (

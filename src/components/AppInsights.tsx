@@ -94,36 +94,36 @@ interface AppInsightsData {
   worstAppGroupsByThroughputReport: AppGroupReport[];
 }
 
-// Modern color palette for charts - vibrant but readable on dark backgrounds
+// Modern color palette for charts - professional, muted colors with good contrast
 const CHART_COLORS = [
-  '#818cf8', // Indigo 400
-  '#a78bfa', // Violet 400
-  '#f472b6', // Pink 400
-  '#fb7185', // Rose 400
-  '#fb923c', // Orange 400
-  '#fbbf24', // Amber 400
-  '#4ade80', // Green 400
-  '#2dd4bf', // Teal 400
-  '#22d3ee', // Cyan 400
-  '#60a5fa', // Blue 400
+  '#6366f1', // Indigo 500
+  '#8b5cf6', // Violet 500
+  '#ec4899', // Pink 500
+  '#14b8a6', // Teal 500
+  '#f97316', // Orange 500
+  '#eab308', // Yellow 500
+  '#22c55e', // Green 500
+  '#06b6d4', // Cyan 500
+  '#3b82f6', // Blue 500
+  '#a855f7', // Purple 500
 ];
 
-// Category color mapping - brighter, more saturated for dark mode readability
+// Category color mapping - professional, distinct colors for dark mode
 const CATEGORY_COLORS: Record<string, string> = {
-  streaming: '#f472b6',      // Pink 400
-  storage: '#60a5fa',        // Blue 400
-  cloud: '#22d3ee',          // Cyan 400
-  social: '#a78bfa',         // Violet 400
-  gaming: '#fb7185',         // Rose 400
-  web: '#4ade80',            // Green 400
-  search: '#fb923c',         // Orange 400
-  communication: '#818cf8',  // Indigo 400
-  business: '#2dd4bf',       // Teal 400
-  security: '#fbbf24',       // Amber 400
-  realtime: '#c084fc',       // Purple 400
-  corporate: '#94a3b8',      // Slate 400
-  content: '#38bdf8',        // Sky 400
-  applications: '#34d399',   // Emerald 400
+  streaming: '#ec4899',      // Pink 500 - entertainment
+  storage: '#3b82f6',        // Blue 500 - data/storage
+  cloud: '#06b6d4',          // Cyan 500 - cloud services
+  social: '#8b5cf6',         // Violet 500 - social
+  gaming: '#f97316',         // Orange 500 - gaming
+  web: '#22c55e',            // Green 500 - web
+  search: '#eab308',         // Yellow 500 - search
+  communication: '#6366f1',  // Indigo 500 - comms
+  business: '#14b8a6',       // Teal 500 - business
+  security: '#ef4444',       // Red 500 - security
+  realtime: '#a855f7',       // Purple 500 - realtime
+  corporate: '#64748b',      // Slate 500 - corporate
+  content: '#0ea5e9',        // Sky 500 - content
+  applications: '#10b981',   // Emerald 500 - apps
 };
 
 const getCategoryColor = (category: string, index: number): string => {
@@ -335,23 +335,23 @@ export function AppInsights({ api }: AppInsightsProps) {
               const itemColor = getCategoryColor(item.name, index);
 
               return (
-                <div key={item.id} className="space-y-0.5">
-                  <div className="flex items-center gap-1.5">
+                <div key={item.id} className="space-y-1">
+                  <div className="flex items-center gap-2">
                     <div 
-                      className="p-0.5 rounded-sm border" 
+                      className="p-1 rounded border" 
                       style={{ 
-                        backgroundColor: `${itemColor}15`, 
-                        borderColor: `${itemColor}40` 
+                        backgroundColor: `${itemColor}20`, 
+                        borderColor: `${itemColor}50` 
                       }}
                     >
-                      <CategoryIcon className="h-2.5 w-2.5" style={{ color: itemColor }} />
+                      <CategoryIcon className="h-3 w-3" style={{ color: itemColor }} />
                     </div>
-                    <span className="text-[11px] font-medium truncate flex-1 text-foreground" title={item.name}>
+                    <span className="text-xs font-medium truncate flex-1 text-foreground" title={item.name}>
                       {item.name}
                     </span>
-                    <span className="text-[11px] font-semibold tabular-nums text-foreground">{formatValue(item.value)}</span>
+                    <span className="text-xs font-bold tabular-nums text-foreground">{formatValue(item.value)}</span>
                   </div>
-                  <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden ml-4">
+                  <div className="h-1.5 bg-muted/40 rounded-full overflow-hidden ml-6">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{ width: `${percentage}%`, backgroundColor: itemColor }}
@@ -374,23 +374,23 @@ export function AppInsights({ api }: AppInsightsProps) {
               const itemColor = getCategoryColor(item.name, index + 5);
 
               return (
-                <div key={item.id} className="space-y-0.5 opacity-75 hover:opacity-100 transition-opacity">
-                  <div className="flex items-center gap-1.5">
+                <div key={item.id} className="space-y-1 opacity-60 hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-2">
                     <div 
-                      className="p-0.5 rounded-sm border" 
+                      className="p-1 rounded border" 
                       style={{ 
-                        backgroundColor: `${itemColor}10`, 
+                        backgroundColor: `${itemColor}15`, 
                         borderColor: `${itemColor}30` 
                       }}
                     >
-                      <CategoryIcon className="h-2.5 w-2.5" style={{ color: itemColor }} />
+                      <CategoryIcon className="h-3 w-3" style={{ color: itemColor }} />
                     </div>
-                    <span className="text-[11px] font-medium truncate flex-1 text-muted-foreground" title={item.name}>
+                    <span className="text-xs font-medium truncate flex-1 text-muted-foreground" title={item.name}>
                       {item.name}
                     </span>
-                    <span className="text-[11px] tabular-nums text-muted-foreground">{formatValue(item.value)}</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">{formatValue(item.value)}</span>
                   </div>
-                  <div className="h-1 bg-muted/30 rounded-full overflow-hidden ml-4">
+                  <div className="h-1 bg-muted/30 rounded-full overflow-hidden ml-6">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{ width: `${percentage}%`, backgroundColor: `${itemColor}80` }}
