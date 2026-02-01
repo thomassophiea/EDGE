@@ -26,7 +26,8 @@ import {
   Activity,
   Bell,
   HardDrive,
-  LayoutDashboard
+  LayoutDashboard,
+  HelpCircle
 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import extremeNetworksLogo from 'figma:asset/cc372b1d703a0b056a9f8c590da6c8e1cb4947fd.png';
@@ -341,6 +342,20 @@ export function Sidebar({ onLogout, adminRole, currentPage, onPageChange, theme 
             >
               <Settings className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
               {!isCollapsed && <span>Administration</span>}
+            </Button>
+            <Button
+              variant={currentPage === 'help' ? "default" : "ghost"}
+              className={cn(
+                "w-full justify-start h-10",
+                isCollapsed ? "px-2" : "px-3",
+                currentPage === 'help'
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+              onClick={() => handlePageChange('help')}
+            >
+              <HelpCircle className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
+              {!isCollapsed && <span>Help</span>}
             </Button>
           </>
         )}
