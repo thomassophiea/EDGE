@@ -5625,6 +5625,37 @@ class ApiService {
   }
 
   /**
+   * Get all AP interface statistics WITH RF data
+   * Endpoint: GET /v1/aps/ifstats?rfStats=true
+   * 
+   * Returns per-radio RF metrics including:
+   * - rfqi: RF Quality Index (1-5 scale)
+   * - chUtil: Channel utilization %
+   * - interference: Interference %
+   * - cochannel: Co-channel interference %
+   * - noise: Noise floor in dBm
+   * - clientCount: Number of clients on this radio
+   */
+  async getAPInterfaceStatsWithRF(): Promise<any[]> {
+    try {
+      logger.log('[API] Fetching AP interface statistics with RF data');
+      const response = await this.makeAuthenticatedRequest('/v1/aps/ifstats?rfStats=true', {}, 15000);
+
+      if (!response.ok) {
+        logger.warn(`AP ifstats with RF API returned ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      logger.log(`[API] ✓ Loaded RF interface stats for ${data?.length || 0} APs`);
+      return data || [];
+    } catch (error) {
+      logger.error('[API] Failed to fetch AP interface stats with RF:', error);
+      return [];
+    }
+  }
+
+  /**
    * Get station events
    * Endpoint: GET /v1/stations/events/{macaddress}
    */

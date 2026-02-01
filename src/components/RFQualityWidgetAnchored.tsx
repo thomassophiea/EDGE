@@ -4,6 +4,9 @@
  * RFQI is the anchor metric for Contextual Insights.
  * Always visible, displays both point-in-time and time series.
  * Exposes contributing factors: interference, channel utilization, noise floor, retry rate.
+ * 
+ * RFQI is on a 1-5 scale (like link quality stars).
+ * We display it both as stars AND as a percentage (RFQI * 20 = percentage).
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -13,15 +16,14 @@ import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { 
-  RefreshCw, Radio, AlertTriangle, 
-  Activity, Zap, Volume2, 
-  RotateCcw, Lock, Unlock
+  RefreshCw, Radio, AlertTriangle, Star,
+  Activity, Zap, Volume2, Wifi, Users,
+  Lock, Unlock, TrendingUp, TrendingDown
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { useOperationalContext } from '../hooks/useOperationalContext';
 import { 
   getEnvironmentProfile, 
-  evaluateMetric,
   type EnvironmentProfileType 
 } from '../config/environmentProfiles';
 import { 
@@ -29,29 +31,31 @@ import {
   ResponsiveContainer, ReferenceLine, Area, AreaChart 
 } from 'recharts';
 
-interface RFQIComputed {
-  rfqi: number;
-  channelUtilization: number | null;
-  interference: number | null;
-  noiseFloorDbm: number | null;
-  retryRate: number | null;
-  source: 'native' | 'computed' | 'fallback';
+interface RFMetrics {
+  rfqi: number;              // 1-5 scale
+  rfqiPercent: number;       // 0-100 (rfqi * 20)
+  channelUtilization: number | null;  // 0-100%
+  interference: number | null;         // 0-100%
+  coChannel: number | null;            // 0-100%
+  noiseFloorDbm: number | null;        // dBm (negative)
+  clientCount: number;
+  apCount: number;
+  source: 'realtime' | 'historical' | 'fallback';
   timestamp: number;
 }
 
 interface TimeSeriesPoint {
   timestamp: number;
   time: string;
-  rfqi: number;
-  channelUtilization?: number;
-  interference?: number;
+  rfqi: number;        // 1-5 scale
+  rfqiPercent: number; // 0-100
 }
 
 export function RFQualityWidgetAnchored() {
   const { ctx, setTimeCursor, setTimeCursorFromHover } = useOperationalContext();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [currentMetrics, setCurrentMetrics] = useState<RFQIComputed | null>(null);
+  const [metrics, setMetrics] = useState<RFMetrics | null>(null);
   const [timeSeries, setTimeSeries] = useState<TimeSeriesPoint[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -67,22 +71,16 @@ export function RFQualityWidgetAnchored() {
     const map: Record<string, string> = {
       '15m': '15M', '1h': '1H', '3h': '3H', '24h': '24H', '7d': '7D', '30d': '30D'
     };
-    return map[timeRange] || '24H';
+    return map[timeRange] || '3H';
   };
 
   useEffect(() => {
     loadRFQIData();
-    const interval = setInterval(() => loadRFQIData(true), 300000);
+    const interval = setInterval(() => loadRFQIData(true), 60000); // Refresh every minute for real-time feel
     return () => clearInterval(interval);
   }, [effectiveSiteId, ctx.timeRange]);
 
   const loadRFQIData = async (isRefresh = false) => {
-    if (!effectiveSiteId) {
-      setLoading(false);
-      setError('Select a site to view RF Quality metrics');
-      return;
-    }
-
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -91,75 +89,24 @@ export function RFQualityWidgetAnchored() {
       }
       setError(null);
 
-      const duration = getDuration(ctx.timeRange);
-      const rfData = await apiService.fetchRFQualityData(effectiveSiteId, duration);
+      // Fetch real-time RF stats from AP ifstats
+      const realtimeMetrics = await fetchRealtimeRFStats();
+      
+      // Fetch historical time series
+      const historicalData = await fetchHistoricalRFQI();
 
-      let computed: RFQIComputed;
-      let series: TimeSeriesPoint[] = [];
-
-      if (rfData && Array.isArray(rfData) && rfData.length > 0) {
-        const report = rfData[0];
-        const stats = report?.statistics || [];
-        
-        const rfqiStat = stats.find((s: { statName?: string }) => 
-          s.statName?.toLowerCase().includes('rfqi') || 
-          s.statName?.toLowerCase().includes('rf quality')
-        );
-
-        if (rfqiStat?.values?.length > 0) {
-          series = rfqiStat.values.map((v: { timestamp: number; value: string }) => ({
-            timestamp: v.timestamp,
-            time: new Date(v.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            rfqi: parseFloat(v.value) || 0
-          })).sort((a: TimeSeriesPoint, b: TimeSeriesPoint) => a.timestamp - b.timestamp);
-
-          const latest = series[series.length - 1];
-          computed = {
-            rfqi: latest?.rfqi || 0,
-            channelUtilization: null,
-            interference: null,
-            noiseFloorDbm: null,
-            retryRate: null,
-            source: 'native',
-            timestamp: latest?.timestamp || Date.now()
-          };
-
-          stats.forEach((stat: { statName?: string; values?: { value: string }[] }) => {
-            const name = stat.statName?.toLowerCase() || '';
-            const latestVal = stat.values?.[stat.values.length - 1]?.value;
-            
-            if (name.includes('channel') && name.includes('util')) {
-              computed.channelUtilization = parseFloat(latestVal || '') || null;
-            }
-            if (name.includes('interference')) {
-              computed.interference = parseFloat(latestVal || '') || null;
-            }
-            if (name.includes('noise')) {
-              computed.noiseFloorDbm = parseFloat(latestVal || '') || null;
-            }
-            if (name.includes('retry')) {
-              computed.retryRate = parseFloat(latestVal || '') || null;
-            }
-          });
-        } else {
-          computed = await computeFallbackRFQI(effectiveSiteId);
-        }
-      } else if (rfData?.score !== undefined) {
-        computed = {
-          rfqi: rfData.score,
-          channelUtilization: rfData.channelUtilization ? rfData.channelUtilization * 100 : null,
-          interference: rfData.interference ? rfData.interference * 100 : null,
-          noiseFloorDbm: null,
-          retryRate: null,
-          source: 'native',
-          timestamp: Date.now()
-        };
+      if (realtimeMetrics) {
+        setMetrics(realtimeMetrics);
+      } else if (historicalData.currentMetrics) {
+        setMetrics(historicalData.currentMetrics);
       } else {
-        computed = await computeFallbackRFQI(effectiveSiteId);
+        setError('No RF quality data available');
       }
 
-      setCurrentMetrics(computed);
-      setTimeSeries(series);
+      if (historicalData.series.length > 0) {
+        setTimeSeries(historicalData.series);
+      }
+
       setLastUpdate(new Date());
 
     } catch (err) {
@@ -171,51 +118,142 @@ export function RFQualityWidgetAnchored() {
     }
   };
 
-  const computeFallbackRFQI = async (siteId: string): Promise<RFQIComputed> => {
+  // Fetch real-time RF stats from AP ifstats endpoint
+  const fetchRealtimeRFStats = async (): Promise<RFMetrics | null> => {
     try {
-      const widgetData = await apiService.fetchWidgetData(siteId, [
-        'channelUtilization2_4', 
-        'channelUtilization5'
-      ], getDuration(ctx.timeRange));
-
-      let chanUtil24 = 0;
-      let chanUtil5 = 0;
-
-      if (widgetData?.channelUtilization2_4?.[0]?.statistics?.[0]?.values) {
-        const vals = widgetData.channelUtilization2_4[0].statistics[0].values;
-        chanUtil24 = parseFloat(vals[vals.length - 1]?.value) || 0;
-      }
-      if (widgetData?.channelUtilization5?.[0]?.statistics?.[0]?.values) {
-        const vals = widgetData.channelUtilization5[0].statistics[0].values;
-        chanUtil5 = parseFloat(vals[vals.length - 1]?.value) || 0;
+      // Get AP interface stats with RF data
+      const apStats = await apiService.getAPInterfaceStatsWithRF();
+      
+      if (!apStats || !Array.isArray(apStats) || apStats.length === 0) {
+        return null;
       }
 
-      const avgChanUtil = (chanUtil24 + chanUtil5) / 2;
-      const utilPenalty = avgChanUtil * 0.5;
-      const computedRfqi = Math.max(0, Math.min(100, 100 - utilPenalty));
+      // Filter APs by site if we have a site selected
+      let relevantAPs = apStats;
+      if (effectiveSiteId) {
+        relevantAPs = apStats.filter((ap: any) => 
+          ap.siteId === effectiveSiteId || 
+          ap.hostSite === effectiveSiteId
+        );
+        // If no APs match, use all (might be site ID format issue)
+        if (relevantAPs.length === 0) {
+          relevantAPs = apStats;
+        }
+      }
 
+      // Aggregate RF metrics across all APs
+      let totalRfqi = 0;
+      let totalChUtil = 0;
+      let totalInterference = 0;
+      let totalCoChannel = 0;
+      let totalNoise = 0;
+      let totalClients = 0;
+      let radioCount = 0;
+
+      relevantAPs.forEach((ap: any) => {
+        const rfData = ap.wirelessRf;
+        if (rfData && Array.isArray(rfData)) {
+          rfData.forEach((radio: any) => {
+            if (radio.rfqi !== undefined) {
+              totalRfqi += radio.rfqi || 0;
+              totalChUtil += radio.chUtil || 0;
+              totalInterference += radio.interference || 0;
+              totalCoChannel += radio.cochannel || 0;
+              totalNoise += radio.noise || -90;
+              totalClients += radio.clientCount || 0;
+              radioCount++;
+            }
+          });
+        }
+      });
+
+      if (radioCount === 0) {
+        return null;
+      }
+
+      const avgRfqi = totalRfqi / radioCount;
+      
       return {
-        rfqi: computedRfqi,
-        channelUtilization: avgChanUtil,
-        interference: null,
-        noiseFloorDbm: null,
-        retryRate: null,
-        source: 'computed',
+        rfqi: avgRfqi,
+        rfqiPercent: avgRfqi * 20, // Convert 1-5 to 0-100
+        channelUtilization: totalChUtil / radioCount,
+        interference: totalInterference / radioCount,
+        coChannel: totalCoChannel / radioCount,
+        noiseFloorDbm: totalNoise / radioCount,
+        clientCount: totalClients,
+        apCount: relevantAPs.length,
+        source: 'realtime',
         timestamp: Date.now()
       };
-    } catch {
-      return {
-        rfqi: 75,
-        channelUtilization: null,
-        interference: null,
-        noiseFloorDbm: null,
-        retryRate: null,
-        source: 'fallback',
-        timestamp: Date.now()
-      };
+
+    } catch (err) {
+      console.log('[RFQualityWidgetAnchored] Could not fetch realtime stats:', err);
+      return null;
     }
   };
 
+  // Fetch historical RFQI time series from report endpoint
+  const fetchHistoricalRFQI = async (): Promise<{ series: TimeSeriesPoint[], currentMetrics: RFMetrics | null }> => {
+    if (!effectiveSiteId) {
+      return { series: [], currentMetrics: null };
+    }
+
+    try {
+      const duration = getDuration(ctx.timeRange);
+      const rfData = await apiService.fetchRFQualityData(effectiveSiteId, duration);
+
+      if (!rfData || !Array.isArray(rfData) || rfData.length === 0) {
+        return { series: [], currentMetrics: null };
+      }
+
+      const report = rfData[0];
+      const stats = report?.statistics || [];
+      
+      // Find the RFQI statistic (look for "Unique RFQI" or "RFQI")
+      const rfqiStat = stats.find((s: any) => 
+        s.statName?.toLowerCase().includes('rfqi') || 
+        s.statName?.toLowerCase() === 'unique rfqi'
+      );
+
+      if (!rfqiStat?.values?.length) {
+        return { series: [], currentMetrics: null };
+      }
+
+      // Parse time series - RFQI values are on 1-5 scale
+      const series: TimeSeriesPoint[] = rfqiStat.values.map((v: any) => {
+        const rawValue = parseFloat(v.value) || 0;
+        return {
+          timestamp: v.timestamp,
+          time: new Date(v.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          rfqi: rawValue,
+          rfqiPercent: rawValue * 20 // Convert to percentage
+        };
+      }).sort((a: TimeSeriesPoint, b: TimeSeriesPoint) => a.timestamp - b.timestamp);
+
+      // Get the latest value as current metric (if no realtime)
+      const latest = series[series.length - 1];
+      const currentMetrics: RFMetrics = {
+        rfqi: latest?.rfqi || 0,
+        rfqiPercent: (latest?.rfqi || 0) * 20,
+        channelUtilization: null,
+        interference: null,
+        coChannel: null,
+        noiseFloorDbm: null,
+        clientCount: 0,
+        apCount: 0,
+        source: 'historical',
+        timestamp: latest?.timestamp || Date.now()
+      };
+
+      return { series, currentMetrics };
+
+    } catch (err) {
+      console.log('[RFQualityWidgetAnchored] Could not fetch historical data:', err);
+      return { series: [], currentMetrics: null };
+    }
+  };
+
+  // Get value at time cursor
   const valueAtCursor = useMemo(() => {
     if (!ctx.timeCursor || timeSeries.length === 0) return null;
     
@@ -233,18 +271,35 @@ export function RFQualityWidgetAnchored() {
     return closest;
   }, [ctx.timeCursor, timeSeries]);
 
-  const getScoreColor = (score: number): string => {
-    const evaluation = evaluateMetric(profile, 'rfqi', score);
-    if (evaluation === 'good') return 'text-green-600';
-    if (evaluation === 'warning') return 'text-amber-600';
-    return 'text-red-600';
+  // Get status based on RFQI value (1-5 scale)
+  const getRFQIStatus = (rfqi: number): { label: string; color: string; variant: 'default' | 'secondary' | 'destructive' } => {
+    if (rfqi >= 4) return { label: 'Excellent', color: 'text-green-600', variant: 'default' };
+    if (rfqi >= 3) return { label: 'Good', color: 'text-blue-600', variant: 'default' };
+    if (rfqi >= 2) return { label: 'Fair', color: 'text-amber-600', variant: 'secondary' };
+    return { label: 'Poor', color: 'text-red-600', variant: 'destructive' };
   };
 
-  const getScoreStatus = (score: number): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
-    const evaluation = evaluateMetric(profile, 'rfqi', score);
-    if (evaluation === 'good') return { label: 'Healthy', variant: 'default' };
-    if (evaluation === 'warning') return { label: 'Warning', variant: 'secondary' };
-    return { label: 'Poor', variant: 'destructive' };
+  // Render star rating
+  const renderStars = (rfqi: number) => {
+    const fullStars = Math.floor(rfqi);
+    const hasHalfStar = rfqi - fullStars >= 0.5;
+    
+    return (
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`h-4 w-4 ${
+              star <= fullStars 
+                ? 'fill-amber-400 text-amber-400' 
+                : star === fullStars + 1 && hasHalfStar
+                  ? 'fill-amber-400/50 text-amber-400'
+                  : 'text-muted-foreground/30'
+            }`}
+          />
+        ))}
+      </div>
+    );
   };
 
   if (loading) {
@@ -263,8 +318,9 @@ export function RFQualityWidgetAnchored() {
     );
   }
 
-  const displayValue = valueAtCursor?.rfqi ?? currentMetrics?.rfqi ?? 0;
-  const status = getScoreStatus(displayValue);
+  const displayRfqi = valueAtCursor?.rfqi ?? metrics?.rfqi ?? 0;
+  const displayPercent = valueAtCursor?.rfqiPercent ?? metrics?.rfqiPercent ?? 0;
+  const status = getRFQIStatus(displayRfqi);
 
   return (
     <Card className="border-2 border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
@@ -272,17 +328,17 @@ export function RFQualityWidgetAnchored() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Radio className="h-5 w-5 text-purple-500" />
-            <CardTitle className="text-base">RF Quality Index (RFQI)</CardTitle>
+            <CardTitle className="text-base">RF Quality Index</CardTitle>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger>
                   <Badge variant="outline" className="text-xs">
-                    {currentMetrics?.source || 'unknown'}
+                    {metrics?.source || 'unknown'}
                   </Badge>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Data source: {currentMetrics?.source === 'native' ? 'Platform API' : 
-                    currentMetrics?.source === 'computed' ? 'Computed from metrics' : 'Estimated'}</p>
+                  <p>{metrics?.source === 'realtime' ? 'Live data from APs' : 
+                      metrics?.source === 'historical' ? 'Historical trend data' : 'Estimated'}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -300,7 +356,7 @@ export function RFQualityWidgetAnchored() {
             </Button>
           </div>
         </div>
-        {error && (
+        {error && !metrics && (
           <Alert className="mt-2 py-2 border-amber-500/50 bg-amber-500/10">
             <AlertTriangle className="h-4 w-4 text-amber-500" />
             <AlertDescription className="text-xs text-amber-600">{error}</AlertDescription>
@@ -309,89 +365,116 @@ export function RFQualityWidgetAnchored() {
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Main RFQI Display */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
-              <p className={`text-4xl font-bold ${getScoreColor(displayValue)}`}>
-                {displayValue.toFixed(0)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {ctx.timeCursor ? 'At cursor' : 'Current'}
-              </p>
+          <div className="space-y-1">
+            {/* Star Rating */}
+            {renderStars(displayRfqi)}
+            
+            {/* Numeric values */}
+            <div className="flex items-baseline gap-2">
+              <span className={`text-4xl font-bold ${status.color}`}>
+                {displayRfqi.toFixed(1)}
+              </span>
+              <span className="text-lg text-muted-foreground">/5</span>
+              <span className="text-sm text-muted-foreground ml-2">
+                ({displayPercent.toFixed(0)}%)
+              </span>
             </div>
-            <Badge variant={status.variant}>
-              {status.label}
-            </Badge>
+            
+            <p className="text-xs text-muted-foreground">
+              {ctx.timeCursor ? 'At cursor' : 'Current'}
+            </p>
           </div>
           
-          {ctx.timeCursor && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {ctx.cursorLocked ? (
-                <Lock className="h-3 w-3" />
-              ) : (
-                <Unlock className="h-3 w-3" />
-              )}
-              <span>{new Date(ctx.timeCursor).toLocaleTimeString()}</span>
-            </div>
-          )}
+          <div className="text-right">
+            <Badge variant={status.variant} className="mb-2">
+              {status.label}
+            </Badge>
+            
+            {/* Cursor lock status */}
+            {ctx.timeCursor && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground justify-end">
+                {ctx.cursorLocked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                <span>{new Date(ctx.timeCursor).toLocaleTimeString()}</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {currentMetrics && (
-          <div className="grid grid-cols-2 gap-3">
-            {currentMetrics.channelUtilization !== null && (
+        {/* Contributing Factors - Only show if we have realtime data */}
+        {metrics?.source === 'realtime' && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {metrics.channelUtilization !== null && (
               <div className="p-2 rounded-lg bg-muted/50">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                   <Activity className="h-3 w-3" />
-                  <span>Channel Util.</span>
+                  <span>Ch. Util</span>
                 </div>
-                <p className="text-lg font-semibold">{currentMetrics.channelUtilization.toFixed(0)}%</p>
+                <p className={`text-lg font-semibold ${metrics.channelUtilization > 70 ? 'text-amber-600' : ''}`}>
+                  {metrics.channelUtilization.toFixed(0)}%
+                </p>
               </div>
             )}
-            {currentMetrics.interference !== null && (
+            
+            {metrics.interference !== null && (
               <div className="p-2 rounded-lg bg-muted/50">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                   <Zap className="h-3 w-3" />
                   <span>Interference</span>
                 </div>
-                <p className="text-lg font-semibold">{currentMetrics.interference.toFixed(0)}%</p>
+                <p className={`text-lg font-semibold ${metrics.interference > 20 ? 'text-amber-600' : ''}`}>
+                  {metrics.interference.toFixed(0)}%
+                </p>
               </div>
             )}
-            {currentMetrics.noiseFloorDbm !== null && (
+            
+            {metrics.noiseFloorDbm !== null && (
               <div className="p-2 rounded-lg bg-muted/50">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                   <Volume2 className="h-3 w-3" />
-                  <span>Noise Floor</span>
+                  <span>Noise</span>
                 </div>
-                <p className="text-lg font-semibold">{currentMetrics.noiseFloorDbm} dBm</p>
+                <p className="text-lg font-semibold">
+                  {metrics.noiseFloorDbm.toFixed(0)} dBm
+                </p>
               </div>
             )}
-            {currentMetrics.retryRate !== null && (
+            
+            {metrics.clientCount > 0 && (
               <div className="p-2 rounded-lg bg-muted/50">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                  <RotateCcw className="h-3 w-3" />
-                  <span>Retry Rate</span>
+                  <Users className="h-3 w-3" />
+                  <span>Clients</span>
                 </div>
-                <p className="text-lg font-semibold">{currentMetrics.retryRate.toFixed(1)}%</p>
+                <p className="text-lg font-semibold">{metrics.clientCount}</p>
               </div>
             )}
           </div>
         )}
 
+        {/* AP Count indicator */}
+        {metrics?.apCount && metrics.apCount > 0 && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Wifi className="h-3 w-3" />
+            <span>Aggregated from {metrics.apCount} access point{metrics.apCount > 1 ? 's' : ''}</span>
+          </div>
+        )}
+
+        {/* Time Series Chart */}
         {timeSeries.length > 0 && (
           <div className="h-32">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart 
                 data={timeSeries}
-                onMouseMove={(e) => {
-                  const payload = e?.activePayload?.[0]?.payload as TimeSeriesPoint | undefined;
-                  if (payload?.timestamp) {
-                    setTimeCursorFromHover(payload.timestamp);
+                onMouseMove={(e: any) => {
+                  if (e?.activePayload?.[0]?.payload?.timestamp) {
+                    setTimeCursorFromHover(e.activePayload[0].payload.timestamp);
                   }
                 }}
-                onClick={(e) => {
-                  const payload = e?.activePayload?.[0]?.payload as TimeSeriesPoint | undefined;
-                  if (payload?.timestamp) {
-                    setTimeCursor(payload.timestamp);
+                onClick={(e: any) => {
+                  if (e?.activePayload?.[0]?.payload?.timestamp) {
+                    setTimeCursor(e.activePayload[0].payload.timestamp);
                   }
                 }}
               >
@@ -409,7 +492,8 @@ export function RFQualityWidgetAnchored() {
                   axisLine={false}
                 />
                 <YAxis 
-                  domain={[0, 100]} 
+                  domain={[0, 5]} 
+                  ticks={[1, 2, 3, 4, 5]}
                   tick={{ fontSize: 10 }} 
                   tickLine={false}
                   axisLine={false}
@@ -422,23 +506,26 @@ export function RFQualityWidgetAnchored() {
                     borderRadius: '8px',
                     fontSize: '12px'
                   }}
-                  formatter={(value: number) => [`${value.toFixed(0)}%`, 'RFQI']}
+                  formatter={(value: number) => [`${value.toFixed(1)} / 5 (${(value * 20).toFixed(0)}%)`, 'RFQI']}
                 />
+                {/* Good threshold line (3.5 = 70%) */}
                 <ReferenceLine 
-                  y={profile.thresholds.rfqiTarget} 
+                  y={3.5} 
                   stroke="#22c55e" 
                   strokeDasharray="3 3" 
                   strokeOpacity={0.5}
                 />
+                {/* Fair threshold line (2.5 = 50%) */}
                 <ReferenceLine 
-                  y={profile.thresholds.rfqiPoor} 
-                  stroke="#ef4444" 
+                  y={2.5} 
+                  stroke="#f59e0b" 
                   strokeDasharray="3 3" 
                   strokeOpacity={0.5}
                 />
-                {ctx.timeCursor && (
+                {/* Cursor line */}
+                {ctx.timeCursor && valueAtCursor && (
                   <ReferenceLine 
-                    x={timeSeries.find(p => Math.abs(p.timestamp - ctx.timeCursor!) < 60000)?.time}
+                    x={valueAtCursor.time}
                     stroke="#8b5cf6"
                     strokeWidth={2}
                   />
@@ -455,6 +542,7 @@ export function RFQualityWidgetAnchored() {
           </div>
         )}
 
+        {/* Last update */}
         {lastUpdate && (
           <p className="text-xs text-muted-foreground text-right">
             Updated {lastUpdate.toLocaleTimeString()}
