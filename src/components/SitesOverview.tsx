@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { toast } from 'sonner';
+import { SaveToWorkspace } from './SaveToWorkspace';
 
 interface SiteData {
   id: string;
@@ -363,7 +364,17 @@ export function SitesOverview({ onShowDetail }: SitesOverviewProps) {
       {/* Sites List */}
       <Card className="surface-2dp">
         <CardHeader>
-          <CardTitle className="text-headline-6 text-high-emphasis">Site Details</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-headline-6 text-high-emphasis">Site Details</CardTitle>
+            <SaveToWorkspace
+              widgetId="sites-overview"
+              widgetType="topn_table"
+              title="Site Details"
+              endpointRefs={['sites.list']}
+              sourcePage="sites"
+              catalogId="sites_overview"
+            />
+          </div>
           <CardDescription>Overview of all network sites and their status</CardDescription>
         </CardHeader>
         <CardContent>
