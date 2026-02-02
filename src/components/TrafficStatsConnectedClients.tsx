@@ -759,11 +759,11 @@ export function TrafficStatsConnectedClients({ onShowDetail }: ConnectedClientsP
       </div>
 
       {/* GDPR Data Rights Panel - Compact */}
-      <Card className="border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+      <Card className="border bg-muted/30">
         <CardContent className="py-3 px-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-blue-600" />
+              <Shield className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium text-sm">GDPR</span>
               <span className="text-xs text-muted-foreground">
                 {selectedStations.size > 0
@@ -774,7 +774,8 @@ export function TrafficStatsConnectedClients({ onShowDetail }: ConnectedClientsP
             <div className="flex gap-2">
               <Button
                 size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white h-8"
+                variant="outline"
+                className="h-8"
                 onClick={handleDownloadClientData}
                 disabled={selectedStations.size === 0}
               >
