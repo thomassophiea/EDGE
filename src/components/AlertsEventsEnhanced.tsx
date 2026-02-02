@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { toast } from 'sonner';
+import { SaveToWorkspace } from './SaveToWorkspace';
 
 interface Alert {
   id: string;
@@ -547,7 +548,17 @@ export function AlertsEventsEnhanced() {
         <TabsContent value="alerts" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Active Alerts</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Active Alerts</CardTitle>
+                <SaveToWorkspace
+                  widgetId="alerts-table"
+                  widgetType="event_feed"
+                  title="Active Alerts"
+                  endpointRefs={['alerts.list']}
+                  sourcePage="alerts"
+                  catalogId="alerts_table"
+                />
+              </div>
               <CardDescription>
                 Showing {filteredAlerts.length} of {alerts.length} alerts
               </CardDescription>
@@ -622,7 +633,17 @@ export function AlertsEventsEnhanced() {
         <TabsContent value="events" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>System Events</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>System Events</CardTitle>
+                <SaveToWorkspace
+                  widgetId="events-table"
+                  widgetType="event_feed"
+                  title="System Events"
+                  endpointRefs={['events.list']}
+                  sourcePage="events"
+                  catalogId="events_table"
+                />
+              </div>
               <CardDescription>
                 Showing {filteredEvents.length} of {events.length} events
               </CardDescription>

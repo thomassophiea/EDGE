@@ -111,6 +111,40 @@ export async function fetchWidgetData(
     case 'contextual_insights.summary':
       return fetchInsightsSummary(api, effectiveSiteId, effectiveTimeRange);
 
+    // Alerts and Events endpoints
+    case 'alerts.list':
+      return fetchAlertsList(api, effectiveSiteId, effectiveTimeRange);
+    case 'events.list':
+      return fetchEventsList(api, effectiveSiteId, effectiveTimeRange);
+    case 'alarms.list':
+      return fetchAlarmsList(api, effectiveSiteId, effectiveTimeRange);
+    case 'events.ap_list':
+    case 'events.ap_timeline':
+      return fetchAPEventsList(api, effectiveSiteId, effectiveTimeRange);
+    case 'events.client_list':
+    case 'events.client_timeline':
+      return fetchClientEventsList(api, effectiveSiteId, effectiveTimeRange);
+
+    // Sites endpoints
+    case 'sites.list':
+    case 'sites.summary':
+      return fetchSitesList(api);
+    case 'venue.statistics':
+      return fetchVenueStatistics(api, effectiveSiteId, effectiveTimeRange);
+    case 'venue.throughput_timeseries':
+    case 'venue.traffic_timeseries':
+      return fetchVenueTimeseries(api, effectiveSiteId, effectiveTimeRange);
+
+    // Network performance
+    case 'network.performance_summary':
+      return fetchNetworkPerformanceSummary(api, effectiveSiteId);
+    case 'traffic.summary':
+      return fetchTrafficSummary(api, effectiveSiteId, effectiveTimeRange);
+
+    // Audit
+    case 'audit.logs':
+      return fetchAuditLogs(api, effectiveTimeRange);
+
     default:
       throw new Error(`Unknown endpoint reference: ${endpointRef}`);
   }
@@ -1423,6 +1457,321 @@ async function fetchInsightsSummary(
   } catch (error) {
     console.warn('[WorkspaceDataService] Failed to fetch insights summary:', error);
     return { data: { critical_count: 0, warning_count: 0, info_count: 0, total_count: 0 }, metadata: { source: 'contextual_insights.summary' } };
+  }
+}
+
+// ========================================
+// ALERTS AND EVENTS FETCHERS
+// ========================================
+
+async function fetchAlertsList(
+  api: any,
+  siteId: string | null,
+  timeRange: string
+): Promise<WidgetDataResponse> {
+  try {
+    const alerts = await api.getAlerts?.() || [];
+
+    const filteredAlerts = siteId
+      ? alerts.filter((a: any) => a.siteId === siteId || a.siteName === siteId)
+      : alerts;
+
+    const transformed = filteredAlerts.map((alert: any) => ({
+      alert_id: alert.id,
+      severity: alert.severity || 'info',
+      category: alert.category || 'general',
+      message: alert.message || alert.description || '',
+      source: alert.source || alert.apSerial || alert.apName || '',
+      status: alert.status || 'active',
+      timestamp: alert.timestamp || alert.createdAt,
+    }));
+
+    return {
+      data: transformed.slice(0, 100),
+      metadata: { totalCount: transformed.length, source: 'alerts.list' },
+    };
+  } catch (error) {
+    console.warn('[WorkspaceDataService] Failed to fetch alerts:', error);
+    return { data: [], metadata: { source: 'alerts.list' } };
+  }
+}
+
+async function fetchEventsList(
+  api: any,
+  siteId: string | null,
+  timeRange: string
+): Promise<WidgetDataResponse> {
+  try {
+    const events = siteId
+      ? await api.getAccessPointEvents?.(siteId, getTimeRangeDays(timeRange)) || []
+      : [];
+
+    const transformed = events.map((event: any) => ({
+      event_id: event.id || `event-${Date.now()}-${Math.random()}`,
+      category: event.category || 'system',
+      type: event.type || event.eventType || 'info',
+      message: event.message || event.description || event.log || '',
+      source: event.apName || event.apSerial || event.source || '',
+      timestamp: event.timestamp || event.ts,
+    }));
+
+    return {
+      data: transformed.slice(0, 100),
+      metadata: { totalCount: transformed.length, source: 'events.list' },
+    };
+  } catch (error) {
+    console.warn('[WorkspaceDataService] Failed to fetch events:', error);
+    return { data: [], metadata: { source: 'events.list' } };
+  }
+}
+
+async function fetchAlarmsList(
+  api: any,
+  siteId: string | null,
+  timeRange: string
+): Promise<WidgetDataResponse> {
+  try {
+    const alarms = await api.getActiveAlarms?.() || [];
+
+    const filteredAlarms = siteId
+      ? alarms.filter((a: any) => a.siteId === siteId)
+      : alarms;
+
+    const transformed = filteredAlarms.map((alarm: any) => ({
+      alarm_id: alarm.id,
+      severity: alarm.severity || 'warning',
+      category: alarm.category || 'system',
+      message: alarm.message || alarm.log || '',
+      source: alarm.apName || alarm.ApName || alarm.apSerial || alarm.ApSerial || '',
+      timestamp: alarm.timestamp || alarm.ts,
+    }));
+
+    return {
+      data: transformed.slice(0, 100),
+      metadata: { totalCount: transformed.length, source: 'alarms.list' },
+    };
+  } catch (error) {
+    console.warn('[WorkspaceDataService] Failed to fetch alarms:', error);
+    return { data: [], metadata: { source: 'alarms.list' } };
+  }
+}
+
+async function fetchAPEventsList(
+  api: any,
+  siteId: string | null,
+  timeRange: string
+): Promise<WidgetDataResponse> {
+  try {
+    const events = siteId
+      ? await api.getAccessPointEvents?.(siteId, getTimeRangeDays(timeRange)) || []
+      : [];
+
+    return {
+      data: events.slice(0, 100),
+      metadata: { totalCount: events.length, source: 'events.ap_list' },
+    };
+  } catch (error) {
+    console.warn('[WorkspaceDataService] Failed to fetch AP events:', error);
+    return { data: [], metadata: { source: 'events.ap_list' } };
+  }
+}
+
+async function fetchClientEventsList(
+  api: any,
+  siteId: string | null,
+  timeRange: string
+): Promise<WidgetDataResponse> {
+  // Client events are typically embedded in station data or fetched separately
+  return { data: [], metadata: { source: 'events.client_list' } };
+}
+
+// ========================================
+// SITES FETCHERS
+// ========================================
+
+async function fetchSitesList(api: any): Promise<WidgetDataResponse> {
+  try {
+    const sites = await api.getSites?.() || [];
+
+    const transformed = sites.map((site: any) => ({
+      site_id: site.id,
+      site_name: site.siteName || site.name || 'Unknown',
+      country: site.country || '',
+      ap_count: site.apCount || 0,
+      client_count: site.clientCount || 0,
+      health_percent: site.healthPercent || 100,
+      status: site.status || 'active',
+    }));
+
+    return {
+      data: transformed,
+      metadata: { totalCount: transformed.length, source: 'sites.list' },
+    };
+  } catch (error) {
+    console.warn('[WorkspaceDataService] Failed to fetch sites:', error);
+    return { data: [], metadata: { source: 'sites.list' } };
+  }
+}
+
+async function fetchVenueStatistics(
+  api: any,
+  siteId: string | null,
+  timeRange: string
+): Promise<WidgetDataResponse> {
+  if (!siteId) {
+    return { data: {}, metadata: { source: 'venue.statistics' } };
+  }
+
+  try {
+    const venueData = await api.fetchVenueStatistics?.(siteId, timeRange) || {};
+
+    return {
+      data: {
+        unique_clients: venueData.uniqueClients || 0,
+        total_upload_bytes: venueData.totalUploadBytes || 0,
+        total_download_bytes: venueData.totalDownloadBytes || 0,
+        upload_throughput_bps: venueData.uploadThroughput || 0,
+        download_throughput_bps: venueData.downloadThroughput || 0,
+      },
+      metadata: { timeRange: getTimeRangeMs(timeRange), source: 'venue.statistics' },
+    };
+  } catch (error) {
+    console.warn('[WorkspaceDataService] Failed to fetch venue statistics:', error);
+    return { data: {}, metadata: { source: 'venue.statistics' } };
+  }
+}
+
+async function fetchVenueTimeseries(
+  api: any,
+  siteId: string | null,
+  timeRange: string
+): Promise<WidgetDataResponse> {
+  if (!siteId) {
+    return { data: {}, metadata: { source: 'venue.throughput_timeseries' } };
+  }
+
+  try {
+    const widgetData = await api.fetchWidgetData?.(siteId, ['throughputReport'], timeRange) || {};
+
+    return {
+      data: {
+        throughput: extractTimeseries(widgetData.throughputReport),
+      },
+      metadata: { timeRange: getTimeRangeMs(timeRange), source: 'venue.throughput_timeseries' },
+    };
+  } catch (error) {
+    console.warn('[WorkspaceDataService] Failed to fetch venue timeseries:', error);
+    return { data: {}, metadata: { source: 'venue.throughput_timeseries' } };
+  }
+}
+
+// ========================================
+// NETWORK PERFORMANCE FETCHERS
+// ========================================
+
+async function fetchNetworkPerformanceSummary(
+  api: any,
+  siteId: string | null
+): Promise<WidgetDataResponse> {
+  try {
+    const [aps, clients] = await Promise.all([
+      api.getAccessPoints?.() || [],
+      api.getStationsWithSiteCorrelation?.() || [],
+    ]);
+
+    const filteredAPs = siteId
+      ? aps.filter((ap: any) => ap.hostSite === siteId || ap.siteId === siteId)
+      : aps;
+
+    const filteredClients = siteId
+      ? clients.filter((c: any) => c.siteId === siteId)
+      : clients;
+
+    const onlineAPs = filteredAPs.filter((ap: any) => ap.status === 'online' || ap.status === 'up').length;
+    const healthScore = filteredAPs.length > 0 ? Math.round((onlineAPs / filteredAPs.length) * 100) : 100;
+
+    let totalRFQI = 0;
+    for (const client of filteredClients) {
+      totalRFQI += calculateClientRfqiScore(client);
+    }
+    const avgRFQI = filteredClients.length > 0 ? Math.round(totalRFQI / filteredClients.length) : 0;
+
+    return {
+      data: {
+        health_score: healthScore,
+        total_aps: filteredAPs.length,
+        online_aps: onlineAPs,
+        total_clients: filteredClients.length,
+        avg_client_experience: avgRFQI,
+      },
+      metadata: { source: 'network.performance_summary' },
+    };
+  } catch (error) {
+    console.warn('[WorkspaceDataService] Failed to fetch network performance:', error);
+    return { data: { health_score: 0, total_aps: 0, online_aps: 0, total_clients: 0, avg_client_experience: 0 }, metadata: { source: 'network.performance_summary' } };
+  }
+}
+
+async function fetchTrafficSummary(
+  api: any,
+  siteId: string | null,
+  timeRange: string
+): Promise<WidgetDataResponse> {
+  try {
+    const clients = await api.getStationsWithSiteCorrelation?.() || [];
+
+    const filteredClients = siteId
+      ? clients.filter((c: any) => c.siteId === siteId)
+      : clients;
+
+    let totalRx = 0, totalTx = 0;
+    for (const client of filteredClients) {
+      totalRx += client.rxBytes || 0;
+      totalTx += client.txBytes || 0;
+    }
+
+    return {
+      data: {
+        total_rx_bytes: totalRx,
+        total_tx_bytes: totalTx,
+        total_bytes: totalRx + totalTx,
+        client_count: filteredClients.length,
+      },
+      metadata: { source: 'traffic.summary' },
+    };
+  } catch (error) {
+    console.warn('[WorkspaceDataService] Failed to fetch traffic summary:', error);
+    return { data: { total_rx_bytes: 0, total_tx_bytes: 0, total_bytes: 0, client_count: 0 }, metadata: { source: 'traffic.summary' } };
+  }
+}
+
+// ========================================
+// AUDIT FETCHERS
+// ========================================
+
+async function fetchAuditLogs(
+  api: any,
+  timeRange: string
+): Promise<WidgetDataResponse> {
+  try {
+    const logs = await api.getAuditLogs?.() || [];
+
+    const transformed = logs.map((log: any) => ({
+      log_id: log.id,
+      user: log.user || log.username || '',
+      action: log.action || log.operation || '',
+      resource: log.resource || log.target || '',
+      timestamp: log.timestamp || log.createdAt,
+      details: log.details || '',
+    }));
+
+    return {
+      data: transformed.slice(0, 100),
+      metadata: { totalCount: transformed.length, source: 'audit.logs' },
+    };
+  } catch (error) {
+    console.warn('[WorkspaceDataService] Failed to fetch audit logs:', error);
+    return { data: [], metadata: { source: 'audit.logs' } };
   }
 }
 

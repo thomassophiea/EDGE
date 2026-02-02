@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { useTableCustomization } from '@/hooks/useTableCustomization';
 import { ColumnCustomizationDialog } from './ui/ColumnCustomizationDialog';
 import { CLIENTS_TABLE_COLUMNS } from '@/config/clientsTableColumns';
+import { SaveToWorkspace } from './SaveToWorkspace';
 
 interface ConnectedClientsProps {
   onShowDetail?: (macAddress: string, hostName?: string) => void;
@@ -789,7 +790,17 @@ function ConnectedClientsComponent({ onShowDetail }: ConnectedClientsProps) {
 
       <Card className="surface-2dp">
         <CardHeader>
-          <CardTitle>Connected Clients</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Connected Clients</CardTitle>
+            <SaveToWorkspace
+              widgetId="connected-clients-table"
+              widgetType="topn_table"
+              title="Connected Clients"
+              endpointRefs={['clients.list']}
+              sourcePage="clients"
+              catalogId="table_clients_all"
+            />
+          </div>
           <CardDescription>
             Select clients using the checkboxes to manage their GDPR data rights
           </CardDescription>

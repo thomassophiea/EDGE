@@ -5,6 +5,9 @@
  * to their personal Workspace. This component can be embedded in
  * any widget header across the dashboard.
  *
+ * Enforces eligibility rules - only data-producing widgets that can
+ * hydrate in Workspace are allowed to be saved.
+ *
  * Usage:
  * <SaveToWorkspace
  *   widgetId="unique-widget-id"
@@ -15,8 +18,8 @@
  * />
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Bookmark, BookmarkCheck } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Bookmark, BookmarkCheck, AlertCircle } from 'lucide-react';
 import { cn } from './ui/utils';
 import {
   saveWidgetToWorkspace,
@@ -25,6 +28,12 @@ import {
   createWidgetReference,
   type PersistedWidgetReference,
 } from '@/services/workspacePersistence';
+import {
+  checkWidgetEligibility,
+  canHydrateInWorkspace,
+  type WidgetEligibility,
+} from '@/config/workspaceEligibility';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 export interface SaveToWorkspaceProps {
   // Required identification
@@ -79,12 +88,26 @@ export const SaveToWorkspace: React.FC<SaveToWorkspaceProps> = ({
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Check widget eligibility
+  const eligibility = useMemo<WidgetEligibility>(() => {
+    return checkWidgetEligibility(widgetId, widgetType, endpointRefs);
+  }, [widgetId, widgetType, endpointRefs]);
+
+  const isEligible = eligibility.isEligible;
+
   // Check initial saved state
   useEffect(() => {
     setIsSaved(isWidgetSavedToWorkspace(widgetId));
   }, [widgetId]);
 
   const handleToggle = useCallback(async () => {
+    // Block if not eligible
+    if (!isEligible) {
+      console.warn(`[SaveToWorkspace] Widget "${widgetId}" is not eligible: ${eligibility.reason}`);
+      onError?.(eligibility.reason || 'Widget is not eligible for Workspace');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -105,7 +128,7 @@ export const SaveToWorkspace: React.FC<SaveToWorkspaceProps> = ({
           title,
           endpointRefs,
           {
-            catalog_id: catalogId,
+            catalog_id: catalogId || eligibility.catalogId,
             columns,
             filters,
             time_range: timeRange,
@@ -132,6 +155,8 @@ export const SaveToWorkspace: React.FC<SaveToWorkspaceProps> = ({
       setIsLoading(false);
     }
   }, [
+    isEligible,
+    eligibility,
     isSaved,
     widgetId,
     widgetType,
@@ -158,35 +183,68 @@ export const SaveToWorkspace: React.FC<SaveToWorkspaceProps> = ({
 
   const Icon = isSaved ? BookmarkCheck : Bookmark;
 
+  // Don't render anything if widget is not eligible
+  // This ensures only data-producing widgets show the save option
+  if (!isEligible) {
+    // Optionally show disabled state for debugging/development
+    if (process.env.NODE_ENV === 'development') {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-md',
+                'text-muted-foreground/50 cursor-not-allowed',
+                className
+              )}
+            >
+              <AlertCircle className={cn(sizeClasses[size])} />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">Not eligible: {eligibility.reason}</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+    return null;
+  }
+
   return (
-    <button
-      onClick={handleToggle}
-      disabled={isLoading}
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-md transition-colors',
-        'text-muted-foreground hover:text-foreground',
-        'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
-        isSaved && 'text-primary hover:text-primary/80',
-        className
-      )}
-      title={isSaved ? 'Remove from Workspace' : 'Save to Workspace'}
-      aria-label={isSaved ? 'Remove from Workspace' : 'Save to Workspace'}
-      aria-pressed={isSaved}
-    >
-      <Icon
-        className={cn(
-          sizeClasses[size],
-          isLoading && 'animate-pulse',
-          isSaved && 'fill-current'
-        )}
-      />
-      {showLabel && (
-        <span className="text-xs font-medium">
-          {isSaved ? 'Saved' : 'Save to Workspace'}
-        </span>
-      )}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={handleToggle}
+          disabled={isLoading}
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-md transition-colors',
+            'text-muted-foreground hover:text-foreground',
+            'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1',
+            'disabled:opacity-50 disabled:cursor-not-allowed',
+            isSaved && 'text-primary hover:text-primary/80',
+            className
+          )}
+          aria-label={isSaved ? 'Remove from Workspace' : 'Save to Workspace'}
+          aria-pressed={isSaved}
+        >
+          <Icon
+            className={cn(
+              sizeClasses[size],
+              isLoading && 'animate-pulse',
+              isSaved && 'fill-current'
+            )}
+          />
+          {showLabel && (
+            <span className="text-xs font-medium">
+              {isSaved ? 'Saved' : 'Save to Workspace'}
+            </span>
+          )}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p className="text-xs">{isSaved ? 'Remove from Workspace' : 'Save to Workspace'}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 };
 
