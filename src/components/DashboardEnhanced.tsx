@@ -1759,11 +1759,7 @@ function DashboardEnhancedComponent() {
           </div>
 
           {/* Device Health Overview - COMPREHENSIVE RF INTELLIGENCE */}
-          <Card className="relative overflow-hidden border-purple-500/30 bg-gradient-to-br from-background via-background to-purple-950/20">
-            {/* Animated background glow */}
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-pink-500/5 animate-pulse" />
-            <div className="absolute top-0 left-1/4 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute bottom-0 right-1/4 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <Card className="relative overflow-hidden border-slate-700/50 bg-gradient-to-br from-background via-background to-slate-900/50">
             
             <CardHeader className="pb-2 relative z-10">
               <div className="flex items-center justify-between">
