@@ -386,14 +386,19 @@ export function ServiceLevelsEnhanced() {
     stations.forEach(station => {
       totalThroughput += (station.txBytes || 0) + (station.rxBytes || 0);
 
-      if (station.rssi !== undefined) {
-        totalRssi += station.rssi;
+      // Use rssi or rss field (API returns rss)
+      const rssi = station.rssi ?? (station as any).rss;
+      if (rssi !== undefined && rssi < 0) {
+        totalRssi += rssi;
         rssiCount++;
-      }
 
-      if (station.snr !== undefined) {
-        totalSnr += station.snr;
-        snrCount++;
+        // Estimate SNR from RSSI using typical noise floor (-95 dBm)
+        const noiseFloor = -95;
+        const estimatedSnr = rssi - noiseFloor;
+        if (estimatedSnr > 0) {
+          totalSnr += estimatedSnr;
+          snrCount++;
+        }
       }
     });
 
@@ -1313,12 +1318,13 @@ export function ServiceLevelsEnhanced() {
                 <ScrollArea className="h-[400px] pr-4">
                   <div className="space-y-2">
                     {serviceStations.slice(0, 20).map((station) => {
-                      const rssi = station.rssi || 0;
+                      const rssi = station.rssi ?? (station as any).rss ?? 0;
                       const signalQuality = rssi >= -50 ? 'excellent' : rssi >= -60 ? 'good' : rssi >= -70 ? 'fair' : 'poor';
                       const SignalIcon = Signal;
-                      
-                      const tx = station.txRate ? (station.txRate * 1000000) : ((station.txBytes || 0) * 8);
-                      const rx = station.rxRate ? (station.rxRate * 1000000) : ((station.rxBytes || 0) * 8);
+
+                      // Use transmittedRate/receivedRate (API field names) with fallback to txRate/rxRate
+                      const tx = (station as any).transmittedRate || station.txRate || ((station.txBytes || 0) * 8);
+                      const rx = (station as any).receivedRate || station.rxRate || ((station.rxBytes || 0) * 8);
                       const totalThroughput = tx + rx;
                       
                       return (
@@ -1485,17 +1491,25 @@ export function ServiceLevelsEnhanced() {
 
                   {/* Signal & Connection Metrics */}
                   <div className="grid grid-cols-3 gap-4">
-                    {selectedClient.rssi !== undefined && (
+                    {(selectedClient.rssi !== undefined || (selectedClient as any).rss !== undefined) && (
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">Signal Strength</p>
-                        <p className="text-sm font-medium">{selectedClient.rssi} dBm</p>
+                        <p className="text-sm font-medium">{selectedClient.rssi ?? (selectedClient as any).rss} dBm</p>
                       </div>
                     )}
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Data Rate</p>
                       <p className="text-sm font-medium">
-                        {selectedClient.txRate || selectedClient.rxRate ?
-                          `${selectedClient.txRate || 0}/${selectedClient.rxRate || 0} Mbps` : 'N/A'}
+                        {(() => {
+                          const tx = (selectedClient as any).transmittedRate || selectedClient.txRate;
+                          const rx = (selectedClient as any).receivedRate || selectedClient.rxRate;
+                          if (tx || rx) {
+                            const txMbps = tx ? Math.round(tx / 1000000) : 0;
+                            const rxMbps = rx ? Math.round(rx / 1000000) : 0;
+                            return `${txMbps}/${rxMbps} Mbps`;
+                          }
+                          return 'N/A';
+                        })()}
                       </p>
                     </div>
                     {selectedClient.protocol && (

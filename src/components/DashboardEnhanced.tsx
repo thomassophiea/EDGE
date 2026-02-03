@@ -1012,10 +1012,16 @@ function DashboardEnhancedComponent() {
     let rssiCount = 0;
 
     stations.forEach(station => {
-      // Band distribution - try to detect from rate or explicit band field
-      const rate = Math.max(station.txRate || 0, station.rxRate || 0);
+      // Band distribution - detect from channel first, then fallback to rate heuristic
+      const channel = (station as any).channel || '';
+      const channelNum = parseInt(channel.toString().split('/')[0], 10);
       const stationBand = (station as any).band || (station as any).frequencyBand;
-      
+      // Use transmittedRate/receivedRate (API field names) with fallback to txRate/rxRate
+      const rate = Math.max(
+        (station as any).transmittedRate || station.txRate || 0,
+        (station as any).receivedRate || station.rxRate || 0
+      );
+
       if (stationBand) {
         if (stationBand.includes('6') || stationBand.includes('6E')) {
           bandCounts['6 GHz']++;
@@ -1024,33 +1030,48 @@ function DashboardEnhancedComponent() {
         } else {
           bandCounts['2.4 GHz']++;
         }
-      } else if (rate > 0) {
-        // Heuristic based on max rate
-        if (rate > 1200) {
+      } else if (!isNaN(channelNum) && channelNum > 0) {
+        // Detect band from channel number
+        // 2.4 GHz: channels 1-14
+        // 5 GHz: channels 36-177 (UNII-1 through UNII-4)
+        // 6 GHz: channels 1-233 but in 6GHz band (typically indicated by protocol or high rates)
+        if (channelNum >= 1 && channelNum <= 14) {
+          bandCounts['2.4 GHz']++;
+        } else if (channelNum >= 36 && channelNum <= 177) {
+          bandCounts['5 GHz']++;
+        } else if (channelNum > 177) {
           bandCounts['6 GHz']++;
-        } else if (rate > 150) {
+        }
+      } else if (rate > 0) {
+        // Heuristic based on max rate (rates are in bps from API)
+        const rateMbps = rate / 1000000;
+        if (rateMbps > 1200) {
+          bandCounts['6 GHz']++;
+        } else if (rateMbps > 150) {
           bandCounts['5 GHz']++;
         } else {
           bandCounts['2.4 GHz']++;
         }
       }
 
-      // SNR distribution
-      const snr = (station as any).snr || 0;
-      if (snr > 0) {
-        totalSnr += snr;
-        snrCount++;
-        if (snr >= 40) snrCounts['Excellent']++;
-        else if (snr >= 25) snrCounts['Good']++;
-        else if (snr >= 15) snrCounts['Fair']++;
-        else snrCounts['Poor']++;
-      }
-
-      // RSSI average
+      // SNR calculation - estimate from RSSI using typical noise floor (-95 dBm)
+      // SNR = RSSI - Noise Floor
       const rssi = station.rssi || (station as any).rss || 0;
       if (rssi < 0) { // Valid RSSI is negative
         totalRssi += rssi;
         rssiCount++;
+
+        // Estimate SNR using typical noise floor of -95 dBm
+        const noiseFloor = -95;
+        const estimatedSnr = rssi - noiseFloor;
+        if (estimatedSnr > 0) {
+          totalSnr += estimatedSnr;
+          snrCount++;
+          if (estimatedSnr >= 40) snrCounts['Excellent']++;
+          else if (estimatedSnr >= 25) snrCounts['Good']++;
+          else if (estimatedSnr >= 15) snrCounts['Fair']++;
+          else snrCounts['Poor']++;
+        }
       }
     });
 
@@ -1081,6 +1102,16 @@ function DashboardEnhancedComponent() {
       totalUploadBps: totalUpload,
       totalDownloadBps: totalDownload,
       distribution: distribution
+    });
+
+    // Log RF metrics for debugging
+    console.log('[Dashboard] RF Metrics:', {
+      bandDistribution: bandData,
+      snrDistribution: snrData,
+      avgSnr: snrCount > 0 ? Math.round(totalSnr / snrCount) : 0,
+      avgRssi: rssiCount > 0 ? Math.round(totalRssi / rssiCount) : 0,
+      clientsWithRssi: rssiCount,
+      clientsWithSnr: snrCount
     });
 
     // Log sample station data to debug
