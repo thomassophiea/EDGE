@@ -1557,10 +1557,10 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
             <div className="flex items-center gap-2">
               <Phone className="h-4 w-4 text-red-500" />
               <span className="font-medium text-sm">E911 BSSID</span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-green-500 text-white text-xs font-semibold shadow-lg shadow-green-500/30 animate-pulse">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-900 dark:bg-slate-800 text-emerald-400 text-xs font-semibold border border-emerald-500/30">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
                 Live Sync
               </span>
