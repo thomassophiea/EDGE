@@ -1758,7 +1758,57 @@ function DashboardEnhancedComponent() {
             </button>
           </div>
 
-          {/* Device Health Overview - COMPREHENSIVE RF INTELLIGENCE */}
+          {/* Recent Events Summary */}
+          <Card className="border-slate-700/50">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                  <CardTitle className="text-base font-semibold">Recent Events</CardTitle>
+                </div>
+                <span className="text-xs text-muted-foreground">Last 24h</span>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-2">
+                {apStats.offline > 0 && (
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                      <span className="text-sm">APs Offline</span>
+                    </div>
+                    <Badge variant="destructive" className="text-xs">{apStats.offline}</Badge>
+                  </div>
+                )}
+                {alertCounts.critical > 0 && (
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                      <span className="text-sm">Critical Alerts</span>
+                    </div>
+                    <Badge variant="destructive" className="text-xs">{alertCounts.critical}</Badge>
+                  </div>
+                )}
+                {alertCounts.warning > 0 && (
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      <span className="text-sm">Warnings</span>
+                    </div>
+                    <Badge className="text-xs bg-amber-500/20 text-amber-600 border-amber-500/30">{alertCounts.warning}</Badge>
+                  </div>
+                )}
+                {apStats.offline === 0 && alertCounts.critical === 0 && alertCounts.warning === 0 && (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="text-sm text-green-600">No issues detected - all systems operational</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Org/Site Health Overview - COMPREHENSIVE RF INTELLIGENCE */}
           <Card className="relative overflow-hidden border-slate-700/50 bg-gradient-to-br from-background via-background to-slate-900/50">
             
             <CardHeader className="pb-2 relative z-10">
@@ -1770,7 +1820,9 @@ function DashboardEnhancedComponent() {
                   </div>
                   <div>
                     <CardTitle className="text-lg font-bold text-slate-100">
-                      {healthViewMode === 'sites' ? 'Site' : healthViewMode === 'devices' ? 'Device' : 'Client'} Health Overview
+                      {filters.site === 'all'
+                        ? 'Org'
+                        : healthViewMode === 'sites' ? 'Site' : healthViewMode === 'devices' ? 'Device' : 'Client'} Health Overview
                     </CardTitle>
                     <p className="text-xs text-slate-400">Real-time RF Quality Intelligence</p>
                   </div>
