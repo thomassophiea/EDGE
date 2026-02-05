@@ -500,15 +500,25 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
 
       const accessPointsArray = Array.isArray(apsData) ? apsData : [];
 
-      // Debug: Log first AP data to find ethernet-related fields
+      // Debug: Log ethernet data for specific AP and all APs
       if (accessPointsArray.length > 0) {
-        const firstAP = accessPointsArray[0];
-        console.log('[AP List] Sample AP fields from query:', Object.keys(firstAP));
-        const ethFields = Object.entries(firstAP).filter(([key]) =>
-          /eth|speed|link|port|cable|duplex|nego|phy|lan|uplink/i.test(key)
-        );
-        console.log('[AP List] Ethernet-related fields in query response:', ethFields);
-        console.log('[AP List] Full first AP data:', JSON.stringify(firstAP, null, 2).substring(0, 2000));
+        // Log specific AP we're investigating
+        const targetAP = accessPointsArray.find((ap: any) => ap.serialNumber === 'CV012408S-C0102');
+        if (targetAP) {
+          console.log('[AP Debug] CV012408S-C0102 ethPorts:', (targetAP as any).ethPorts);
+          console.log('[AP Debug] CV012408S-C0102 ethSpeed:', (targetAP as any).ethSpeed);
+          console.log('[AP Debug] CV012408S-C0102 status:', (targetAP as any).status);
+          console.log('[AP Debug] CV012408S-C0102 full data:', JSON.stringify(targetAP, null, 2));
+        } else {
+          console.log('[AP Debug] CV012408S-C0102 not found in AP list');
+        }
+
+        // Log all APs ethPorts for comparison
+        console.log('[AP Debug] All APs ethernet data:');
+        accessPointsArray.forEach((ap: any) => {
+          const speed = ap.ethPorts?.[0]?.speed || ap.ethSpeed || 'N/A';
+          console.log(`  ${ap.apName || ap.serialNumber}: ethPorts[0].speed=${ap.ethPorts?.[0]?.speed}, ethSpeed=${ap.ethSpeed}, status=${ap.status}`);
+        });
       }
 
       // Map sysUptime to uptime field and format it
