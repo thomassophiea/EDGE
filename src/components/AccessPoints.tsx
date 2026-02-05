@@ -203,10 +203,10 @@ const AVAILABLE_COLUMNS: ColumnConfig[] = [
   { key: 'clients', label: 'Connected Clients', defaultVisible: true, category: 'basic' },
 
   // Network columns
+  { key: 'cableHealth', label: 'Cable Health', defaultVisible: true, category: 'network' },
   { key: 'macAddress', label: 'MAC Address', defaultVisible: false, category: 'network' },
   { key: 'ethMode', label: 'Ethernet Mode', defaultVisible: false, category: 'network' },
   { key: 'ethSpeed', label: 'Ethernet Speed', defaultVisible: false, category: 'network' },
-  { key: 'cableHealth', label: 'Cable Health', defaultVisible: false, category: 'network' },
   { key: 'tunnel', label: 'Tunnel', defaultVisible: false, category: 'network' },
   { key: 'wiredClients', label: 'Wired Clients', defaultVisible: false, category: 'network' },
 
@@ -1537,6 +1537,61 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
+      {/* Cable Health Alert Banner */}
+      {(() => {
+        const criticalAPs = accessPoints.filter(ap => cableHealthMap[ap.serialNumber]?.status === 'critical');
+        const warningAPs = accessPoints.filter(ap => cableHealthMap[ap.serialNumber]?.status === 'warning');
+
+        if (criticalAPs.length === 0 && warningAPs.length === 0) return null;
+
+        return (
+          <Alert variant={criticalAPs.length > 0 ? 'destructive' : 'default'} className={criticalAPs.length > 0 ? 'border-red-500 bg-red-500/10' : 'border-yellow-500 bg-yellow-500/10'}>
+            <Cable className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between w-full">
+              <div>
+                <span className="font-semibold">
+                  {criticalAPs.length > 0 ? 'Cable Issues Detected' : 'Potential Cable Issues'}
+                </span>
+                <span className="ml-2">
+                  {criticalAPs.length > 0 && (
+                    <Badge variant="destructive" className="mr-2">
+                      {criticalAPs.length} Critical
+                    </Badge>
+                  )}
+                  {warningAPs.length > 0 && (
+                    <Badge variant="outline" className="bg-yellow-500/20 text-yellow-600 border-yellow-500/50">
+                      {warningAPs.length} Warning
+                    </Badge>
+                  )}
+                </span>
+                <p className="text-xs mt-1 text-muted-foreground">
+                  {criticalAPs.length > 0
+                    ? `APs negotiating at 10Mbps - likely bad cables: ${criticalAPs.map(ap => (ap as any).apName || ap.serialNumber).join(', ')}`
+                    : `APs with degraded link speed: ${warningAPs.map(ap => (ap as any).apName || ap.serialNumber).join(', ')}`
+                  }
+                </p>
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="ml-4">
+                    <Info className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="max-w-sm">
+                  <p className="font-medium mb-1">AI Insight</p>
+                  <p className="text-xs">
+                    {criticalAPs.length > 0
+                      ? 'A 10Mbps link indicates multiple damaged cable pairs. Check both RJ45 connectors for damage, especially the blue pair (pins 4,5) and brown pair (pins 7,8). Consider replacing the cable.'
+                      : 'A 100Mbps link on gigabit APs usually means one cable pair is damaged. Check the blue pair (pins 4,5) or brown pair (pins 7,8) - these pairs are only used for gigabit speeds and damage often goes unnoticed.'
+                    }
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </AlertDescription>
+          </Alert>
+        );
+      })()}
 
       {/* Column Customization Dialog */}
       <DetailSlideOut
