@@ -265,7 +265,7 @@ const AVAILABLE_COLUMNS: ColumnConfig[] = [
   { key: 'clients', label: 'Connected Clients', defaultVisible: true, category: 'basic' },
 
   // Network columns
-  { key: 'cableHealth', label: 'Cable Health', defaultVisible: true, category: 'network' },
+  { key: 'cableHealth', label: 'Cable Health', defaultVisible: false, category: 'network' },
   { key: 'macAddress', label: 'MAC Address', defaultVisible: false, category: 'network' },
   { key: 'ethMode', label: 'Ethernet Mode', defaultVisible: false, category: 'network' },
   { key: 'ethSpeed', label: 'Ethernet Speed', defaultVisible: false, category: 'network' },
@@ -1276,6 +1276,8 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
       case 'connection':
         return <div className="flex items-center justify-center">{getConnectionStatusIcon(ap)}</div>;
       case 'apName':
+        const apCableHealth = cableHealthMap[ap.serialNumber];
+        const apIsOnline = isAPOnline(ap);
         return (
           <div className="flex items-center gap-2">
             <span>{getAPName(ap)}</span>
@@ -1287,6 +1289,31 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
                 <TooltipContent>
                   <p className="font-medium">AFC Anchor</p>
                   <p className="text-xs opacity-80">6 GHz Standard Power - This AP provides GPS location for AFC (Automated Frequency Coordination)</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {/* Cable Health Icon - only for online APs with known status */}
+            {apIsOnline && apCableHealth && apCableHealth.status !== 'unknown' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {apCableHealth.status === 'good' ? (
+                    <Cable className="h-4 w-4 text-green-500 cursor-help" />
+                  ) : apCableHealth.status === 'warning' ? (
+                    <Cable className="h-4 w-4 text-yellow-500 cursor-help" />
+                  ) : (
+                    <Cable className="h-4 w-4 text-red-500 cursor-help" />
+                  )}
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-medium">
+                    {apCableHealth.status === 'good' ? 'Cable Health: Good' :
+                     apCableHealth.status === 'warning' ? 'Cable Health: Warning' :
+                     'Cable Health: Bad Cable'}
+                  </p>
+                  <p className="text-xs opacity-80">{apCableHealth.speedDisplay} ({apCableHealth.message})</p>
+                  {apCableHealth.status !== 'good' && (
+                    <p className="text-xs mt-1 text-yellow-400">Check blue pair (pins 4,5) or brown pair (pins 7,8)</p>
+                  )}
                 </TooltipContent>
               </Tooltip>
             )}
