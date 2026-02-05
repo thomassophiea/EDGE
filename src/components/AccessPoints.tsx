@@ -1292,13 +1292,11 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
                 </TooltipContent>
               </Tooltip>
             )}
-            {/* Cable Health Icon - only for online APs with known status */}
-            {apIsOnline && apCableHealth && apCableHealth.status !== 'unknown' && (
+            {/* Cable Health Icon - only show when there's a problem (warning/critical) */}
+            {apIsOnline && apCableHealth && (apCableHealth.status === 'warning' || apCableHealth.status === 'critical') && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  {apCableHealth.status === 'good' ? (
-                    <Cable className="h-4 w-4 text-green-500 cursor-help" />
-                  ) : apCableHealth.status === 'warning' ? (
+                  {apCableHealth.status === 'warning' ? (
                     <Cable className="h-4 w-4 text-yellow-500 cursor-help" />
                   ) : (
                     <Cable className="h-4 w-4 text-red-500 cursor-help" />
@@ -1306,13 +1304,23 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
                   <p className="font-medium">
-                    {apCableHealth.status === 'good' ? 'Cable Health: Good' :
-                     apCableHealth.status === 'warning' ? 'Cable Health: Warning' :
-                     'Cable Health: Bad Cable'}
+                    {apCableHealth.status === 'warning' ? 'Possible Cable Issue' : 'Bad Cable Detected'}
                   </p>
-                  <p className="text-xs opacity-80">{apCableHealth.speedDisplay} ({apCableHealth.message})</p>
-                  {apCableHealth.status !== 'good' && (
-                    <p className="text-xs mt-1 text-yellow-400">Check blue pair (pins 4,5) or brown pair (pins 7,8)</p>
+                  <p className="text-xs opacity-80 mt-1">
+                    <span className="font-medium">Speed:</span> {apCableHealth.speedDisplay} (expected {apCableHealth.expectedSpeedMbps >= 1000 ? `${apCableHealth.expectedSpeedMbps/1000}Gbps` : `${apCableHealth.expectedSpeedMbps}Mbps`})
+                  </p>
+                  <p className="text-xs opacity-80 mt-1">
+                    <span className="font-medium">Likely cause:</span> {apCableHealth.status === 'critical'
+                      ? 'Multiple damaged pairs or severely damaged cable'
+                      : 'Damaged cable pair - Gigabit requires all 4 pairs, 100Mbps only uses 2'}
+                  </p>
+                  <p className="text-xs mt-2 text-yellow-400">
+                    Check blue pair (pins 4,5) or brown pair (pins 7,8) on the RJ45 connector
+                  </p>
+                  {apCableHealth.otherAPsOnSwitch && apCableHealth.otherAPsOnSwitch.good > 0 && (
+                    <p className="text-xs mt-1 text-orange-400">
+                      {apCableHealth.otherAPsOnSwitch.good} other APs on same switch have good speeds - issue isolated to this cable
+                    </p>
                   )}
                 </TooltipContent>
               </Tooltip>
