@@ -1423,48 +1423,36 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
                 <TooltipTrigger asChild>
                   <Cable className={`h-4 w-4 cursor-help ${apCableHealth.status === 'critical' ? 'text-red-500' : 'text-yellow-500'}`} />
                 </TooltipTrigger>
-                <TooltipContent className="max-w-sm">
-                  <p className={`font-medium ${apCableHealth.status === 'critical' ? 'text-red-400' : 'text-yellow-400'}`}>
-                    {apCableHealth.status === 'critical' ? 'Bad Cable Detected' : 'Possible Cable Issue'}
-                  </p>
-
-                  {/* Speed info */}
-                  <div className="text-xs mt-2 space-y-1">
-                    <p><span className="text-muted-foreground">Link Speed:</span> <span className={apCableHealth.status === 'critical' ? 'text-red-400' : 'text-yellow-400'}>{apCableHealth.speedDisplay}</span> (expected {apCableHealth.expectedSpeedMbps >= 1000 ? `${apCableHealth.expectedSpeedMbps/1000}Gbps` : `${apCableHealth.expectedSpeedMbps}Mbps`})</p>
-                    {apCableHealth.duplexMode && (
-                      <p><span className="text-muted-foreground">Duplex:</span> <span className={apCableHealth.duplexMode.toLowerCase().includes('half') ? 'text-yellow-400' : ''}>{apCableHealth.duplexMode}</span></p>
-                    )}
-                    {apCableHealth.portName && (
-                      <p><span className="text-muted-foreground">Port:</span> {apCableHealth.portName}</p>
-                    )}
+                <TooltipContent className="max-w-xs bg-zinc-900 border-zinc-700 p-3">
+                  {/* Header */}
+                  <div className={`font-semibold text-sm ${apCableHealth.status === 'critical' ? 'text-red-500' : 'text-yellow-500'}`}>
+                    {apCableHealth.status === 'critical' ? '⚠ Bad Cable Detected' : '⚠ Possible Cable Issue'}
                   </div>
 
-                  {/* Issues list */}
-                  {apCableHealth.issues && apCableHealth.issues.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-border/50">
-                      <p className="text-xs font-medium mb-1">Detected Issues:</p>
-                      {apCableHealth.issues.map((issue, idx) => (
-                        <div key={idx} className="text-xs mb-1">
-                          <span className={issue.severity === 'critical' ? 'text-red-400' : 'text-yellow-400'}>• </span>
-                          {issue.description}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {/* Speed info - compact */}
+                  <div className="text-xs mt-2 text-zinc-300">
+                    <span className={`font-medium ${apCableHealth.status === 'critical' ? 'text-red-400' : 'text-yellow-400'}`}>
+                      {apCableHealth.speedDisplay}
+                    </span>
+                    <span className="text-zinc-500"> → expected </span>
+                    <span className="text-green-400">
+                      {apCableHealth.expectedSpeedMbps >= 1000 ? `${apCableHealth.expectedSpeedMbps/1000}Gbps` : `${apCableHealth.expectedSpeedMbps}Mbps`}
+                    </span>
+                  </div>
 
-                  {/* Recommendation */}
+                  {/* Recommendation - clear and readable */}
                   {apCableHealth.issues && apCableHealth.issues.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-border/50 text-xs text-blue-400">
-                      <p className="font-medium">Recommendation:</p>
-                      <p>{apCableHealth.issues[0].recommendation}</p>
+                    <div className="mt-3 p-2 bg-zinc-800 rounded text-xs text-zinc-200">
+                      <span className="text-blue-400 font-medium">Fix: </span>
+                      {apCableHealth.issues[0].recommendation}
                     </div>
                   )}
 
                   {/* Switch comparison */}
                   {apCableHealth.otherAPsOnSwitch && apCableHealth.otherAPsOnSwitch.good > 0 && (
-                    <p className="text-xs mt-2 text-orange-400">
-                      {apCableHealth.otherAPsOnSwitch.good} other APs on same switch have good speeds - issue isolated to this cable
-                    </p>
+                    <div className="mt-2 text-xs text-emerald-400">
+                      ✓ {apCableHealth.otherAPsOnSwitch.good} other APs on switch OK - issue is this cable
+                    </div>
                   )}
                 </TooltipContent>
               </Tooltip>
