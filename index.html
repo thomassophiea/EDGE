@@ -13,6 +13,57 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
 
+    <!-- Critical inline styles for boot surface - prevents blank screen during hydration -->
+    <style id="boot-styles">
+      /* Static background colors - never rely on CSS variables during boot */
+      html, body, #root {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+      /* Dark theme defaults (most common) - light theme overridden below */
+      html, body {
+        background-color: #121212 !important;
+        color: rgba(255, 255, 255, 0.87) !important;
+      }
+      html.light, html.light body {
+        background-color: #ffffff !important;
+        color: rgba(0, 0, 0, 0.87) !important;
+      }
+      /* Boot surface - covers screen until app is hydrated */
+      #boot-surface {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background-color: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 150ms ease-out;
+      }
+      #boot-surface.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      /* Simple loading indicator */
+      .boot-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: boot-spin 0.8s linear infinite;
+      }
+      html.light .boot-spinner {
+        border-color: rgba(0, 0, 0, 0.1);
+        border-top-color: #6366f1;
+      }
+      @keyframes boot-spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+
     <!-- Inline script to prevent FOUC - apply theme immediately -->
     <script>
       (function() {
@@ -37,6 +88,10 @@
   </head>
 
   <body>
+    <!-- Boot surface - removed after React hydration -->
+    <div id="boot-surface" aria-hidden="true">
+      <div class="boot-spinner"></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

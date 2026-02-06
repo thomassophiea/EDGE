@@ -6,6 +6,31 @@ import "./styles/globals.css";
 import "./index.css";
 
 /**
+ * Remove the boot surface after app hydration
+ * Fades out smoothly then removes from DOM
+ */
+function removeBootSurface(): void {
+  const bootSurface = document.getElementById('boot-surface');
+  if (!bootSurface) return;
+
+  // Fade out
+  bootSurface.classList.add('fade-out');
+
+  // Remove after transition
+  bootSurface.addEventListener('transitionend', () => {
+    bootSurface.remove();
+    // Also remove boot styles to reduce DOM size
+    document.getElementById('boot-styles')?.remove();
+  }, { once: true });
+
+  // Fallback removal if transition doesn't fire
+  setTimeout(() => {
+    bootSurface.remove();
+    document.getElementById('boot-styles')?.remove();
+  }, 300);
+}
+
+/**
  * Initialize the application with version gate check
  * This ensures clean state on version changes before React mounts
  */
@@ -19,6 +44,13 @@ async function initApp() {
       <App />
     </ErrorBoundary>
   );
+
+  // Remove boot surface after a brief delay to ensure React has rendered
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      removeBootSurface();
+    });
+  });
 
   // Register service worker for caching static assets (production only)
   registerServiceWorker();
