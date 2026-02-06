@@ -1,6 +1,6 @@
 /**
- * Unified UI Constants for AIO Platform Management Dashboard
- * AI-Informed Orchestration
+ * Unified UI Constants for AURA Platform Management Dashboard
+ * Autonomous Unified Radio Agent
  * Ensures consistency across all pages
  */
 

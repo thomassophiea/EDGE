@@ -57,13 +57,13 @@ export function LoginForm({ onLoginSuccess, theme = 'system', onThemeToggle }: L
             <div className="flex justify-center mb-4">
               <ImageWithFallback 
                 src={extremeNetworksLogo}
-                alt="AIO Platform"
+                alt="AURA Platform"
                 className="h-12 w-12 object-contain"
               />
             </div>
-            <CardTitle className="text-2xl"><span className="font-bold">Extreme</span> Platform ONE™ | AIO</CardTitle>
+            <CardTitle className="text-2xl"><span className="font-bold">Extreme</span> Platform ONE™ | AURA</CardTitle>
             <CardDescription className="text-center mt-2">
-              AI-Informed Orchestration
+              Autonomous Unified Radio Agent
             </CardDescription>
           </CardHeader>
         <CardContent>
