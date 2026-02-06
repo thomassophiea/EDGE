@@ -1,6 +1,6 @@
-# Wireless EDGE Services
+# Extreme Platform ONE | AURA
 
-A comprehensive enterprise wireless network management and monitoring dashboard that integrates with Extreme Networks' Campus Controller. Built with React, TypeScript, and modern web technologies for real-time network visibility, historical analytics, and intelligent automation.
+**Autonomous Unified Radio Agent** - A comprehensive enterprise wireless network management and monitoring dashboard that integrates with Extreme Networks' Campus Controller. Built with React, TypeScript, and modern web technologies for real-time network visibility, historical analytics, and intelligent automation.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://reactjs.org/)
@@ -9,7 +9,13 @@ A comprehensive enterprise wireless network management and monitoring dashboard 
 
 ## 🌟 Overview
 
-Wireless EDGE Services is an enterprise-grade network management platform providing comprehensive control over Extreme Networks wireless infrastructure with:
+**AURA** represents:
+- **A**utonomous - Designed for autonomous operation driven by cloud-derived intelligence, closed-loop optimization, and continuous learning, minimizing the need for manual intervention at scale
+- **U**nified - A single, cloud-coordinated decisioning layer that normalizes data and intent across radios, bands, deployment models, and operational domains
+- **R**adio - Grounded in real RF behavior at the edge, with telemetry streamed to the cloud to enable correlation, learning, and system-wide optimization rather than isolated tuning
+- **A**gent - A distributed agent model where intelligence is informed by the cloud, executed at the edge, and continuously refined through telemetry, intent, and contextual signals
+
+AURA is an enterprise-grade network management platform providing comprehensive control over Extreme Networks wireless infrastructure with:
 
 - 🎯 **Real-time Network Monitoring** - Live metrics for 1000+ access points and clients
 - ⏮️ **Network Rewind** - Travel back in time with historical metrics and playback
@@ -683,4 +689,4 @@ For issues, questions, or feature requests:
 
 ---
 
-*Wireless EDGE Services - Professional network management for the modern enterprise*
+*Extreme Platform ONE | AURA - Autonomous Unified Radio Agent for the modern enterprise*
