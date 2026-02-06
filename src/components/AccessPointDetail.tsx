@@ -40,6 +40,13 @@ import { APInsights, APInsightsFullScreen } from './APInsights';
 import { toast } from 'sonner';
 
 // Cable health detection utilities
+interface CableIssue {
+  type: 'speed_degraded' | 'speed_critical' | 'duplex_mismatch' | 'poe_issue' | 'low_power';
+  severity: 'warning' | 'critical';
+  description: string;
+  recommendation: string;
+}
+
 interface CableHealthResult {
   status: 'good' | 'warning' | 'critical' | 'unknown';
   speedMbps: number | null;
@@ -47,6 +54,9 @@ interface CableHealthResult {
   expectedSpeedMbps: number;
   message: string;
   aiInsight?: string;
+  issues: CableIssue[];
+  duplexMode?: string;
+  portName?: string;
 }
 
 /**
@@ -92,11 +102,16 @@ function parseSpeedString(speedStr: string | undefined | null): { speedMbps: num
 }
 
 /**
- * Get the actual negotiated ethernet speed from AP data
+ * Get the actual negotiated ethernet speed and duplex mode from AP data
  * Checks ALL ports in ethPorts array and finds the one with valid speed
  * (some APs use eth1 as uplink, not eth0)
  */
-function getActualEthSpeed(ap: any): { speedMbps: number | null; speedDisplay: string; portName?: string } {
+function getActualEthSpeed(ap: any): {
+  speedMbps: number | null;
+  speedDisplay: string;
+  portName?: string;
+  duplexMode?: string;
+} {
   // Check all ports in ethPorts array to find one with valid speed
   if (ap.ethPorts && Array.isArray(ap.ethPorts) && ap.ethPorts.length > 0) {
     // First pass: find any port with valid numeric speed (not speedNA)
@@ -104,7 +119,11 @@ function getActualEthSpeed(ap: any): { speedMbps: number | null; speedDisplay: s
       if (port && port.speed) {
         const parsed = parseSpeedString(port.speed);
         if (parsed.speedMbps !== null) {
-          return { ...parsed, portName: port.name || 'eth' };
+          return {
+            ...parsed,
+            portName: port.name || 'eth',
+            duplexMode: port.mode || port.duplex || ap.ethMode
+          };
         }
       }
     }
@@ -112,7 +131,8 @@ function getActualEthSpeed(ap: any): { speedMbps: number | null; speedDisplay: s
 
   // Fallback to ethSpeed field
   if (ap.ethSpeed) {
-    return parseSpeedString(ap.ethSpeed);
+    const parsed = parseSpeedString(ap.ethSpeed);
+    return { ...parsed, duplexMode: ap.ethMode };
   }
 
   return { speedMbps: null, speedDisplay: 'Unknown' };
@@ -143,12 +163,48 @@ function getExpectedSpeed(model: string | undefined): number {
 }
 
 /**
- * Analyze cable health for an AP
+ * Check if duplex mode indicates a problem
+ */
+function isDuplexIssue(duplexMode: string | undefined): boolean {
+  if (!duplexMode) return false;
+  const mode = duplexMode.toLowerCase();
+  return mode.includes('half') || mode === 'halfduplex' || mode === 'half-duplex';
+}
+
+/**
+ * Check if PoE status indicates a cable issue
+ */
+function getPoEIssue(ap: any): { hasIssue: boolean; description: string } | null {
+  const powerStatus = ap.ethPowerStatus?.toLowerCase() || '';
+  const powerMode = ap.powerMode?.toLowerCase() || '';
+  const lowPower = ap.lowPower === true;
+
+  if (lowPower || powerMode.includes('low') || powerMode.includes('reduced')) {
+    return {
+      hasIssue: true,
+      description: 'AP running in low power mode - may indicate high cable resistance'
+    };
+  }
+
+  if (powerStatus.includes('low') || powerStatus.includes('insufficient') ||
+      powerStatus.includes('fault') || powerStatus.includes('error')) {
+    return {
+      hasIssue: true,
+      description: `PoE issue detected: ${ap.ethPowerStatus}`
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Analyze cable health for an AP using multiple indicators
  */
 function analyzeCableHealth(apDetails: APDetails): CableHealthResult {
   const apAny = apDetails as any;
-  const { speedMbps, speedDisplay } = getActualEthSpeed(apAny);
+  const { speedMbps, speedDisplay, portName, duplexMode } = getActualEthSpeed(apAny);
   const expectedSpeedMbps = getExpectedSpeed(apDetails.model || apAny.hardwareType || apAny.platformName);
+  const issues: CableIssue[] = [];
 
   if (speedMbps === null) {
     return {
@@ -156,38 +212,109 @@ function analyzeCableHealth(apDetails: APDetails): CableHealthResult {
       speedMbps: null,
       speedDisplay,
       expectedSpeedMbps,
-      message: 'Ethernet speed not available'
+      message: 'Ethernet speed not available',
+      issues: [],
+      duplexMode,
+      portName
     };
   }
 
+  // Issue 1: Critical speed degradation (10Mbps or less)
   if (speedMbps <= 10) {
-    return {
-      status: 'critical',
-      speedMbps,
-      speedDisplay,
-      expectedSpeedMbps,
-      message: `Critical: ${speedDisplay} link detected - likely bad cable, damaged connector, or severe cable damage`,
-      aiInsight: 'A 10Mbps negotiation typically indicates multiple damaged pairs. Check both ends of the cable for damage to the RJ45 connector. The blue pair (pins 4, 5) and brown pair (pins 7, 8) are most commonly damaged as they are the outer pairs. Consider replacing the cable entirely.'
-    };
+    issues.push({
+      type: 'speed_critical',
+      severity: 'critical',
+      description: `Critical: ${speedDisplay} link detected`,
+      recommendation: 'Multiple cable pairs likely damaged. Replace the entire cable and check both RJ45 connectors for damage.'
+    });
+  }
+  // Issue 2: Speed degradation (100Mbps when gigabit expected)
+  else if (speedMbps <= 100 && speedMbps < expectedSpeedMbps) {
+    issues.push({
+      type: 'speed_degraded',
+      severity: 'warning',
+      description: `Speed degraded: ${speedDisplay} (expected ${expectedSpeedMbps >= 1000 ? `${expectedSpeedMbps/1000}Gbps` : `${expectedSpeedMbps}Mbps`})`,
+      recommendation: 'Check blue pair (pins 4,5) and brown pair (pins 7,8) on both ends. These outer pairs are most commonly damaged and only needed for gigabit.'
+    });
   }
 
-  if (speedMbps <= 100 && expectedSpeedMbps >= 1000) {
-    return {
-      status: 'warning',
-      speedMbps,
-      speedDisplay,
-      expectedSpeedMbps,
-      message: `Warning: ${speedDisplay} link on AP that supports ${expectedSpeedMbps >= 1000 ? `${expectedSpeedMbps/1000}Gbps` : `${expectedSpeedMbps}Mbps`}`,
-      aiInsight: 'A 100Mbps negotiation on a gigabit-capable AP usually indicates a damaged pair in the cable. Gigabit Ethernet requires all 4 pairs, while 100Mbps only uses 2. Check the blue pair (pins 4, 5) or brown pair (pins 7, 8) on the RJ45 connector - these are often the culprit as they\'re not used for 100Mbps and damage goes unnoticed until gigabit is needed. Also verify the cable is Cat5e or better.'
-    };
+  // Issue 3: Duplex mismatch
+  if (isDuplexIssue(duplexMode)) {
+    issues.push({
+      type: 'duplex_mismatch',
+      severity: 'warning',
+      description: `Half duplex detected (${duplexMode})`,
+      recommendation: 'Half duplex indicates cable quality issues or switch port misconfiguration. Check for cable damage, excessive length (>100m), or switch port settings.'
+    });
+  }
+
+  // Issue 4: PoE/Power issues
+  const poeIssue = getPoEIssue(apAny);
+  if (poeIssue) {
+    issues.push({
+      type: 'poe_issue',
+      severity: 'warning',
+      description: poeIssue.description,
+      recommendation: 'High cable resistance reduces power delivery. Check for corroded connectors, damaged cable, or excessive cable length.'
+    });
+  }
+
+  // Issue 5: Low power mode
+  if (apAny.lowPower === true && !poeIssue) {
+    issues.push({
+      type: 'low_power',
+      severity: 'warning',
+      description: 'AP operating in low power mode',
+      recommendation: 'May be due to PoE budget constraints or cable resistance. Verify PoE source capacity and cable quality.'
+    });
+  }
+
+  // Determine overall status
+  let status: 'good' | 'warning' | 'critical' = 'good';
+  if (issues.some(i => i.severity === 'critical')) {
+    status = 'critical';
+  } else if (issues.length > 0) {
+    status = 'warning';
+  }
+
+  // Build message
+  let message = '';
+  if (issues.length === 0) {
+    message = `${speedDisplay} - Link speed is good`;
+  } else if (issues.length === 1) {
+    message = issues[0].description;
+  } else {
+    message = `Multiple issues detected: ${issues.map(i => i.type.replace(/_/g, ' ')).join(', ')}`;
+  }
+
+  // Build AI insight from all issues
+  let aiInsight = '';
+  if (issues.length > 0) {
+    if (issues.some(i => i.type === 'speed_critical')) {
+      aiInsight = 'A 10Mbps negotiation typically indicates multiple damaged pairs. Check both ends of the cable for damage to the RJ45 connector. The blue pair (pins 4, 5) and brown pair (pins 7, 8) are most commonly damaged as they are the outer pairs. Consider replacing the cable entirely.';
+    } else if (issues.some(i => i.type === 'speed_degraded')) {
+      aiInsight = 'A 100Mbps negotiation on a gigabit-capable AP usually indicates a damaged pair in the cable. Gigabit Ethernet requires all 4 pairs, while 100Mbps only uses 2. Check the blue pair (pins 4, 5) or brown pair (pins 7, 8) on the RJ45 connector.';
+    }
+
+    if (issues.some(i => i.type === 'duplex_mismatch')) {
+      aiInsight += (aiInsight ? ' Additionally, ' : '') + 'Half duplex negotiation suggests signal quality issues - possibly from cable damage, interference, or excessive length.';
+    }
+
+    if (issues.some(i => i.type === 'poe_issue' || i.type === 'low_power')) {
+      aiInsight += (aiInsight ? ' ' : '') + 'Power delivery issues can indicate high cable resistance from corroded connections or damaged conductors.';
+    }
   }
 
   return {
-    status: 'good',
+    status,
     speedMbps,
     speedDisplay,
     expectedSpeedMbps,
-    message: `${speedDisplay} - Link speed is good`
+    message,
+    aiInsight: aiInsight || undefined,
+    issues,
+    duplexMode,
+    portName
   };
 }
 

@@ -28,15 +28,30 @@ interface CableHealthResult {
   expectedSpeedMbps: number;
   message: string;
   otherAPsOnSwitch?: { good: number; bad: number };
+  issues: CableIssue[];
+  duplexMode?: string;
+  portName?: string;
+}
+
+interface CableIssue {
+  type: 'speed_degraded' | 'speed_critical' | 'duplex_mismatch' | 'poe_issue' | 'low_power';
+  severity: 'warning' | 'critical';
+  description: string;
+  recommendation: string;
 }
 
 /**
- * Get the actual negotiated ethernet speed from AP data
+ * Get the actual negotiated ethernet speed and duplex mode from AP data
  * Checks ALL ports in ethPorts array and finds the one with valid speed
  * (some APs use eth1 as uplink, not eth0)
  * Handles formats like: "speed5Gbps", "speed100Mbps", "speedNA", "speedAuto"
  */
-function getActualEthSpeed(ap: any): { speedMbps: number | null; speedDisplay: string; portName?: string } {
+function getActualEthSpeed(ap: any): {
+  speedMbps: number | null;
+  speedDisplay: string;
+  portName?: string;
+  duplexMode?: string;
+} {
   // Check all ports in ethPorts array to find one with valid speed
   if (ap.ethPorts && Array.isArray(ap.ethPorts) && ap.ethPorts.length > 0) {
     // First pass: find any port with valid numeric speed (not speedNA)
@@ -44,7 +59,11 @@ function getActualEthSpeed(ap: any): { speedMbps: number | null; speedDisplay: s
       if (port && port.speed) {
         const parsed = parseSpeedString(port.speed);
         if (parsed.speedMbps !== null) {
-          return { ...parsed, portName: port.name || 'eth' };
+          return {
+            ...parsed,
+            portName: port.name || 'eth',
+            duplexMode: port.mode || port.duplex || ap.ethMode
+          };
         }
       }
     }
@@ -52,7 +71,8 @@ function getActualEthSpeed(ap: any): { speedMbps: number | null; speedDisplay: s
 
   // Fallback to ethSpeed field
   if (ap.ethSpeed) {
-    return parseSpeedString(ap.ethSpeed);
+    const parsed = parseSpeedString(ap.ethSpeed);
+    return { ...parsed, duplexMode: ap.ethMode };
   }
 
   return { speedMbps: null, speedDisplay: 'Unknown' };
@@ -162,15 +182,59 @@ function extractSwitchId(switchPorts: string | string[] | undefined): string | n
 }
 
 /**
- * Analyze cable health for an AP, considering other APs on the same switch
+ * Check if duplex mode indicates a problem
+ * Half duplex on a modern network typically indicates cable issues or switch misconfiguration
+ */
+function isDuplexIssue(duplexMode: string | undefined): boolean {
+  if (!duplexMode) return false;
+  const mode = duplexMode.toLowerCase();
+  return mode.includes('half') || mode === 'halfduplex' || mode === 'half-duplex';
+}
+
+/**
+ * Check if PoE status indicates a cable issue
+ * Low power delivery can indicate high resistance from damaged cable
+ */
+function getPoEIssue(ap: any): { hasIssue: boolean; description: string } | null {
+  const powerStatus = ap.ethPowerStatus?.toLowerCase() || '';
+  const powerMode = ap.powerMode?.toLowerCase() || '';
+  const lowPower = ap.lowPower === true;
+
+  // Check for explicit low power indicators
+  if (lowPower || powerMode.includes('low') || powerMode.includes('reduced')) {
+    return {
+      hasIssue: true,
+      description: 'AP running in low power mode - may indicate high cable resistance'
+    };
+  }
+
+  // Check PoE status for issues
+  if (powerStatus.includes('low') || powerStatus.includes('insufficient') ||
+      powerStatus.includes('fault') || powerStatus.includes('error')) {
+    return {
+      hasIssue: true,
+      description: `PoE issue detected: ${ap.ethPowerStatus}`
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Analyze cable health for an AP using multiple indicators:
+ * 1. Speed degradation (primary indicator)
+ * 2. Duplex mismatch (half when full expected)
+ * 3. PoE/power issues (high resistance indication)
+ * 4. Comparison with other APs on same switch
  */
 function analyzeCableHealth(
   ap: AccessPoint,
   allAPs: AccessPoint[]
 ): CableHealthResult {
   const apAny = ap as any;
-  const { speedMbps, speedDisplay } = getActualEthSpeed(apAny);
+  const { speedMbps, speedDisplay, portName, duplexMode } = getActualEthSpeed(apAny);
   const expectedSpeedMbps = getExpectedSpeed(ap.model || apAny.hardwareType || apAny.platformName);
+  const issues: CableIssue[] = [];
 
   // If we can't determine speed, return unknown
   if (speedMbps === null) {
@@ -179,7 +243,10 @@ function analyzeCableHealth(
       speedMbps: null,
       speedDisplay,
       expectedSpeedMbps,
-      message: 'Ethernet speed not available'
+      message: 'Ethernet speed not available',
+      issues: [],
+      duplexMode,
+      portName
     };
   }
 
@@ -208,44 +275,89 @@ function analyzeCableHealth(
     }
   }
 
-  // Determine status based on speed and switch context
+  // Issue 1: Critical speed degradation (10Mbps or less)
   if (speedMbps <= 10) {
-    return {
-      status: 'critical',
-      speedMbps,
-      speedDisplay,
-      expectedSpeedMbps,
-      message: otherAPsOnSwitch && otherAPsOnSwitch.good > 0
-        ? `Critical: ${speedDisplay} link - likely bad cable (${otherAPsOnSwitch.good} other APs on same switch have good rates)`
-        : `Critical: ${speedDisplay} link detected - likely bad cable or connector`,
-      otherAPsOnSwitch
-    };
+    issues.push({
+      type: 'speed_critical',
+      severity: 'critical',
+      description: `Critical: ${speedDisplay} link detected`,
+      recommendation: 'Multiple cable pairs likely damaged. Replace the entire cable and check both RJ45 connectors for damage.'
+    });
+  }
+  // Issue 2: Speed degradation (100Mbps when gigabit expected)
+  else if (speedMbps <= 100 && speedMbps < expectedSpeedMbps) {
+    issues.push({
+      type: 'speed_degraded',
+      severity: 'warning',
+      description: `Speed degraded: ${speedDisplay} (expected ${expectedSpeedMbps >= 1000 ? `${expectedSpeedMbps/1000}Gbps` : `${expectedSpeedMbps}Mbps`})`,
+      recommendation: 'Check blue pair (pins 4,5) and brown pair (pins 7,8) on both ends. These outer pairs are most commonly damaged and only needed for gigabit.'
+    });
   }
 
-  if (speedMbps <= 100) {
-    const isBelowExpected = speedMbps < expectedSpeedMbps;
-    if (isBelowExpected) {
-      return {
-        status: 'warning',
-        speedMbps,
-        speedDisplay,
-        expectedSpeedMbps,
-        message: otherAPsOnSwitch && otherAPsOnSwitch.good > 0
-          ? `Warning: ${speedDisplay} link on ${ap.model || apAny.platformName || 'AP'} (expected ${expectedSpeedMbps >= 1000 ? `${expectedSpeedMbps/1000}Gbps` : `${expectedSpeedMbps}Mbps`}) - ${otherAPsOnSwitch.good} other APs on same switch have good rates`
-          : `Warning: ${speedDisplay} link - possible cable issue (${ap.model || apAny.platformName || 'AP'} supports higher speeds)`,
-        otherAPsOnSwitch
-      };
-    }
+  // Issue 3: Duplex mismatch
+  if (isDuplexIssue(duplexMode)) {
+    issues.push({
+      type: 'duplex_mismatch',
+      severity: 'warning',
+      description: `Half duplex detected (${duplexMode})`,
+      recommendation: 'Half duplex indicates cable quality issues or switch port misconfiguration. Check for cable damage, excessive length (>100m), or switch port settings.'
+    });
   }
 
-  // Good speed
+  // Issue 4: PoE/Power issues
+  const poeIssue = getPoEIssue(apAny);
+  if (poeIssue) {
+    issues.push({
+      type: 'poe_issue',
+      severity: 'warning',
+      description: poeIssue.description,
+      recommendation: 'High cable resistance reduces power delivery. Check for corroded connectors, damaged cable, or excessive cable length.'
+    });
+  }
+
+  // Issue 5: Low power mode (may indicate cable-related power issues)
+  if (apAny.lowPower === true && !poeIssue) {
+    issues.push({
+      type: 'low_power',
+      severity: 'warning',
+      description: 'AP operating in low power mode',
+      recommendation: 'May be due to PoE budget constraints or cable resistance. Verify PoE source capacity and cable quality.'
+    });
+  }
+
+  // Determine overall status based on issues
+  let status: 'good' | 'warning' | 'critical' = 'good';
+  if (issues.some(i => i.severity === 'critical')) {
+    status = 'critical';
+  } else if (issues.length > 0) {
+    status = 'warning';
+  }
+
+  // Build message
+  let message = '';
+  if (issues.length === 0) {
+    message = `${speedDisplay} - Good`;
+  } else if (issues.length === 1) {
+    message = issues[0].description;
+  } else {
+    message = `Multiple issues detected: ${issues.map(i => i.type.replace('_', ' ')).join(', ')}`;
+  }
+
+  // Add switch context to message
+  if (status !== 'good' && otherAPsOnSwitch && otherAPsOnSwitch.good > 0) {
+    message += ` (${otherAPsOnSwitch.good} other APs on same switch have good rates - issue isolated to this cable)`;
+  }
+
   return {
-    status: 'good',
+    status,
     speedMbps,
     speedDisplay,
     expectedSpeedMbps,
-    message: `${speedDisplay} - Good`,
-    otherAPsOnSwitch
+    message,
+    otherAPsOnSwitch,
+    issues,
+    duplexMode,
+    portName
   };
 }
 
@@ -1311,23 +1423,46 @@ export function AccessPoints({ onShowDetail }: AccessPointsProps) {
                 <TooltipTrigger asChild>
                   <Cable className={`h-4 w-4 cursor-help ${apCableHealth.status === 'critical' ? 'text-red-500' : 'text-yellow-500'}`} />
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="font-medium">
-                    {apCableHealth.status === 'warning' ? 'Possible Cable Issue' : 'Bad Cable Detected'}
+                <TooltipContent className="max-w-sm">
+                  <p className={`font-medium ${apCableHealth.status === 'critical' ? 'text-red-400' : 'text-yellow-400'}`}>
+                    {apCableHealth.status === 'critical' ? 'Bad Cable Detected' : 'Possible Cable Issue'}
                   </p>
-                  <p className="text-xs opacity-80 mt-1">
-                    <span className="font-medium">Speed:</span> {apCableHealth.speedDisplay} (expected {apCableHealth.expectedSpeedMbps >= 1000 ? `${apCableHealth.expectedSpeedMbps/1000}Gbps` : `${apCableHealth.expectedSpeedMbps}Mbps`})
-                  </p>
-                  <p className="text-xs opacity-80 mt-1">
-                    <span className="font-medium">Likely cause:</span> {apCableHealth.status === 'critical'
-                      ? 'Multiple damaged pairs or severely damaged cable'
-                      : 'Damaged cable pair - Gigabit requires all 4 pairs, 100Mbps only uses 2'}
-                  </p>
-                  <p className="text-xs mt-2 text-yellow-400">
-                    Check blue pair (pins 4,5) or brown pair (pins 7,8) on the RJ45 connector
-                  </p>
+
+                  {/* Speed info */}
+                  <div className="text-xs mt-2 space-y-1">
+                    <p><span className="text-muted-foreground">Link Speed:</span> <span className={apCableHealth.status === 'critical' ? 'text-red-400' : 'text-yellow-400'}>{apCableHealth.speedDisplay}</span> (expected {apCableHealth.expectedSpeedMbps >= 1000 ? `${apCableHealth.expectedSpeedMbps/1000}Gbps` : `${apCableHealth.expectedSpeedMbps}Mbps`})</p>
+                    {apCableHealth.duplexMode && (
+                      <p><span className="text-muted-foreground">Duplex:</span> <span className={apCableHealth.duplexMode.toLowerCase().includes('half') ? 'text-yellow-400' : ''}>{apCableHealth.duplexMode}</span></p>
+                    )}
+                    {apCableHealth.portName && (
+                      <p><span className="text-muted-foreground">Port:</span> {apCableHealth.portName}</p>
+                    )}
+                  </div>
+
+                  {/* Issues list */}
+                  {apCableHealth.issues && apCableHealth.issues.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-border/50">
+                      <p className="text-xs font-medium mb-1">Detected Issues:</p>
+                      {apCableHealth.issues.map((issue, idx) => (
+                        <div key={idx} className="text-xs mb-1">
+                          <span className={issue.severity === 'critical' ? 'text-red-400' : 'text-yellow-400'}>• </span>
+                          {issue.description}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Recommendation */}
+                  {apCableHealth.issues && apCableHealth.issues.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-border/50 text-xs text-blue-400">
+                      <p className="font-medium">Recommendation:</p>
+                      <p>{apCableHealth.issues[0].recommendation}</p>
+                    </div>
+                  )}
+
+                  {/* Switch comparison */}
                   {apCableHealth.otherAPsOnSwitch && apCableHealth.otherAPsOnSwitch.good > 0 && (
-                    <p className="text-xs mt-1 text-orange-400">
+                    <p className="text-xs mt-2 text-orange-400">
                       {apCableHealth.otherAPsOnSwitch.good} other APs on same switch have good speeds - issue isolated to this cable
                     </p>
                   )}
