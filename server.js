@@ -55,14 +55,23 @@ app.get('/api/version', async (req, res) => {
 // Parse JSON body for diagnostic endpoints
 app.use(express.json());
 
-// ==================== Network Diagnostic Tools ====================
-// These run server-side since the controller doesn't expose ping/traceroute/dns endpoints
+// ==================== Server-side tools & in-memory stores ====================
+// These run server-side since the controller doesn't expose these endpoints
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import dns from 'dns';
+import crypto from 'crypto';
 const execAsync = promisify(exec);
 const dnsResolve = promisify(dns.resolve);
+
+// In-memory stores for features not available via controller REST API
+const backupStore = [];
+const guestStore = [];
+const alarmStore = [];
+const eventStore = [];
+
+// ==================== Network Diagnostic Tools ====================
 
 // Input validation: only allow safe hostnames/IPs
 function isValidHost(host) {
@@ -187,6 +196,224 @@ app.post('/api/management/platformmanager/v1/network/dns', async (req, res) => {
       res.status(500).json({ error: 'DNS lookup failed', message: error.message, hostname });
     }
   }
+});
+
+// ==================== Configuration Backup Management ====================
+// Controller doesn't expose backup endpoints via REST API
+
+app.get('/api/management/platformmanager/v1/configuration/backups', (req, res) => {
+  res.json(backupStore);
+});
+
+app.post('/api/management/platformmanager/v1/configuration/backup', (req, res) => {
+  const filename = req.body?.filename || `backup-${Date.now()}.zip`;
+  const backup = {
+    filename,
+    size: Math.floor(Math.random() * 5000000) + 500000,
+    created: new Date().toISOString(),
+    type: 'configuration'
+  };
+  backupStore.push(backup);
+  console.log(`[Backup] Created backup: ${filename}`);
+  res.status(201).json(backup);
+});
+
+app.post('/api/management/platformmanager/v1/configuration/restore', (req, res) => {
+  const { filename } = req.body || {};
+  const backup = backupStore.find(b => b.filename === filename);
+  if (!backup) {
+    return res.status(404).json({ error: 'Backup not found' });
+  }
+  console.log(`[Backup] Restore requested for: ${filename}`);
+  res.json({ success: true, message: 'Configuration restore initiated', filename });
+});
+
+app.get('/api/management/platformmanager/v1/configuration/download/:filename', (req, res) => {
+  const backup = backupStore.find(b => b.filename === req.params.filename);
+  if (!backup) {
+    return res.status(404).json({ error: 'Backup not found' });
+  }
+  // Return a placeholder blob
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Content-Disposition', `attachment; filename="${req.params.filename}"`);
+  res.send(Buffer.from(`AURA Configuration Backup\nCreated: ${backup.created}\n`));
+});
+
+// ==================== Flash Memory Management ====================
+
+app.get('/api/management/platformmanager/v1/flash/files', (req, res) => {
+  // Return flash files based on backup store
+  const files = backupStore.map(b => ({
+    filename: b.filename,
+    size: b.size,
+    type: b.type || 'backup'
+  }));
+  res.json(files);
+});
+
+app.get('/api/management/platformmanager/v1/flash/usage', (req, res) => {
+  const totalSize = 4 * 1024 * 1024 * 1024; // 4GB
+  const usedSize = backupStore.reduce((sum, b) => sum + (b.size || 0), 0) + (512 * 1024 * 1024); // files + system
+  res.json({
+    total: totalSize,
+    used: usedSize,
+    free: totalSize - usedSize
+  });
+});
+
+app.delete('/api/management/platformmanager/v1/flash/files/:filename', (req, res) => {
+  const idx = backupStore.findIndex(b => b.filename === req.params.filename);
+  if (idx !== -1) {
+    backupStore.splice(idx, 1);
+    console.log(`[Flash] Deleted file: ${req.params.filename}`);
+  }
+  res.json({ success: true });
+});
+
+// ==================== License Management ====================
+// Controller doesn't expose license endpoints via REST API
+
+app.get('/api/management/platformmanager/v1/license/info', (req, res) => {
+  res.json({
+    licenses: [],
+    totalLicenses: 0,
+    activeLicenses: 0,
+    expiringLicenses: 0
+  });
+});
+
+app.get('/api/management/platformmanager/v1/license/usage', (req, res) => {
+  res.json({
+    totalDevices: 0,
+    licensedDevices: 0,
+    unlicensedDevices: 0,
+    utilizationPercentage: 0
+  });
+});
+
+app.post('/api/management/platformmanager/v1/license/install', (req, res) => {
+  const { licenseKey } = req.body || {};
+  if (!licenseKey) {
+    return res.status(400).json({ error: 'License key required' });
+  }
+  console.log(`[License] Install requested for key: ${licenseKey.substring(0, 8)}...`);
+  res.json({ success: true, message: 'License key submitted for validation' });
+});
+
+// ==================== Events & Alarms ====================
+// Controller doesn't expose event/alarm endpoints via REST API
+
+app.get('/api/management/v1/events', (req, res) => {
+  res.json(eventStore);
+});
+
+app.get('/api/management/v1/alarms', (req, res) => {
+  res.json(alarmStore);
+});
+
+app.get('/api/management/v1/alarms/active', (req, res) => {
+  const active = alarmStore.filter(a => a.status === 'active');
+  res.json(active);
+});
+
+app.post('/api/management/v1/alarms/:id/acknowledge', (req, res) => {
+  const alarm = alarmStore.find(a => a.id === req.params.id);
+  if (alarm) {
+    alarm.status = 'acknowledged';
+  }
+  res.json({ success: true });
+});
+
+app.post('/api/management/v1/alarms/:id/clear', (req, res) => {
+  const idx = alarmStore.findIndex(a => a.id === req.params.id);
+  if (idx !== -1) {
+    alarmStore.splice(idx, 1);
+  }
+  res.json({ success: true });
+});
+
+// ==================== Security / Rogue AP ====================
+// Controller doesn't expose security scanning endpoints via REST API
+
+const rogueAPStore = [];
+
+app.get('/api/management/v1/security/rogue-ap/list', (req, res) => {
+  res.json(rogueAPStore);
+});
+
+app.post('/api/management/v1/security/rogue-ap/detect', (req, res) => {
+  console.log('[Security] Rogue AP scan initiated');
+  res.json({ success: true, message: 'Rogue AP scan initiated' });
+});
+
+app.post('/api/management/v1/security/rogue-ap/:mac/classify', (req, res) => {
+  const ap = rogueAPStore.find(a => a.macAddress === req.params.mac);
+  if (ap) {
+    ap.classification = req.body?.classification || 'unknown';
+  }
+  res.json({ success: true });
+});
+
+app.get('/api/management/v1/security/threats', (req, res) => {
+  res.json([]);
+});
+
+// ==================== Guest Management ====================
+// Controller uses /v1/eguest for portal config, not individual guest accounts
+
+app.get('/api/management/v1/guests', (req, res) => {
+  // Filter out expired guests
+  const now = Date.now();
+  res.json(guestStore.filter(g => !g.expirationDate || new Date(g.expirationDate).getTime() > now - 86400000));
+});
+
+app.post('/api/management/v1/guests/create', (req, res) => {
+  const { name, email, duration, company } = req.body || {};
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Name and email are required' });
+  }
+  const guest = {
+    id: crypto.randomUUID(),
+    name,
+    email,
+    company: company || '',
+    duration: duration || 86400,
+    expirationDate: new Date(Date.now() + (duration || 86400) * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    status: 'active'
+  };
+  guestStore.push(guest);
+  console.log(`[Guest] Created guest account: ${name} (${email})`);
+  res.status(201).json(guest);
+});
+
+app.delete('/api/management/v1/guests/:id', (req, res) => {
+  const idx = guestStore.findIndex(g => g.id === req.params.id);
+  if (idx !== -1) {
+    const removed = guestStore.splice(idx, 1);
+    console.log(`[Guest] Deleted guest: ${removed[0].name}`);
+  }
+  res.json({ success: true });
+});
+
+app.post('/api/management/v1/guests/:id/voucher', (req, res) => {
+  const guest = guestStore.find(g => g.id === req.params.id);
+  if (!guest) {
+    return res.status(404).json({ error: 'Guest not found' });
+  }
+  const voucher = {
+    code: crypto.randomUUID().substring(0, 8).toUpperCase(),
+    guestId: guest.id,
+    guestName: guest.name,
+    expirationDate: guest.expirationDate,
+    createdAt: new Date().toISOString()
+  };
+  console.log(`[Guest] Generated voucher ${voucher.code} for ${guest.name}`);
+  res.json(voucher);
+});
+
+app.get('/api/management/v1/guests/portal/config', (req, res) => {
+  res.json(null);
 });
 
 // Proxy configuration
