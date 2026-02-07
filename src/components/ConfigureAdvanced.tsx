@@ -1326,54 +1326,66 @@ function LocationServicesTab() {
 
 // ==================== MAIN COMPONENT ====================
 export function ConfigureAdvanced() {
+  const [activeTab, setActiveTab] = useState('topologies');
+
+  const tabs = [
+    { id: 'topologies', label: 'Topologies', icon: Network },
+    { id: 'cos', label: 'Class of Service', icon: Gauge },
+    { id: 'ratelimiters', label: 'Rate Limiters', icon: Gauge },
+    { id: 'profiles', label: 'AP Profiles', icon: Layers },
+    { id: 'iot', label: 'IoT Profiles', icon: Bluetooth },
+    { id: 'meshpoints', label: 'Meshpoints', icon: Cable },
+    { id: 'accesscontrol', label: 'Access Control', icon: Shield },
+    { id: 'location', label: 'Location Services', icon: Globe },
+  ];
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'topologies': return <TopologiesTab />;
+      case 'cos': return <CoSTab />;
+      case 'ratelimiters': return <RateLimitersTab />;
+      case 'profiles': return <ProfilesTab />;
+      case 'iot': return <IoTTab />;
+      case 'meshpoints': return <MeshpointsTab />;
+      case 'accesscontrol': return <AccessControlTab />;
+      case 'location': return <LocationServicesTab />;
+      default: return <TopologiesTab />;
+    }
+  };
+
   return (
     <div className="h-full overflow-auto">
-      <div className="container mx-auto p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Settings className="h-8 w-8" />
-            Advanced Configuration
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Topologies, QoS, AP Profiles, IoT, Mesh, Access Control, and Location Services
-          </p>
-        </div>
-
-        <Tabs defaultValue="topologies" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="topologies" className="text-xs"><Network className="h-3 w-3 mr-1" />Topologies</TabsTrigger>
-            <TabsTrigger value="cos" className="text-xs"><Gauge className="h-3 w-3 mr-1" />CoS</TabsTrigger>
-            <TabsTrigger value="ratelimiters" className="text-xs"><Gauge className="h-3 w-3 mr-1" />Rate Limiters</TabsTrigger>
-            <TabsTrigger value="profiles" className="text-xs"><Layers className="h-3 w-3 mr-1" />AP Profiles</TabsTrigger>
-            <TabsTrigger value="iot" className="text-xs"><Bluetooth className="h-3 w-3 mr-1" />IoT</TabsTrigger>
-            <TabsTrigger value="meshpoints" className="text-xs"><Cable className="h-3 w-3 mr-1" />Mesh</TabsTrigger>
-            <TabsTrigger value="accesscontrol" className="text-xs"><Shield className="h-3 w-3 mr-1" />ACL</TabsTrigger>
-          </TabsList>
-
-          <div className="mt-6">
-            <TabsContent value="topologies"><TopologiesTab /></TabsContent>
-            <TabsContent value="cos"><CoSTab /></TabsContent>
-            <TabsContent value="ratelimiters"><RateLimitersTab /></TabsContent>
-            <TabsContent value="profiles"><ProfilesTab /></TabsContent>
-            <TabsContent value="iot"><IoTTab /></TabsContent>
-            <TabsContent value="meshpoints"><MeshpointsTab /></TabsContent>
-            <TabsContent value="accesscontrol"><AccessControlTab /></TabsContent>
+      <div className="p-6">
+        <div className="flex gap-6">
+          {/* Left sidebar navigation */}
+          <div className="w-48 flex-shrink-0">
+            <nav className="space-y-1 sticky top-0">
+              {tabs.map(tab => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors text-left ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground font-medium'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
-        </Tabs>
 
-        {/* Location Services as separate section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
-              Location Services
-            </CardTitle>
-            <CardDescription>XLocation, RTLS, Positioning, and Analytics profiles</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <LocationServicesTab />
-          </CardContent>
-        </Card>
+          {/* Main content area */}
+          <div className="flex-1 min-w-0">
+            {renderContent()}
+          </div>
+        </div>
       </div>
     </div>
   );
