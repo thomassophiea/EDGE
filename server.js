@@ -52,8 +52,11 @@ app.get('/api/version', async (req, res) => {
   }
 });
 
-// Parse JSON body for diagnostic endpoints
-app.use(express.json());
+// JSON body parser - only applied to server-side routes, NOT globally
+// IMPORTANT: Do NOT use app.use(express.json()) globally as it consumes
+// the request body stream, preventing http-proxy-middleware from forwarding
+// POST/PUT bodies to the controller (breaks login and all write operations)
+const jsonParser = express.json();
 
 // ==================== Server-side tools & in-memory stores ====================
 // These run server-side since the controller doesn't expose these endpoints
@@ -81,7 +84,7 @@ function isValidHost(host) {
   return /^[a-zA-Z0-9][a-zA-Z0-9.\-]*[a-zA-Z0-9]$/.test(host) || /^(\d{1,3}\.){3}\d{1,3}$/.test(host);
 }
 
-app.post('/api/management/platformmanager/v1/network/ping', async (req, res) => {
+app.post('/api/management/platformmanager/v1/network/ping', jsonParser, async (req, res) => {
   const { host, count = 4 } = req.body;
   if (!isValidHost(host)) {
     return res.status(400).json({ error: 'Invalid hostname or IP address' });
@@ -130,7 +133,7 @@ app.post('/api/management/platformmanager/v1/network/ping', async (req, res) => 
   }
 });
 
-app.post('/api/management/platformmanager/v1/network/traceroute', async (req, res) => {
+app.post('/api/management/platformmanager/v1/network/traceroute', jsonParser, async (req, res) => {
   const { host } = req.body;
   if (!isValidHost(host)) {
     return res.status(400).json({ error: 'Invalid hostname or IP address' });
@@ -178,7 +181,7 @@ app.post('/api/management/platformmanager/v1/network/traceroute', async (req, re
   }
 });
 
-app.post('/api/management/platformmanager/v1/network/dns', async (req, res) => {
+app.post('/api/management/platformmanager/v1/network/dns', jsonParser, async (req, res) => {
   const { hostname } = req.body;
   if (!isValidHost(hostname)) {
     return res.status(400).json({ error: 'Invalid hostname' });
@@ -205,7 +208,7 @@ app.get('/api/management/platformmanager/v1/configuration/backups', (req, res) =
   res.json(backupStore);
 });
 
-app.post('/api/management/platformmanager/v1/configuration/backup', (req, res) => {
+app.post('/api/management/platformmanager/v1/configuration/backup', jsonParser, (req, res) => {
   const filename = req.body?.filename || `backup-${Date.now()}.zip`;
   const backup = {
     filename,
@@ -218,7 +221,7 @@ app.post('/api/management/platformmanager/v1/configuration/backup', (req, res) =
   res.status(201).json(backup);
 });
 
-app.post('/api/management/platformmanager/v1/configuration/restore', (req, res) => {
+app.post('/api/management/platformmanager/v1/configuration/restore', jsonParser, (req, res) => {
   const { filename } = req.body || {};
   const backup = backupStore.find(b => b.filename === filename);
   if (!backup) {
@@ -291,7 +294,7 @@ app.get('/api/management/platformmanager/v1/license/usage', (req, res) => {
   });
 });
 
-app.post('/api/management/platformmanager/v1/license/install', (req, res) => {
+app.post('/api/management/platformmanager/v1/license/install', jsonParser, (req, res) => {
   const { licenseKey } = req.body || {};
   if (!licenseKey) {
     return res.status(400).json({ error: 'License key required' });
@@ -316,7 +319,7 @@ app.get('/api/management/v1/alarms/active', (req, res) => {
   res.json(active);
 });
 
-app.post('/api/management/v1/alarms/:id/acknowledge', (req, res) => {
+app.post('/api/management/v1/alarms/:id/acknowledge', jsonParser, (req, res) => {
   const alarm = alarmStore.find(a => a.id === req.params.id);
   if (alarm) {
     alarm.status = 'acknowledged';
@@ -324,7 +327,7 @@ app.post('/api/management/v1/alarms/:id/acknowledge', (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/management/v1/alarms/:id/clear', (req, res) => {
+app.post('/api/management/v1/alarms/:id/clear', jsonParser, (req, res) => {
   const idx = alarmStore.findIndex(a => a.id === req.params.id);
   if (idx !== -1) {
     alarmStore.splice(idx, 1);
@@ -341,12 +344,12 @@ app.get('/api/management/v1/security/rogue-ap/list', (req, res) => {
   res.json(rogueAPStore);
 });
 
-app.post('/api/management/v1/security/rogue-ap/detect', (req, res) => {
+app.post('/api/management/v1/security/rogue-ap/detect', jsonParser, (req, res) => {
   console.log('[Security] Rogue AP scan initiated');
   res.json({ success: true, message: 'Rogue AP scan initiated' });
 });
 
-app.post('/api/management/v1/security/rogue-ap/:mac/classify', (req, res) => {
+app.post('/api/management/v1/security/rogue-ap/:mac/classify', jsonParser, (req, res) => {
   const ap = rogueAPStore.find(a => a.macAddress === req.params.mac);
   if (ap) {
     ap.classification = req.body?.classification || 'unknown';
@@ -367,7 +370,7 @@ app.get('/api/management/v1/guests', (req, res) => {
   res.json(guestStore.filter(g => !g.expirationDate || new Date(g.expirationDate).getTime() > now - 86400000));
 });
 
-app.post('/api/management/v1/guests/create', (req, res) => {
+app.post('/api/management/v1/guests/create', jsonParser, (req, res) => {
   const { name, email, duration, company } = req.body || {};
   if (!name || !email) {
     return res.status(400).json({ error: 'Name and email are required' });
@@ -396,7 +399,7 @@ app.delete('/api/management/v1/guests/:id', (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/management/v1/guests/:id/voucher', (req, res) => {
+app.post('/api/management/v1/guests/:id/voucher', jsonParser, (req, res) => {
   const guest = guestStore.find(g => g.id === req.params.id);
   if (!guest) {
     return res.status(404).json({ error: 'Guest not found' });
@@ -447,16 +450,6 @@ const proxyOptions = {
     // Forward original headers
     if (req.headers.authorization) {
       proxyReq.setHeader('Authorization', req.headers.authorization);
-    }
-
-    // Re-serialize body if express.json() already consumed the stream
-    // This is critical: express.json() parses the body and consumes the raw stream,
-    // so the proxy would forward an empty body without this fix
-    if (req.body && Object.keys(req.body).length > 0) {
-      const bodyData = JSON.stringify(req.body);
-      proxyReq.setHeader('Content-Type', 'application/json');
-      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
-      proxyReq.write(bodyData);
     }
   },
 
